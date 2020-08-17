@@ -1,3 +1,1 @@
-![1](sources\1.png)
-
-S
+![1](sources/1.png)
