@@ -3,9 +3,9 @@
 ## 纯通信编程-结合图形界面用于调试
 
 1. [软件准备](#软件准备)
-2. [在Qt Creator中的编程](#在Qt Creator中的编程)
+2. [在Qt-Creator中的编程](#在Qt-Creator中的编程)
 3. [STM32CubeMX配置串口通信接口](#STM32CubeMX配置串口通信接口)
-4. [Keil MDK中给STM32板子编写与烧写程序](#Keil MDK中给STM32板子编写与烧写程序)
+4. [Keil-MDK中给STM32板子编写与烧写程序](#Keil-MDK中给STM32板子编写与烧写程序)
 5. [功能介绍](#功能介绍)
 
 ### 软件准备
@@ -30,7 +30,7 @@
 
    ![2](sources/2.png)
 
-### 在Qt Creator中的编程
+### 在Qt-Creator中的编程
 
 1. 打开qt工程文件，.pro的文件名后缀
 
@@ -58,7 +58,7 @@
 
 
 
-### Keil MDK中给STM32板子编写与烧写程序
+### Keil-MDK中给STM32板子编写与烧写程序
 
 1. 参考wiki中大疆A板入门使用文档中关于使用Keil MDK（smart-car/WiKi/）的内容
 
