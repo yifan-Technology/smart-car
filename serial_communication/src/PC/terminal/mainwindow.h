@@ -67,6 +67,8 @@ private:
     void showStatusMessage(const QString &message);
     ControlData calculateRS();
     void resetTestValue();
+    void get_soll_value();
+    void write_real_value();
 
     Ui::MainWindow *m_ui = nullptr;
     QLabel *m_status = nullptr;
@@ -79,6 +81,9 @@ private:
     uint8_t *Rx_Count;
 
 private:
+    float soll[4];
+    float real[4];
+
     enum
     {
         JetsonCommSOF = (uint8_t)0x03,
