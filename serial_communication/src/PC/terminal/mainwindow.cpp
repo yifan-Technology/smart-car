@@ -317,6 +317,7 @@ void MainWindow::write_real_value()
      if(!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
          qDebug()<<"Can't open the file!";
      }
+     file.resize(0);
      QTextStream stream(&file);
      stream.seek(0);
      for (int i = 0; i < 4; i++)
