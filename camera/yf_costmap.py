@@ -3,9 +3,9 @@ import numpy as np
 
 
 class costMap:
-    def __init__(self, mapSize=250, visSize = 501, h_self=80, h_top=180, feld=500):
-        self.sendmap = np.zeros([mapSize,mapSize])
-        self.vismap = np.zeros([visSize,visSize,3])
+    def __init__(self, mapSize=100, visSize = 501, h_self=80, h_top=180, feld=500):
+        self.mapSize = mapSize
+        self.visSize = visSize
         self.feld = feld
         self.h_top = h_top
         self.h_self = h_self
@@ -15,7 +15,7 @@ class costMap:
     def pointCloud2map(self,pcl):
         pcl = np.floor(pcl * 100).astype(np.uint32)# z up x forward
         gridmap = np.zeros_like(pcl)
-        gridmap[:,0] = pcl[:,1]+ np.floor(self.feld/2)
+        gridmap[:,0] = pcl[:,1]+ 250
         gridmap[:,1] = pcl[:,0]
         gridmap[:,2] = np.abs(pcl[:,2] + 80)
         gridmap = np.delete(gridmap,np.where(gridmap[:,0]>self.feld),0)   
@@ -25,15 +25,17 @@ class costMap:
         self.gridmap = gridmap
         
     def obstaclemap(self):    
-        gridmap = self.gridmap    
-        small = np.where([gridmap[:,2]<25])
+        
+        self.sendmap = np.zeros([self.visSize,self.visSize])
+        gridmap = self.gridmap            
         large = np.where([gridmap[:,2]>=25])
-        sendmap[gridmap[large,1],gridmap[large,0]] = 1
-        sendmap = cv2.resize(sendmap,(250,250))
+        self.sendmap[gridmap[large,1],gridmap[large,0]] = 1
+        sendmap = cv2.resize(self.sendmap,(self.mapSize,self.mapSize))
         return sendmap
 
     def visualMap(self):
                 
+        self.vismap = np.zeros([self.visSize,self.visSize,3])
         kernel = np.ones((5,5),np.uint8)
         gridmap = self.gridmap  
         testmap = self.vismap  
