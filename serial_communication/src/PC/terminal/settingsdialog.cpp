@@ -3,7 +3,7 @@
 
 #include <QIntValidator>
 #include <QLineEdit>
-#include <QSerialPortInfo>
+#include <QtSerialPort/QSerialPortInfo>
 
 static const char blankString[] = QT_TRANSLATE_NOOP("SettingsDialog", "N/A");
 

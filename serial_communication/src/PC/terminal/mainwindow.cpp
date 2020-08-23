@@ -6,17 +6,18 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <string.h>
+#include <QtSerialPort/QSerialPort>
 
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     m_ui(new Ui::MainWindow),
-    m_status(new QLabel),
-    m_settings(new SettingsDialog),
-
-    m_serial(new QSerialPort(this))
+    m_status(new QLabel)
 {
     m_ui->setupUi(this);
+
+    m_serial = new QSerialPort(this);
+    m_settings = new SettingsDialog;
 
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);

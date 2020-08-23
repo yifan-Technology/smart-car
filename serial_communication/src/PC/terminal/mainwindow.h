@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QSerialPort>
+#include <QtSerialPort/QSerialPort>
 
 QT_BEGIN_NAMESPACE
 
