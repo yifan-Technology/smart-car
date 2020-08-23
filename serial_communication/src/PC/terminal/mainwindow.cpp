@@ -12,14 +12,11 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     m_ui(new Ui::MainWindow),
     m_status(new QLabel),
-    //m_console(new Console),
     m_settings(new SettingsDialog),
 
     m_serial(new QSerialPort(this))
 {
     m_ui->setupUi(this);
-    //m_console->setEnabled(false);
-    //setCentralWidget(m_console);
 
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);
@@ -37,7 +34,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //set Timer
     QTimer *timer = new QTimer;
     connect(timer, SIGNAL(timeout()), SLOT(send()));
-    timer->start(1000);
+    timer->start(25);
 
     //set data frame SOF and EOF
     _controlFrame.SOF = JetsonCommSOF;
@@ -90,6 +87,15 @@ void MainWindow::closeSerialPort()
     m_ui->actionDisconnect->setEnabled(false);
     m_ui->actionConfigure->setEnabled(true);
     showStatusMessage(tr("Disconnected"));
+    m_ui->realLeftFrontRS->setText("0.0");
+    m_ui->realLeftFrontRA->setText("0.0");
+    m_ui->realRightFrontRS->setText("0.0");
+    m_ui->realRightFrontRA->setText("0.0");
+    m_ui->realLeftBackRS->setText("0.0");
+    m_ui->realLeftBackRA->setText("0.0");
+    m_ui->realRightBackRS->setText("0.0");
+    m_ui->realRightBackRA->setText("0.0");
+
 }
 
 //void MainWindow::about()
@@ -105,115 +111,85 @@ MainWindow::ControlFrame MainWindow::pack(ControlData& ctrl)
     return ControlFrame
     {
         JetsonCommSOF,
-        ctrl.soll_left_rs,
-        ctrl.soll_right_rs,
+        ctrl.soll_left_front_rs,
+        ctrl.soll_right_front_rs,
+        ctrl.soll_left_back_rs,
+        ctrl.soll_right_back_rs,
         JetsonCommEOF
     };
 }
 
 ControlData MainWindow::calculateRS()
 {
-    float soll_left_rs;
-    float soll_right_rs;
+    float soll_left_front_rs;
+    float soll_right_front_rs;
+    float soll_left_back_rs;
+    float soll_right_back_rs;
+
     float rand_error = rand()/(RAND_MAX+1.0);
     rand_error = (int)(1000*rand_error) / 1000.0;
+
+
     if (!Test) {
-        soll_left_rs = 22.323 + rand_error;
-        soll_right_rs = 23.457 + rand_error;
+        soll_left_front_rs = 500.0;
+        soll_right_front_rs = 500.0;
+        soll_left_back_rs = 500.0;
+        soll_right_back_rs = 500.0;
     } else {
-        soll_left_rs = m_ui->sollLeftRS_Test->text().toFloat();
-        soll_right_rs = m_ui->sollRightRS_Test->text().toFloat();
+        soll_left_front_rs = m_ui->sollLeftFrontRS_Test->text().toFloat();
+        soll_left_front_rs *= 19.0;
+        soll_right_front_rs = m_ui->sollRightFrontRS_Test->text().toFloat();
+        soll_right_front_rs *= 19.0;
+        soll_left_back_rs = m_ui->sollLeftBackRS_Test->text().toFloat();
+        soll_left_back_rs *= 19.0;
+        soll_right_back_rs = m_ui->sollRightBackRS_Test->text().toFloat();
+        soll_right_back_rs *= 19.0;
     }
+
     return ControlData{
-        soll_left_rs,
-        soll_right_rs
+        soll_left_front_rs,
+        soll_right_front_rs,
+        soll_left_back_rs,
+        soll_right_back_rs
     };
 }
 
 void MainWindow::send()
 {
-//    const char send_info[] = {0x55, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x66};
-
-//    float * data_ptr_1 = (float *)(send_info + 1);
-//    data_ptr_1[0] = 234.4;
-//    float * data_ptr_2 = (float *)(send_info + 5);
-//    data_ptr_2[0] = 234.5;
-
     //生成数据帧
     ControlData _control_data = calculateRS();
     _controlFrame = pack(_control_data);
 
-//    //转换为char数组
-//    int struct_real_len = sizeof(_controlFrame);
-//    int struct_soll_len = 10;
-//    int struct_diff_len = struct_real_len - struct_soll_len;
-//    int incre_index = struct_diff_len / 2;
-//    qDebug()<<"struct_real_len: "<<struct_real_len;
-//    char send_info[struct_real_len];
-//    memcpy( send_info, &_controlFrame, sizeof(_controlFrame));
-
-//    float * b = (float *)(send_info+1+incre_index);
-//    float * c = (float *)(send_info+5+incre_index);
-
-//    qDebug()<<b[0];
-//    qDebug()<<c[0];
-
     //转换为char数组
-    char send_info[10] = {(char) _controlFrame.SOF, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, (char) _controlFrame._EOF};
-    float * soll_left_rs = (float *)(send_info + 1);
-    soll_left_rs[0] = _controlFrame.soll_left_rs;
-    float * soll_right_rs = (float *)(send_info + 5);
-    soll_right_rs[0] = _controlFrame.soll_right_rs;
-
-//    float * data_ptr_3 = (float *)(send_info + 1);
-//    qDebug()<<data_ptr_3[0]<<"   ";
-//    float * data_ptr_4 = (float *)(send_info + 5);
-//    qDebug()<<data_ptr_4[0];
+    char send_info[18] = {(char) _controlFrame.SOF, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, (char) _controlFrame._EOF};
+    float * soll_left_front_rs = (float *)(send_info + 1);
+    soll_left_front_rs[0] = _controlFrame.soll_left_front_rs;
+    float * soll_right_front_rs = (float *)(send_info + 5);
+    soll_right_front_rs[0] = _controlFrame.soll_right_front_rs;
+    float * soll_left_back_rs = (float *)(send_info + 9);
+    soll_left_back_rs[0] = _controlFrame.soll_left_back_rs;
+    float * soll_right_back_rs = (float *)(send_info + 13);
+    soll_right_back_rs[0] = _controlFrame.soll_right_back_rs;
 
     //转换为QByteArray
     QByteArray data(QByteArray::fromRawData(send_info, sizeof(send_info)));
     if (m_serial->isOpen())
         writeData(data);
 
-//    qDebug()<<sizeof(data);
-//    char data_par[4];
-//    for (int i = 1; i < 5; ++i) {
-//         data_par[i-1] = data.at(i);
-//    }
-
-//    float * dd = (float *)(data_par);
-//    qDebug()<<dd[0];
-
-//    char data_parr[4];
-//    for (int i = 1; i < 5; ++i) {
-//         data_parr[i-1] = data.at(i+4);
-//    }
-
-//    float * ddd = (float *)(data_parr);
-//    qDebug()<<ddd[0];
-//    qDebug()<<sizeof(data);
-    QString str_soll_left_rs = QString::number(_controlFrame.soll_left_rs, 'f', 3);
-    QString str_soll_right_rs = QString::number(_controlFrame.soll_right_rs, 'f', 3);
-    m_ui->sollLeftRS->setText(str_soll_left_rs);
-    m_ui->sollRightRS->setText(str_soll_right_rs);
+    QString str_soll_left_front_rs = QString::number(_controlFrame.soll_left_front_rs/19.0, 'f', 3);
+    QString str_soll_right_front_rs = QString::number(_controlFrame.soll_right_front_rs/19.0, 'f', 3);
+    QString str_soll_left_back_rs = QString::number(_controlFrame.soll_left_back_rs/19.0, 'f', 3);
+    QString str_soll_right_back_rs = QString::number(_controlFrame.soll_right_back_rs/19.0, 'f', 3);
+    m_ui->sollLeftFrontRS->setText(str_soll_left_front_rs);
+    m_ui->sollRightFrontRS->setText(str_soll_right_front_rs);
+    m_ui->sollLeftBackRS->setText(str_soll_left_back_rs);
+    m_ui->sollRightBackRS->setText(str_soll_right_back_rs);
 }
 
 void MainWindow::writeData(const QByteArray &data)
 {
     //qDebug()<<"writeData: "<<data<<" with "<<data.count()<<" bytes";
     m_serial->write(data);
-}
-
-
-FeedBackData MainWindow::unpack(MainWindow::FeedBackFrame& fb)
-{
-    return FeedBackData
-    {
-        fb.real_left_rs,
-        fb.real_right_rs,
-        fb.real_left_ra,
-        fb.real_right_rs,
-    };
 }
 
 void MainWindow::readData()
@@ -231,7 +207,7 @@ void MainWindow::readData()
 
          Rx_buf[*Rx_Count] = data.at(i);
          *Rx_Count = *Rx_Count + 1;
-        //qDebug()<<"i: "<<i<<" rxcount++ : "<<*Rx_Count<<"\n";
+         //qDebug()<<"i: "<<i<<" rxcount++ : "<<*Rx_Count<<"\n";
     }
 
     if (data.at(data_len-1) == 0x06) {
@@ -244,7 +220,7 @@ void MainWindow::readData()
          }
          float * aa = (float *)a;
          //qDebug()<<QString::number(aa[0], 'f', 3);
-         m_ui->realLeftRS->setText(QString::number(aa[0], 'f', 3));
+         m_ui->realLeftFrontRS->setText(QString::number(aa[0]/19.0, 'f', 3));
 
          char b[4];
           for (int i = 0; i < 4; i++) {
@@ -252,7 +228,7 @@ void MainWindow::readData()
           }
           float * bb = (float *)b;
           //qDebug()<<QString::number(bb[0], 'f', 3);
-          m_ui->realLeftRA->setText(QString::number(bb[0], 'f', 3));
+          m_ui->realLeftFrontRA->setText(QString::number(bb[0]/19.0, 'f', 3));
 
           char c[4];
            for (int i = 0; i < 4; i++) {
@@ -260,7 +236,7 @@ void MainWindow::readData()
            }
            float * cc = (float *)c;
            //qDebug()<<QString::number(cc[0], 'f', 3);
-           m_ui->realRightRS->setText(QString::number(cc[0], 'f', 3));
+           m_ui->realRightFrontRS->setText(QString::number(cc[0]/19.0, 'f', 3));
 
            char d[4];
             for (int i = 0; i < 4; i++) {
@@ -268,7 +244,39 @@ void MainWindow::readData()
             }
             float * dd = (float *)d;
             //qDebug()<<QString::number(dd[0], 'f', 3);
-            m_ui->realRightRA->setText(QString::number(dd[0], 'f', 3));
+            m_ui->realRightFrontRA->setText(QString::number(dd[0]/19.0, 'f', 3));
+
+            char e[4];
+             for (int i = 0; i < 4; i++) {
+                 e[i] = Rx_buf[i+20];
+             }
+             float * ee = (float *)e;
+             //qDebug()<<QString::number(ee[0], 'f', 3);
+             m_ui->realLeftBackRS->setText(QString::number(ee[0]/19.0, 'f', 3));
+
+             char f[4];
+              for (int i = 0; i < 4; i++) {
+                  f[i] = Rx_buf[i+24];
+              }
+              float * ff = (float *)f;
+              //qDebug()<<QString::number(ff[0], 'f', 3);
+              m_ui->realLeftBackRA->setText(QString::number(ff[0]/19.0, 'f', 3));
+
+              char g[4];
+               for (int i = 0; i < 4; i++) {
+                   g[i] = Rx_buf[i+28];
+               }
+               float * gg = (float *)g;
+               //qDebug()<<QString::number(gg[0], 'f', 3);
+               m_ui->realRightBackRS->setText(QString::number(gg[0]/19.0, 'f', 3));
+
+               char h[4];
+                for (int i = 0; i < 4; i++) {
+                    h[i] = Rx_buf[i+32];
+                }
+                float * hh = (float *)h;
+                //qDebug()<<QString::number(hh[0], 'f', 3);
+                m_ui->realRightBackRA->setText(QString::number(hh[0]/19.0, 'f', 3));
         }
 }
 
@@ -281,8 +289,10 @@ void MainWindow::handleError(QSerialPort::SerialPortError error)
 }
 void MainWindow::resetTestValue()
 {
-    m_ui->sollLeftRS_Test->setText(QString("0.0"));
-    m_ui->sollRightRS_Test->setText(QString("0.0"));
+    m_ui->sollLeftFrontRS_Test->setText(QString("0.0"));
+    m_ui->sollRightFrontRS_Test->setText(QString("0.0"));
+    m_ui->sollLeftBackRS_Test->setText(QString("0.0"));
+    m_ui->sollRightBackRS_Test->setText(QString("0.0"));
 }
 void MainWindow::initActionsConnections()
 {
@@ -291,8 +301,6 @@ void MainWindow::initActionsConnections()
     connect(m_ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
     connect(m_ui->actionConfigure, &QAction::triggered, m_settings, &SettingsDialog::show);
     connect(m_ui->actionClear, &QAction::triggered, this, &MainWindow::resetTestValue);
-    //connect(m_ui->actionAbout, &QAction::triggered, this, &MainWindow::about);
-    //connect(m_ui->actionAboutQt, &QAction::triggered, qApp, &QApplication::aboutQt);
 }
 
 void MainWindow::initConnections()

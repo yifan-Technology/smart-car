@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>687</width>
+    <height>326</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,7 +38,7 @@
         <string>实际转速：</string>
        </property>
       </widget>
-      <widget class="QLabel" name="realLeftRS">
+      <widget class="QLabel" name="realLeftFrontRS">
        <property name="geometry">
         <rect>
          <x>108</x>
@@ -74,7 +74,7 @@
         <string>实际转角：</string>
        </property>
       </widget>
-      <widget class="QLabel" name="realLeftRA">
+      <widget class="QLabel" name="realLeftFrontRA">
        <property name="geometry">
         <rect>
          <x>108</x>
@@ -110,7 +110,7 @@
         <string>理想转速：</string>
        </property>
       </widget>
-      <widget class="QLineEdit" name="sollLeftRS_Test">
+      <widget class="QLineEdit" name="sollLeftFrontRS_Test">
        <property name="geometry">
         <rect>
          <x>110</x>
@@ -143,14 +143,14 @@
         </font>
        </property>
        <property name="text">
-        <string>n/s</string>
+        <string>rpm</string>
        </property>
       </widget>
       <widget class="QPushButton" name="startTest">
        <property name="geometry">
         <rect>
-         <x>200</x>
-         <y>170</y>
+         <x>480</x>
+         <y>180</y>
          <width>75</width>
          <height>27</height>
         </rect>
@@ -167,8 +167,8 @@
       <widget class="QPushButton" name="stopTest">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>170</y>
+         <x>570</x>
+         <y>180</y>
          <width>75</width>
          <height>27</height>
         </rect>
@@ -182,7 +182,7 @@
         <string>Stop</string>
        </property>
       </widget>
-      <widget class="QLabel" name="realRightRS">
+      <widget class="QLabel" name="realRightFrontRS">
        <property name="geometry">
         <rect>
          <x>250</x>
@@ -200,7 +200,7 @@
         <string>0.0      </string>
        </property>
       </widget>
-      <widget class="QLineEdit" name="sollRightRS_Test">
+      <widget class="QLineEdit" name="sollRightFrontRS_Test">
        <property name="geometry">
         <rect>
          <x>250</x>
@@ -218,7 +218,7 @@
         <string>0.0 </string>
        </property>
       </widget>
-      <widget class="QLabel" name="realRightRA">
+      <widget class="QLabel" name="realRightFrontRA">
        <property name="geometry">
         <rect>
          <x>250</x>
@@ -251,7 +251,7 @@
         </font>
        </property>
        <property name="text">
-        <string>n/s</string>
+        <string>rpm</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_10">
@@ -269,7 +269,7 @@
         </font>
        </property>
        <property name="text">
-        <string>左轮</string>
+        <string>左前</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_11">
@@ -287,7 +287,7 @@
         </font>
        </property>
        <property name="text">
-        <string>右轮</string>
+        <string>右前</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_7">
@@ -308,7 +308,7 @@
         <string>理想转速：</string>
        </property>
       </widget>
-      <widget class="QLabel" name="sollLeftRS">
+      <widget class="QLabel" name="sollLeftFrontRS">
        <property name="geometry">
         <rect>
          <x>108</x>
@@ -326,7 +326,7 @@
         <string>0.0      </string>
        </property>
       </widget>
-      <widget class="QLabel" name="sollRightRS">
+      <widget class="QLabel" name="sollRightFrontRS">
        <property name="geometry">
         <rect>
          <x>250</x>
@@ -359,7 +359,7 @@
         </font>
        </property>
        <property name="text">
-        <string>n/s</string>
+        <string>rpm</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_12">
@@ -395,7 +395,7 @@
         </font>
        </property>
        <property name="text">
-        <string>n/s</string>
+        <string>rpm</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_14">
@@ -413,7 +413,7 @@
         </font>
        </property>
        <property name="text">
-        <string>n/s</string>
+        <string>rpm</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_15">
@@ -431,7 +431,7 @@
         </font>
        </property>
        <property name="text">
-        <string>n/s</string>
+        <string>rpm</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_16">
@@ -452,6 +452,330 @@
         <string>rad</string>
        </property>
       </widget>
+      <widget class="QLabel" name="realRightBackRS">
+       <property name="geometry">
+        <rect>
+         <x>532</x>
+         <y>34</y>
+         <width>79</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0      </string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="realLeftBackRS">
+       <property name="geometry">
+        <rect>
+         <x>390</x>
+         <y>34</y>
+         <width>89</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0     </string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_17">
+       <property name="geometry">
+        <rect>
+         <x>620</x>
+         <y>60</y>
+         <width>39</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rad</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_18">
+       <property name="geometry">
+        <rect>
+         <x>534</x>
+         <y>10</y>
+         <width>72</width>
+         <height>29</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>右后</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_19">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>92</y>
+         <width>39</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rpm</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_20">
+       <property name="geometry">
+        <rect>
+         <x>620</x>
+         <y>32</y>
+         <width>39</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rpm</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="realRightBackRA">
+       <property name="geometry">
+        <rect>
+         <x>532</x>
+         <y>64</y>
+         <width>81</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0      </string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_21">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>124</y>
+         <width>39</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rpm</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_22">
+       <property name="geometry">
+        <rect>
+         <x>621</x>
+         <y>122</y>
+         <width>37</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rpm</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="sollLeftBackRS_Test">
+       <property name="geometry">
+        <rect>
+         <x>392</x>
+         <y>128</y>
+         <width>83</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0 </string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="sollRightBackRS_Test">
+       <property name="geometry">
+        <rect>
+         <x>532</x>
+         <y>126</y>
+         <width>83</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0 </string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_23">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>62</y>
+         <width>39</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rad</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="sollLeftBackRS">
+       <property name="geometry">
+        <rect>
+         <x>390</x>
+         <y>92</y>
+         <width>85</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0      </string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_24">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>34</y>
+         <width>39</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rpm</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_25">
+       <property name="geometry">
+        <rect>
+         <x>394</x>
+         <y>10</y>
+         <width>72</width>
+         <height>29</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>左后</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="sollRightBackRS">
+       <property name="geometry">
+        <rect>
+         <x>532</x>
+         <y>92</y>
+         <width>83</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0      </string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="realLeftBackRA">
+       <property name="geometry">
+        <rect>
+         <x>390</x>
+         <y>64</y>
+         <width>87</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>0.0      </string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_26">
+       <property name="geometry">
+        <rect>
+         <x>620</x>
+         <y>90</y>
+         <width>39</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>rpm</string>
+       </property>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -461,7 +785,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>400</width>
+     <width>687</width>
      <height>20</height>
     </rect>
    </property>
