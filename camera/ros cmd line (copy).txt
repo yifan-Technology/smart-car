@@ -1,0 +1,43 @@
+. ~/ros2_dashing/install/setup.bash
+. install/setup.bash
+colcon build; ros2 run target talker
+
+sudo apt-get install ros-dashing-cv-bridge
+
+Ros1 bridge tok ros2
+terminal 1:
+source ~/yf_zed_ws/devel/setup.bash
+roscore
+
+terminal 2:
+source  /opt/ros/melodic/setup.bash
+source ~/yf_zed_ws/devel/setup.bash
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+ros2 run ros1_bridge dynamic_bridge --bridge-all-topics
+
+terminal 3:
+source  /opt/ros/melodic/setup.bash
+source ~/yf_zed_ws/devel/setup.bash
+roslaunch zed_wrapper zed2.launch
+# roslaunch zed_display_rviz display_zed2.launch
+
+terminal 4:
+cd dev_ws
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+source ~/dev_ws/install/setup.bash
+colcon build; ros2 run yfcam leftcam
+
+
+google object detection api:
+export PYTHONPATH=$PYTHONPATH:~/tf_ws/models/research:~/tf_ws/models/research/slim
+
+
+export PYTHONPATH=$PYTHONPATH:~/tensorflow_ws/TensorFlow/models/research/object_detection:~/tensorflow_ws/TensorFlow/models/research:~/tensorflow_ws/TensorFlow/models/research/slim
+
+#ros 1
+source ~/catkin_ws/devel/setup.bash
+
+#cartographer
+source ~/catkin_ws/install_isolated/setup.bash
