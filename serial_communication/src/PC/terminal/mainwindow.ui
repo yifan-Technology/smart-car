@@ -125,7 +125,7 @@
         </font>
        </property>
        <property name="text">
-        <string>0.0 </string>
+        <string>25</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_6">
@@ -215,7 +215,7 @@
         </font>
        </property>
        <property name="text">
-        <string>0.0 </string>
+        <string>25</string>
        </property>
       </widget>
       <widget class="QLabel" name="realRightFrontRA">
@@ -629,7 +629,7 @@
         </font>
        </property>
        <property name="text">
-        <string>0.0 </string>
+        <string>25</string>
        </property>
       </widget>
       <widget class="QLineEdit" name="sollRightBackRS_Test">
@@ -647,7 +647,7 @@
         </font>
        </property>
        <property name="text">
-        <string>0.0 </string>
+        <string>25</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_23">

@@ -131,10 +131,11 @@ void SettingsDialog::fillPortsInfo()
              << (info.vendorIdentifier() ? QString::number(info.vendorIdentifier(), 16) : blankString)
              << (info.productIdentifier() ? QString::number(info.productIdentifier(), 16) : blankString);
 
-        m_ui->serialPortInfoListBox->addItem(list.first(), list);
+        //m_ui->serialPortInfoListBox->addItem(list.first(), list);
+        m_ui->serialPortInfoListBox->insertItem(0, list.first(), list);
     }
-
-    m_ui->serialPortInfoListBox->addItem(tr("Custom"));
+    m_ui->serialPortInfoListBox->setCurrentIndex(0);
+    //m_ui->serialPortInfoListBox->addItem(tr("Custom"));
 }
 
 void SettingsDialog::updateSettings()

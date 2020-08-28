@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <string.h>
 #include <QtSerialPort/QSerialPort>
+#include <QThread>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -31,8 +32,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(m_serial, &QSerialPort::errorOccurred, this, &MainWindow::handleError);
     connect(m_serial, &QSerialPort::readyRead, this, &MainWindow::readData);
 
-    //connect(m_console, &Console::getData, this, &MainWindow::writeData);
-    //set Timer
     QTimer *timer = new QTimer;
     connect(timer, SIGNAL(timeout()), SLOT(send()));
     timer->start(25);
@@ -64,8 +63,6 @@ void MainWindow::openSerialPort()
     m_serial->setStopBits(p.stopBits);
     m_serial->setFlowControl(p.flowControl);
     if (m_serial->open(QIODevice::ReadWrite)) {
-        //m_console->setEnabled(false);
-        //m_console->setLocalEchoEnabled(p.localEchoEnabled);
         m_ui->actionConnect->setEnabled(false);
         m_ui->actionDisconnect->setEnabled(true);
         m_ui->actionConfigure->setEnabled(false);
@@ -81,31 +78,25 @@ void MainWindow::openSerialPort()
 
 void MainWindow::closeSerialPort()
 {
+    emit m_ui->stopTest->click();
+
     if (m_serial->isOpen())
         m_serial->close();
-    //m_console->setEnabled(false);
+
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);
     m_ui->actionConfigure->setEnabled(true);
     showStatusMessage(tr("Disconnected"));
-    m_ui->realLeftFrontRS->setText("0.0");
-    m_ui->realLeftFrontRA->setText("0.0");
-    m_ui->realRightFrontRS->setText("0.0");
-    m_ui->realRightFrontRA->setText("0.0");
-    m_ui->realLeftBackRS->setText("0.0");
-    m_ui->realLeftBackRA->setText("0.0");
-    m_ui->realRightBackRS->setText("0.0");
-    m_ui->realRightBackRA->setText("0.0");
+//    m_ui->realLeftFrontRS->setText("0.0");
+//    m_ui->realLeftFrontRA->setText("0.0");
+//    m_ui->realRightFrontRS->setText("0.0");
+//    m_ui->realRightFrontRA->setText("0.0");
+//    m_ui->realLeftBackRS->setText("0.0");
+//    m_ui->realLeftBackRA->setText("0.0");
+//    m_ui->realRightBackRS->setText("0.0");
+//    m_ui->realRightBackRA->setText("0.0");
 
 }
-
-//void MainWindow::about()
-//{
-//    QMessageBox::about(this, tr("About Simple Terminal"),
-//                       tr("The <b>Simple Terminal</b> example demonstrates how to "
-//                          "use the Qt Serial Port module in modern GUI applications "
-//                          "using Qt, with a menu bar, toolbars, and a status bar."));
-//}
 
 MainWindow::ControlFrame MainWindow::pack(ControlData& ctrl)
 {
@@ -132,10 +123,10 @@ ControlData MainWindow::calculateRS()
 
 
     if (!Test) {
-        soll_left_front_rs = 500.0;
-        soll_right_front_rs = 500.0;
-        soll_left_back_rs = 500.0;
-        soll_right_back_rs = 500.0;
+        soll_left_front_rs = 0.0;
+        soll_right_front_rs = 0.0;
+        soll_left_back_rs = 0.0;
+        soll_right_back_rs = 0.0;
     } else {
         soll_left_front_rs = m_ui->sollLeftFrontRS_Test->text().toFloat();
         soll_left_front_rs *= 19.0;
@@ -155,7 +146,7 @@ ControlData MainWindow::calculateRS()
     };
 }
 
-void MainWindow::send()
+void MainWindow::writeData()
 {
     //生成数据帧
     ControlData _control_data = calculateRS();
@@ -175,8 +166,11 @@ void MainWindow::send()
     //转换为QByteArray
     QByteArray data(QByteArray::fromRawData(send_info, sizeof(send_info)));
     if (m_serial->isOpen())
-        writeData(data);
+        m_serial->write(data);
+}
 
+void MainWindow::showSollValue()
+{
     QString str_soll_left_front_rs = QString::number(_controlFrame.soll_left_front_rs/19.0, 'f', 3);
     QString str_soll_right_front_rs = QString::number(_controlFrame.soll_right_front_rs/19.0, 'f', 3);
     QString str_soll_left_back_rs = QString::number(_controlFrame.soll_left_back_rs/19.0, 'f', 3);
@@ -187,10 +181,12 @@ void MainWindow::send()
     m_ui->sollRightBackRS->setText(str_soll_right_back_rs);
 }
 
-void MainWindow::writeData(const QByteArray &data)
+void MainWindow::send()
 {
-    //qDebug()<<"writeData: "<<data<<" with "<<data.count()<<" bytes";
-    m_serial->write(data);
+    if (m_serial->isOpen()) {
+        writeData();
+        showSollValue();
+    }
 }
 
 void MainWindow::readData()
@@ -200,7 +196,7 @@ void MainWindow::readData()
     uint8_t data_len = data.count();
     //qDebug()<<"readData: "<<data<<" with size: "<<data_len;
 
-    if (data.at(0) == 0x05) {
+    if (data.at(0) == STM32CommSOF) {
         *Rx_Count = 0;
         //qDebug()<<"Begining "<<*Rx_Count<<"\n";
     }
@@ -211,7 +207,7 @@ void MainWindow::readData()
          //qDebug()<<"i: "<<i<<" rxcount++ : "<<*Rx_Count<<"\n";
     }
 
-    if (data.at(data_len-1) == 0x06) {
+    if (data.at(data_len-1) == STM32CommEOF) {
         *Rx_Count = 0;
         //qDebug()<<"Last "<<*Rx_Count<<"\n";
 

@@ -14,7 +14,6 @@ class MainWindow;
 
 QT_END_NAMESPACE
 
-class Console;
 class SettingsDialog;
 
 struct ControlData
@@ -49,7 +48,6 @@ private slots:
     void openSerialPort();
     void closeSerialPort();
     //void about();
-    void writeData(const QByteArray &data);
     void readData();
     void send();
     void start_test();
@@ -67,6 +65,8 @@ private:
     void showStatusMessage(const QString &message);
     ControlData calculateRS();
     void resetTestValue();
+    void writeData();
+    void showSollValue();
 
     Ui::MainWindow *m_ui = nullptr;
     QLabel *m_status = nullptr;
@@ -75,6 +75,7 @@ private:
     QSerialPort *m_serial = nullptr;
 
     bool Test = false;
+
     char Rx_buf[40];
     uint8_t *Rx_Count;
 
