@@ -132,15 +132,10 @@ ControlData MainWindow::calculateRS()
 
 
     if (!Test) {
-        m_ui->get_soll_value();
-        soll_left_front_rs = m_ui->soll[0] * 19.0;
-        soll_right_front_rs = m_ui->soll[1] * 19.0;
-        soll_left_back_rs = m_ui->soll[2] * 19.0;
-        soll_right_back_rs = m_ui->soll[3] * 19.0;
-        // soll_left_front_rs = 500.0;
-        // soll_right_front_rs = 500.0;
-        // soll_left_back_rs = 500.0;
-        // soll_right_back_rs = 500.0;
+        soll_left_front_rs = 500.0;
+        soll_right_front_rs = 500.0;
+        soll_left_back_rs = 500.0;
+        soll_right_back_rs = 500.0;
     } else {
         soll_left_front_rs = m_ui->sollLeftFrontRS_Test->text().toFloat();
         soll_left_front_rs *= 19.0;
@@ -283,47 +278,7 @@ void MainWindow::readData()
                 float * hh = (float *)h;
                 //qDebug()<<QString::number(hh[0], 'f', 3);
                 m_ui->realRightBackRA->setText(QString::number(hh[0]/19.0, 'f', 3));
-
-                m_ui->real[0] = m_ui->realLeftFrontRS;
-                m_ui->real[1] = m_ui->realRightFrontRS;
-                m_ui->real[2] = m_ui->realLeftBackRS;
-                m_ui->real[3] = m_ui->realRightBackRS;
-                m_ui->write_real_value();
         }
-}
-
-
-void MainWindow::get_soll_value()
-{
-
-    QFile file("C:/Users/Z003XEVY/Desktop/stm32/terminal/soll.txt");
-    if(!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        qDebug()<<"Can't open the file!";
-    }
-    for (int i = 0; i < 4; i++)
-    {
-        QByteArray line = file.readLine();
-        QString str(line);
-        if (i < 3) str.chop(1);
-        m_ui->soll[i] = str.toFloat();
-    }
-}
-
-
-void MainWindow::write_real_value()
-{
-    QFile file("C:/Users/Z003XEVY/Desktop/stm32/terminal/real.txt");
-     if(!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
-         qDebug()<<"Can't open the file!";
-     }
-     file.resize(0);
-     QTextStream stream(&file);
-     stream.seek(0);
-     for (int i = 0; i < 4; i++)
-     {
-         stream << m_ui->real[i] << "\n";
-     }
 }
 
 void MainWindow::handleError(QSerialPort::SerialPortError error)

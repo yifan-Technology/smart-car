@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>687</width>
-    <height>326</height>
+    <height>325</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
        <property name="geometry">
         <rect>
          <x>12</x>
-         <y>38</y>
+         <y>48</y>
          <width>89</width>
          <height>31</height>
         </rect>
@@ -42,7 +42,7 @@
        <property name="geometry">
         <rect>
          <x>108</x>
-         <y>38</y>
+         <y>48</y>
          <width>89</width>
          <height>31</height>
         </rect>
@@ -60,7 +60,7 @@
        <property name="geometry">
         <rect>
          <x>12</x>
-         <y>68</y>
+         <y>78</y>
          <width>91</width>
          <height>31</height>
         </rect>
@@ -78,7 +78,7 @@
        <property name="geometry">
         <rect>
          <x>108</x>
-         <y>68</y>
+         <y>78</y>
          <width>87</width>
          <height>31</height>
         </rect>
@@ -96,7 +96,7 @@
        <property name="geometry">
         <rect>
          <x>12</x>
-         <y>128</y>
+         <y>138</y>
          <width>91</width>
          <height>31</height>
         </rect>
@@ -114,7 +114,7 @@
        <property name="geometry">
         <rect>
          <x>110</x>
-         <y>132</y>
+         <y>142</y>
          <width>83</width>
          <height>21</height>
         </rect>
@@ -132,7 +132,7 @@
        <property name="geometry">
         <rect>
          <x>198</x>
-         <y>128</y>
+         <y>138</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -150,7 +150,7 @@
        <property name="geometry">
         <rect>
          <x>480</x>
-         <y>180</y>
+         <y>190</y>
          <width>75</width>
          <height>27</height>
         </rect>
@@ -168,7 +168,7 @@
        <property name="geometry">
         <rect>
          <x>570</x>
-         <y>180</y>
+         <y>190</y>
          <width>75</width>
          <height>27</height>
         </rect>
@@ -186,7 +186,7 @@
        <property name="geometry">
         <rect>
          <x>250</x>
-         <y>38</y>
+         <y>48</y>
          <width>79</width>
          <height>31</height>
         </rect>
@@ -204,7 +204,7 @@
        <property name="geometry">
         <rect>
          <x>250</x>
-         <y>130</y>
+         <y>140</y>
          <width>83</width>
          <height>21</height>
         </rect>
@@ -222,7 +222,7 @@
        <property name="geometry">
         <rect>
          <x>250</x>
-         <y>68</y>
+         <y>78</y>
          <width>81</width>
          <height>31</height>
         </rect>
@@ -240,7 +240,7 @@
        <property name="geometry">
         <rect>
          <x>339</x>
-         <y>126</y>
+         <y>136</y>
          <width>37</width>
          <height>27</height>
         </rect>
@@ -258,7 +258,7 @@
        <property name="geometry">
         <rect>
          <x>112</x>
-         <y>10</y>
+         <y>20</y>
          <width>72</width>
          <height>29</height>
         </rect>
@@ -276,7 +276,7 @@
        <property name="geometry">
         <rect>
          <x>252</x>
-         <y>10</y>
+         <y>20</y>
          <width>72</width>
          <height>29</height>
         </rect>
@@ -294,7 +294,7 @@
        <property name="geometry">
         <rect>
          <x>12</x>
-         <y>96</y>
+         <y>106</y>
          <width>91</width>
          <height>31</height>
         </rect>
@@ -312,7 +312,7 @@
        <property name="geometry">
         <rect>
          <x>108</x>
-         <y>96</y>
+         <y>106</y>
          <width>85</width>
          <height>31</height>
         </rect>
@@ -330,7 +330,7 @@
        <property name="geometry">
         <rect>
          <x>250</x>
-         <y>96</y>
+         <y>106</y>
          <width>83</width>
          <height>31</height>
         </rect>
@@ -348,7 +348,7 @@
        <property name="geometry">
         <rect>
          <x>198</x>
-         <y>96</y>
+         <y>106</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -366,7 +366,7 @@
        <property name="geometry">
         <rect>
          <x>198</x>
-         <y>66</y>
+         <y>76</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -384,7 +384,7 @@
        <property name="geometry">
         <rect>
          <x>198</x>
-         <y>38</y>
+         <y>48</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -402,7 +402,7 @@
        <property name="geometry">
         <rect>
          <x>338</x>
-         <y>36</y>
+         <y>46</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -420,7 +420,7 @@
        <property name="geometry">
         <rect>
          <x>338</x>
-         <y>94</y>
+         <y>104</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -438,7 +438,7 @@
        <property name="geometry">
         <rect>
          <x>338</x>
-         <y>64</y>
+         <y>74</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -456,7 +456,7 @@
        <property name="geometry">
         <rect>
          <x>532</x>
-         <y>34</y>
+         <y>44</y>
          <width>79</width>
          <height>31</height>
         </rect>
@@ -474,7 +474,7 @@
        <property name="geometry">
         <rect>
          <x>390</x>
-         <y>34</y>
+         <y>44</y>
          <width>89</width>
          <height>31</height>
         </rect>
@@ -492,7 +492,7 @@
        <property name="geometry">
         <rect>
          <x>620</x>
-         <y>60</y>
+         <y>70</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -510,7 +510,7 @@
        <property name="geometry">
         <rect>
          <x>534</x>
-         <y>10</y>
+         <y>20</y>
          <width>72</width>
          <height>29</height>
         </rect>
@@ -528,7 +528,7 @@
        <property name="geometry">
         <rect>
          <x>480</x>
-         <y>92</y>
+         <y>102</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -546,7 +546,7 @@
        <property name="geometry">
         <rect>
          <x>620</x>
-         <y>32</y>
+         <y>42</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -564,7 +564,7 @@
        <property name="geometry">
         <rect>
          <x>532</x>
-         <y>64</y>
+         <y>74</y>
          <width>81</width>
          <height>31</height>
         </rect>
@@ -582,7 +582,7 @@
        <property name="geometry">
         <rect>
          <x>480</x>
-         <y>124</y>
+         <y>134</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -600,7 +600,7 @@
        <property name="geometry">
         <rect>
          <x>621</x>
-         <y>122</y>
+         <y>132</y>
          <width>37</width>
          <height>27</height>
         </rect>
@@ -618,7 +618,7 @@
        <property name="geometry">
         <rect>
          <x>392</x>
-         <y>128</y>
+         <y>138</y>
          <width>83</width>
          <height>21</height>
         </rect>
@@ -636,7 +636,7 @@
        <property name="geometry">
         <rect>
          <x>532</x>
-         <y>126</y>
+         <y>136</y>
          <width>83</width>
          <height>21</height>
         </rect>
@@ -654,7 +654,7 @@
        <property name="geometry">
         <rect>
          <x>480</x>
-         <y>62</y>
+         <y>72</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -672,7 +672,7 @@
        <property name="geometry">
         <rect>
          <x>390</x>
-         <y>92</y>
+         <y>102</y>
          <width>85</width>
          <height>31</height>
         </rect>
@@ -690,7 +690,7 @@
        <property name="geometry">
         <rect>
          <x>480</x>
-         <y>34</y>
+         <y>44</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -708,7 +708,7 @@
        <property name="geometry">
         <rect>
          <x>394</x>
-         <y>10</y>
+         <y>20</y>
          <width>72</width>
          <height>29</height>
         </rect>
@@ -726,7 +726,7 @@
        <property name="geometry">
         <rect>
          <x>532</x>
-         <y>92</y>
+         <y>102</y>
          <width>83</width>
          <height>31</height>
         </rect>
@@ -744,7 +744,7 @@
        <property name="geometry">
         <rect>
          <x>390</x>
-         <y>64</y>
+         <y>74</y>
          <width>87</width>
          <height>31</height>
         </rect>
@@ -762,7 +762,7 @@
        <property name="geometry">
         <rect>
          <x>620</x>
-         <y>90</y>
+         <y>100</y>
          <width>39</width>
          <height>27</height>
         </rect>
@@ -786,7 +786,7 @@
      <x>0</x>
      <y>0</y>
      <width>687</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuCalls">
@@ -838,6 +838,10 @@
    </property>
   </action>
   <action name="actionConnect">
+   <property name="icon">
+    <iconset resource="serial_pc.qrc">
+     <normaloff>:/images/connect.png</normaloff>:/images/connect.png</iconset>
+   </property>
    <property name="text">
     <string>C&amp;onnect</string>
    </property>
@@ -849,6 +853,10 @@
    </property>
   </action>
   <action name="actionDisconnect">
+   <property name="icon">
+    <iconset resource="serial_pc.qrc">
+     <normaloff>:/images/disconnect.png</normaloff>:/images/disconnect.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;Disconnect</string>
    </property>
@@ -860,6 +868,10 @@
    </property>
   </action>
   <action name="actionConfigure">
+   <property name="icon">
+    <iconset resource="serial_pc.qrc">
+     <normaloff>:/images/settings.png</normaloff>:/images/settings.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;Configure</string>
    </property>
@@ -871,6 +883,10 @@
    </property>
   </action>
   <action name="actionClear">
+   <property name="icon">
+    <iconset resource="serial_pc.qrc">
+     <normaloff>:/images/clear.png</normaloff>:/images/clear.png</iconset>
+   </property>
    <property name="text">
     <string>C&amp;lear</string>
    </property>
@@ -882,6 +898,10 @@
    </property>
   </action>
   <action name="actionQuit">
+   <property name="icon">
+    <iconset resource="serial_pc.qrc">
+     <normaloff>:/images/application-exit.png</normaloff>:/images/application-exit.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;Quit</string>
    </property>
@@ -891,6 +911,8 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="serial_pc.qrc"/>
+ </resources>
  <connections/>
 </ui>

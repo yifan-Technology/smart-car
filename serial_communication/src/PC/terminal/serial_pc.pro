@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT += core gui
 QT += serialport
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -35,3 +35,6 @@ HEADERS += \
 FORMS += \
         mainwindow.ui \
     settingsdialog.ui
+
+RESOURCES += \
+    serial_pc.qrc
