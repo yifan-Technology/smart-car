@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QtSerialPort/QSerialPort>
+#include "RobotThread.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -41,8 +42,10 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(int argc, char** argv, QWidget * parent = 0);
     ~MainWindow();
+
+    Q_SLOT void updateSollSpeed(float soll_left_front_rs_, float soll_right_front_rs_, float soll_left_back_rs_, float soll_right_back_rs_);
 
 private slots:
     void openSerialPort();
@@ -63,7 +66,6 @@ private:
 
 private:
     void showStatusMessage(const QString &message);
-    ControlData calculateRS();
     void resetTestValue();
     void writeData();
     void showSollValue();
@@ -73,6 +75,7 @@ private:
     //Console *m_console = nullptr;
     SettingsDialog *m_settings = nullptr;
     QSerialPort *m_serial = nullptr;
+    RobotThread m_RobotThread;
 
     bool Test = false;
 
@@ -111,9 +114,6 @@ private:
         float real_right_back_ra;
         uint8_t  _EOF;
     }_feedBackFrame;
-
-    ControlFrame pack(ControlData& controlData);
-//    FeedBackData unpack(FeedBackFrame& FeedBackData);
 };
 
 #endif // MAINWINDOW_H

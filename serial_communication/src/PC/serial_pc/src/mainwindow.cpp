@@ -8,27 +8,34 @@
 #include <string.h>
 #include <QtSerialPort/QSerialPort>
 #include <QThread>
+#include <QMutex>
 
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(int argc, char **argv, QWidget *parent) :
     QMainWindow(parent),
     m_ui(new Ui::MainWindow),
-    m_status(new QLabel)
+    m_status(new QLabel),
+    m_RobotThread(argc, argv)
 {
-    m_ui->setupUi(this);
-
     m_serial = new QSerialPort(this);
     m_settings = new SettingsDialog;
+
+    m_ui->setupUi(this);
 
     m_ui->actionConnect->setEnabled(true);
     m_ui->actionDisconnect->setEnabled(false);
     m_ui->actionQuit->setEnabled(true);
     m_ui->actionConfigure->setEnabled(true);
-
     m_ui->statusBar->addWidget(m_status);
-
     initActionsConnections();
     initConnections();
+
+    //set up two buttons for test
+    m_ui->startTest->setEnabled(true);
+    m_ui->stopTest->setEnabled(false);
+
+    show();
+
     connect(m_serial, &QSerialPort::errorOccurred, this, &MainWindow::handleError);
     connect(m_serial, &QSerialPort::readyRead, this, &MainWindow::readData);
 
@@ -42,9 +49,13 @@ MainWindow::MainWindow(QWidget *parent) :
     _feedBackFrame.SOF = STM32CommSOF;
     _feedBackFrame._EOF = STM32CommEOF;
 
-    //set up two buttons for test
-    m_ui->startTest->setEnabled(true);
-    m_ui->stopTest->setEnabled(false);
+    _controlFrame.soll_left_front_rs = 0;
+    _controlFrame.soll_right_front_rs = 0;
+    _controlFrame.soll_left_back_rs = 0;
+    _controlFrame.soll_right_back_rs = 0;
+
+    connect(&m_RobotThread, &RobotThread::newSollSpeed, this, &MainWindow::updateSollSpeed);
+    m_RobotThread.init();
 }
 
 MainWindow::~MainWindow()
@@ -98,59 +109,19 @@ void MainWindow::closeSerialPort()
 
 }
 
-MainWindow::ControlFrame MainWindow::pack(ControlData& ctrl)
-{
-    return ControlFrame
-    {
-        JetsonCommSOF,
-        ctrl.soll_left_front_rs,
-        ctrl.soll_right_front_rs,
-        ctrl.soll_left_back_rs,
-        ctrl.soll_right_back_rs,
-        JetsonCommEOF
-    };
-}
-
-ControlData MainWindow::calculateRS()
-{
-    float soll_left_front_rs;
-    float soll_right_front_rs;
-    float soll_left_back_rs;
-    float soll_right_back_rs;
-
-    float rand_error = rand()/(RAND_MAX+1.0);
-    rand_error = (int)(1000*rand_error) / 1000.0;
-
-
-    if (!Test) {
-        soll_left_front_rs = 0.0;
-        soll_right_front_rs = 0.0;
-        soll_left_back_rs = 0.0;
-        soll_right_back_rs = 0.0;
-    } else {
-        soll_left_front_rs = m_ui->sollLeftFrontRS_Test->text().toFloat();
-        soll_left_front_rs *= 19.0;
-        soll_right_front_rs = m_ui->sollRightFrontRS_Test->text().toFloat();
-        soll_right_front_rs *= 19.0;
-        soll_left_back_rs = m_ui->sollLeftBackRS_Test->text().toFloat();
-        soll_left_back_rs *= 19.0;
-        soll_right_back_rs = m_ui->sollRightBackRS_Test->text().toFloat();
-        soll_right_back_rs *= 19.0;
-    }
-
-    return ControlData{
-        soll_left_front_rs,
-        soll_right_front_rs,
-        soll_left_back_rs,
-        soll_right_back_rs
-    };
-}
-
 void MainWindow::writeData()
 {
-    //生成数据帧
-    ControlData _control_data = calculateRS();
-    _controlFrame = pack(_control_data);
+    if (Test) {
+        QMutex * pMutex = new QMutex();
+        pMutex->lock();
+        _controlFrame.soll_left_front_rs = m_ui->sollLeftFrontRS_Test->text().toFloat() * 19.0;
+        _controlFrame.soll_right_front_rs = m_ui->sollRightFrontRS_Test->text().toFloat() * 19.0;
+        _controlFrame.soll_left_back_rs = m_ui->sollLeftBackRS_Test->text().toFloat() * 19.0;
+        _controlFrame.soll_right_back_rs = m_ui->sollRightBackRS_Test->text().toFloat() * 19.0;
+        pMutex->unlock();
+
+        delete pMutex;
+    }
 
     //转换为char数组
     char send_info[18] = {(char) _controlFrame.SOF, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, (char) _controlFrame._EOF};
@@ -171,14 +142,26 @@ void MainWindow::writeData()
 
 void MainWindow::showSollValue()
 {
-    QString str_soll_left_front_rs = QString::number(_controlFrame.soll_left_front_rs/19.0, 'f', 3);
-    QString str_soll_right_front_rs = QString::number(_controlFrame.soll_right_front_rs/19.0, 'f', 3);
-    QString str_soll_left_back_rs = QString::number(_controlFrame.soll_left_back_rs/19.0, 'f', 3);
-    QString str_soll_right_back_rs = QString::number(_controlFrame.soll_right_back_rs/19.0, 'f', 3);
+    QString str_soll_left_front_rs = QString::number(_controlFrame.soll_left_front_rs / 19.0, 'f', 3);
+    QString str_soll_right_front_rs = QString::number(_controlFrame.soll_right_front_rs / 19.0, 'f', 3);
+    QString str_soll_left_back_rs = QString::number(_controlFrame.soll_left_back_rs / 19.0, 'f', 3);
+    QString str_soll_right_back_rs = QString::number(_controlFrame.soll_right_back_rs / 19.0, 'f', 3);
     m_ui->sollLeftFrontRS->setText(str_soll_left_front_rs);
     m_ui->sollRightFrontRS->setText(str_soll_right_front_rs);
     m_ui->sollLeftBackRS->setText(str_soll_left_back_rs);
     m_ui->sollRightBackRS->setText(str_soll_right_back_rs);
+}
+
+void MainWindow::updateSollSpeed(float soll_left_front_rs_, float soll_right_front_rs_, float soll_left_back_rs_, float soll_right_back_rs_){
+    QMutex * pMutex = new QMutex();
+    pMutex->lock();
+    _controlFrame.soll_left_front_rs = soll_left_front_rs_ * 19.0;
+    _controlFrame.soll_right_front_rs = soll_right_front_rs_ * 19.0;
+    _controlFrame.soll_left_back_rs = soll_left_back_rs_ * 19.0;
+    _controlFrame.soll_right_back_rs = soll_right_back_rs_ * 19.0;
+    pMutex->unlock();
+
+    delete pMutex;
 }
 
 void MainWindow::send()
@@ -215,9 +198,9 @@ void MainWindow::readData()
          for (int i = 0; i < 4; i++) {
              a[i] = Rx_buf[i+4];
          }
-         float * aa = (float *)a;
+         float * real_left_front_rs = (float *)a;
          //qDebug()<<QString::number(aa[0], 'f', 3);
-         m_ui->realLeftFrontRS->setText(QString::number(aa[0]/19.0, 'f', 3));
+         m_ui->realLeftFrontRS->setText(QString::number(real_left_front_rs[0]/19.0, 'f', 3));
 
          char b[4];
           for (int i = 0; i < 4; i++) {
@@ -231,9 +214,9 @@ void MainWindow::readData()
            for (int i = 0; i < 4; i++) {
                c[i] = Rx_buf[i+12];
            }
-           float * cc = (float *)c;
+           float * real_right_front_rs = (float *)c;
            //qDebug()<<QString::number(cc[0], 'f', 3);
-           m_ui->realRightFrontRS->setText(QString::number(cc[0]/19.0, 'f', 3));
+           m_ui->realRightFrontRS->setText(QString::number(real_right_front_rs[0]/19.0, 'f', 3));
 
            char d[4];
             for (int i = 0; i < 4; i++) {
@@ -247,9 +230,9 @@ void MainWindow::readData()
              for (int i = 0; i < 4; i++) {
                  e[i] = Rx_buf[i+20];
              }
-             float * ee = (float *)e;
+             float * real_left_back_rs = (float *)e;
              //qDebug()<<QString::number(ee[0], 'f', 3);
-             m_ui->realLeftBackRS->setText(QString::number(ee[0]/19.0, 'f', 3));
+             m_ui->realLeftBackRS->setText(QString::number(real_left_back_rs[0]/19.0, 'f', 3));
 
              char f[4];
               for (int i = 0; i < 4; i++) {
@@ -263,9 +246,9 @@ void MainWindow::readData()
                for (int i = 0; i < 4; i++) {
                    g[i] = Rx_buf[i+28];
                }
-               float * gg = (float *)g;
+               float * real_right_back_rs = (float *)g;
                //qDebug()<<QString::number(gg[0], 'f', 3);
-               m_ui->realRightBackRS->setText(QString::number(gg[0]/19.0, 'f', 3));
+               m_ui->realRightBackRS->setText(QString::number(real_right_back_rs[0]/19.0, 'f', 3));
 
                char h[4];
                 for (int i = 0; i < 4; i++) {
@@ -274,6 +257,14 @@ void MainWindow::readData()
                 float * hh = (float *)h;
                 //qDebug()<<QString::number(hh[0], 'f', 3);
                 m_ui->realRightBackRA->setText(QString::number(hh[0]/19.0, 'f', 3));
+
+              QList<float> to_set;
+              to_set.append(real_left_front_rs[0] / 19.0);
+              to_set.append(real_right_front_rs[0] / 19.0);
+              to_set.append(real_left_back_rs[0] / 19.0);
+              to_set.append(real_right_back_rs[0] / 19.0);
+              m_RobotThread.setRealSpeed(to_set);
+
         }
 }
 

@@ -1,0 +1,6 @@
+*.o
+moc*
+qrc*
+Makefile
+serial_pc
+

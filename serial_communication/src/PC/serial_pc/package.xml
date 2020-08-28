@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package>
+  <name>serial_pc</name>
+  <version>0.0.1</version>
+  <description>Serial for PC</description>
+  <license>BSD</license>
+  <maintainer email="zhu.jiale6@gmail.com">Jiale Zhu</maintainer>
+  <author email="zhu.jiale6@gmail.com">Jiale Zhu</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+</package>
