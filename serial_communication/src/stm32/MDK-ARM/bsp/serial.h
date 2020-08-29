@@ -3,6 +3,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "bsp_can.h"
+#include "pid.h"
 
 static float * soll_left_front_rs;
 static float * soll_left_back_rs;

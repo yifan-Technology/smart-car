@@ -10,16 +10,16 @@ void updateRSRA(float *real_left_front_rs, float *real_left_front_ra, float *rea
   // get current rotate spped and rotate angle
   
   *real_left_front_rs = moto_chassis[0].speed_rpm;
-  *real_left_front_ra = *soll_left_front_rs;
+  *real_left_front_ra = pid_spd[0].pos_out;
 
-  *real_right_front_rs = moto_chassis[1].speed_rpm;
-  *real_right_front_ra = *soll_right_front_rs;
+  *real_right_front_rs = -moto_chassis[2].speed_rpm;
+  *real_right_front_ra = pid_spd[2].pos_out;
   
-  *real_left_back_rs = -moto_chassis[2].speed_rpm;
-  *real_left_back_ra = *soll_left_back_rs;
+  *real_left_back_rs = moto_chassis[1].speed_rpm;
+  *real_left_back_ra = pid_spd[1].pos_out;
 
   *real_right_back_rs = -moto_chassis[3].speed_rpm;
-  *real_right_back_ra = *soll_right_back_rs;
+  *real_right_back_ra = pid_spd[3].pos_out;
 }
 
 void send(float *set_spd, float *real_left_front_rs, float *real_left_front_ra, float *real_right_front_rs, float *real_right_front_ra, float *real_left_back_rs, float *real_left_back_ra, float *real_right_back_rs, float *real_right_back_ra)
@@ -59,7 +59,7 @@ void send(float *set_spd, float *real_left_front_rs, float *real_left_front_ra, 
 		
 		updateRSRA(real_left_front_rs, real_left_front_ra, real_right_front_rs, real_right_front_ra, real_left_back_rs, real_left_back_ra, real_right_back_rs, real_right_back_ra);
 
-		uint8_t send_info[] = {0x05,0x05,0x05,0x05, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x06,0x06,0x06,0x06};
+		uint8_t send_info[] = {0x61,0x61,0x61,0x61, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x62,0x62,0x62,0x62};
 			
 		*(float*)(send_info+4) = *real_left_front_rs;
 		*(float*)(send_info+8) = *real_left_front_ra;
@@ -80,11 +80,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	/* Prevent unused argument(s) compilation warning */
   UNUSED(huart);
 	
-	if (rDataBuffer[0] == 0x03)		rDataCount = 0;
+	if (rDataBuffer[0] == 0x63)		rDataCount = 0;
   rData[rDataCount]=rDataBuffer[0];
 	rDataCount++;
   
-	if(rDataBuffer[0]==0x04){  
+	if(rDataBuffer[0]==0x64){  
 		rDataCount = 0;
 		rDataFlag = 1;
 		

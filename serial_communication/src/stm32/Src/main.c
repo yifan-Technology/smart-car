@@ -75,6 +75,7 @@ int main(void)
 	
 	HAL_Delay(100);
 	
+	bool protection = false; 
   while (1)
   {
 		send(set_spd, &real_left_front_rs, &real_left_front_ra, &real_right_front_rs, &real_right_front_ra, &real_left_back_rs, &real_left_back_ra, &real_right_back_rs, &real_right_back_ra);
@@ -89,11 +90,22 @@ int main(void)
 			pid_calc(&pid_spd[i], moto_chassis[i].speed_rpm, -set_spd[i]);
 		}
 		
-		set_moto_current(&hcan1, pid_spd[0].pos_out, 
-								pid_spd[1].pos_out,
-								pid_spd[2].pos_out,
-								pid_spd[3].pos_out);
+		for (int i = 0; i < 4; i++) {
+			
+			if ((moto_chassis[i].speed_rpm > 2000) || (moto_chassis[i].speed_rpm < -2000)) {
+				protection = true;
+				break;
+			}
+		}
 		
+		if (protection) {
+			set_moto_current(&hcan1, 0, 0, 0, 0);
+		} else{
+			set_moto_current(&hcan1, pid_spd[0].pos_out, 
+									pid_spd[1].pos_out,
+									pid_spd[2].pos_out,
+									pid_spd[3].pos_out);
+		}
 		HAL_Delay(10);
 		
 //    HAL_Delay(5);
