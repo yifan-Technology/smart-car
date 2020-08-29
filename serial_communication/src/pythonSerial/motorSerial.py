@@ -19,7 +19,7 @@ class SerialThread:
         self.wait_end = None                    # 用来控制主线程
         self.thread_read = None                 # 读线程
         self.thread_write = None                # 写线程
-        self.control_data = [800, 800, 800, 800]
+        self.control_data = [800, -800, 200, -200]
         self.read_data = None
 
     def start(self):
@@ -94,12 +94,9 @@ class SerialThread:
         self.alive = False
 
 if __name__ == "__main__":
-    Motor_serial = SerialThread("COM15")
+    Motor_serial = SerialThread("/dev/ttyUSB0")
     while True:
-        if Motor_serial.control_data == [800, 800, 800, 800]:
-            Motor_serial.control_data = [200,200,200,200]
-        elif Motor_serial.control_data == [200,200,200,200]:
-            Motor_serial.control_data = [800, 800, 800, 800]
+
         if Motor_serial.start():
             Motor_serial.wait()
             Motor_serial.stop()

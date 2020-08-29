@@ -17,7 +17,7 @@ class costMap:
         gridmap = np.zeros_like(pcl)
         gridmap[:,0] = pcl[:,1]+ 250
         gridmap[:,1] = pcl[:,0]
-        gridmap[:,2] = np.abs(pcl[:,2] + 80)
+        gridmap[:,2] = np.abs(pcl[:,2] + 53)
         gridmap = np.delete(gridmap,np.where(gridmap[:,0]>self.feld),0)   
         gridmap = np.delete(gridmap,np.where(gridmap[:,0]<0),0)
         gridmap = np.delete(gridmap,np.where(gridmap[:,1]>self.feld),0)

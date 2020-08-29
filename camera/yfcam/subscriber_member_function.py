@@ -31,10 +31,10 @@ def main(args=None):
 #    Motor_serial = motorSerial.SerialThread("/dev/ttyUSB0")
     
     dwa = dwa_module.DWA_Controller()
-    trajectory_ist = dwa.x
-    idx = 0
+#    trajectory_ist = dwa.x
+#    idx = 0
     init = True
-    signal = 25.0
+#    signal = 25.0
     while 1:  
         # 接受 图像，物体，点云信息
         rclpy.spin_once(cam.nodeImg,timeout_sec=0.05) 
@@ -51,29 +51,29 @@ def main(args=None):
             continue
 
         ################################
-        if real.real_speed is None:
-            print("Waiting for real_speed")
-            continue
-        real_wheel = real.real_speed
-        if init:
-            init = False
-            real_wheel = [200.0,200.0, 200.0, 200.0]
-        print(real_wheel)
-        if 200 <= real_wheel[0] <= 800:
-            for i in range(len(real_wheel)):
-                real_wheel[i] += signal 
-        elif real_wheel[0] > 800:
-            signal *= -1            
-            for i in range(len(real_wheel)):
-                real_wheel[i] = 750 
-        elif real_wheel[0] < 200:
-            signal *= -1            
-            for i in range(len(real_wheel)):
-                real_wheel[i] = 250.0 
-        if len(real_wheel) == 4:
-            soll.soll_publish(real_wheel)
-        else:
-            soll.soll_publish([real_wheel[0],real_wheel[2],real_wheel[4],real_wheel[6]])
+#        if real.real_speed is None:
+#            print("Waiting for real_speed")
+#            continue
+#        real_wheel = real.real_speed
+#        if init:
+#            init = False
+#            real_wheel = [200.0,200.0, 200.0, 200.0]
+#        print(real_wheel)
+#        if 200 <= real_wheel[0] <= 800:
+#            for i in range(len(real_wheel)):
+#                real_wheel[i] += signal 
+#        elif real_wheel[0] > 800:
+#            signal *= -1            
+#            for i in range(len(real_wheel)):
+#                real_wheel[i] = 750 
+#        elif real_wheel[0] < 200:
+#            signal *= -1            
+#            for i in range(len(real_wheel)):
+#                real_wheel[i] = 250.0 
+#        if len(real_wheel) == 4:
+#            soll.soll_publish(real_wheel)
+#        else:
+#            soll.soll_publish([real_wheel[0],real_wheel[2],real_wheel[4],real_wheel[6]])
 
 
         ################################
@@ -85,13 +85,35 @@ def main(args=None):
 
 
         # update Position init X
-#        u_ist = np.array([(a+b)/2,(c+d)/2])
-#        if target is not None:
-#            # update u_ist
-#            u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap, 5/100)
-#            wheel_speed = np.array([u_soll[0], u_soll[1], u_soll[0], u_soll[1]])
-#            outPrint = np.around(wheel_speed,decimals=3)
+        if real.real_speed is None:
+            print("Waiting for real_speed")
+            continue
+        
+        real_wheel = real.real_speed
+        print(real_wheel)
+        
+        a = real_wheel[0]
+        b = real_wheel[2]
+        c = real_wheel[4]
+        d = real_wheel[6]
+        
+        target = np.array([2.5,12.])
+        u_ist = np.array([(a+b)/2,(c+d)/2])
+        if target is not None:
+            print("target detected")
+            # update u_ist
+            dwa.RESET_STATE = True
             
+            u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap, 5/100)
+            wheel1 = float(int(u_soll[0]))
+            wheel2 = float(int(u_soll[1]))
+            wheel_speed = [wheel1, wheel2, wheel1, wheel2]
+#            outPrint = np.around(wheel_speed,decimals=3)
+            print("outprint: ", wheel_speed)
+            soll.soll_publish(wheel_speed)
+        else:
+            print('target not detected')
+            soll.soll_publish([200.0,200.0, 200.0, 200.0])
         
 #            if idx % 15 == 0:
 #                plt.ion()
@@ -129,7 +151,7 @@ def main(args=None):
 #                plt.ioff()         
 #               
         
-        idx += 1
+#        idx += 1
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break

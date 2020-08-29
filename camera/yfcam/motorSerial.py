@@ -22,7 +22,7 @@ class SerialThread:
         self.thread_read = None                 # 读线程
         self.thread_write = None                # 写线程
         self.control_data = [800.0, 800.0, 800.0, 800.0]
-        self.read_data = [200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0]
+        self.read_data = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         self.my_serial.open()
 
     def start(self):
@@ -67,7 +67,7 @@ class SerialThread:
                                 data = myByte[4:-4]
                                 new_values = struct.unpack('<ffffffff', data)
                                 self.read_data = new_values
-                                print(self.read_data)
+                                #print(self.read_data)
                                 break # 线程结束
 
                             except Exception as ex:
@@ -91,7 +91,7 @@ class SerialThread:
             except Exception as ex:
                 print(ex)
 
-            time.sleep(0.03)
+            time.sleep(0.1)
 
         self.wait_end.set()
         self.alive = False
@@ -106,13 +106,19 @@ def main():
     
     real.real_publish(Motor_serial.read_data)
     rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
+    
     while True:        
+        print(11)
         # set data        
         rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
         Motor_serial.control_data = soll.soll_speed
+        print("got soll value")
+        print("soll value: ",  Motor_serial.control_data)
         # pub data
         real.real_publish(Motor_serial.read_data)
         rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
+        print("sent real value")
+        print("real value: ", Motor_serial.read_data[0], Motor_serial.read_data[2],  Motor_serial.read_data[4],  Motor_serial.read_data[6])
         # give it to A
         if Motor_serial.start():
             Motor_serial.wait()
