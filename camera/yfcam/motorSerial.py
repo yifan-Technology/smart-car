@@ -91,7 +91,7 @@ class SerialThread:
             except Exception as ex:
                 print(ex)
 
-            time.sleep(0.1)
+            time.sleep(0.03)
 
         self.wait_end.set()
         self.alive = False
