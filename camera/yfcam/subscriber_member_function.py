@@ -6,6 +6,8 @@ import yf_node
 import dwa_module
 import yf_camera
 import matplotlib.pyplot as plt
+import motorSerial 
+import time 
 
 def main(args=None):
     # 初始化 ros2 python - rclpy
@@ -25,6 +27,8 @@ def main(args=None):
     
     # init camera
     yf_camera.init()
+
+    Motor_serial = motorSerial.SerialThread("/dev/ttyUSB0")
     
     dwa = dwa_module.DWA_Controller()
     trajectory_ist = dwa.x
@@ -35,7 +39,7 @@ def main(args=None):
         rclpy.spin_once(obj.nodeObj,timeout_sec=0.05)
         rclpy.spin_once(poc.nodePoc,timeout_sec=0.05)
         rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
-        rclpy.spin_once(soll.nodeReal,timeout_sec=0.05)
+        rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
 
         # Run cam
         res = yf_camera.runCam(cam,obj,poc,goal)
@@ -44,11 +48,18 @@ def main(args=None):
         else :
             continue
 
-        ################################
-        if soll.soll_speed is None:
+        '''################################
+        if real.real_speed is None:
+            print("Waiting for soll_speed")
             continue
-        print(soll.soll_speed)
-        ################################
+        print(real.real_speed)
+        ################################'''
+#        if Motor_serial.start():
+#            Motor_serial.wait()
+#            Motor_serial.stop()
+#        print(Motor_serial.read_data)
+
+
 
 #        # update Position init X
 #        dwa.x[0] = 2.5
