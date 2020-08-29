@@ -1,12 +1,62 @@
 import rclpy
+import numpy as np
 from sensor_msgs.msg import Image
 from std_msgs.msg import Int8MultiArray
 from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import MarkerArray
 from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Twist 
 from cv_bridge import CvBridge
 import ros2_numpy
 
+class SollSpeed():
+    def __init__(self):
+        self._nodeSoll = rclpy.create_node('SollSpeed')
+        self.subSoll = self._nodeSoll.create_subscription(
+            Twist,
+            '/soll_speed',
+            self.soll_callback,
+            1)
+        self.subSoll# prevent unused variable warning
+
+        self._soll_speed = None
+
+    def real_callback(self, msg):
+        left_front = msg.linear.x
+        right_front = msg.linear.y
+        left_back = msg.angular.x
+        right_back = msg.angular.y
+        self._soll_speed = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
+    
+    @property
+    def nodePoc(self):
+        return self._nodePoc    
+    @property
+    def soll_speed(self):
+        return self._soll_speed
+
+class RealSpeed():
+    def __init__(self):
+        self._nodeReal = rclpy.create_node('RealSpeed')
+        self.pubReal = self._nodeReal.create_publisher(
+            Twist,
+            '/real_speed',
+            1)
+        self.pubReal  # prevent unused variable warning       
+
+    def cost_callback(self,wheel_speed):
+        lf,rf,lb,rb = wheel_speed
+        msg = Twist()
+        msg.linear.x = lf
+        msg.linear.y = rf
+        msg.angular.x = lb
+        msg.angular.y = rb
+        self.pubReal.publish(msg)
+    
+    @property
+    def nodeReal(self):
+        return self._nodeReal  
+    
 
 class PointCloud():
     def __init__(self):

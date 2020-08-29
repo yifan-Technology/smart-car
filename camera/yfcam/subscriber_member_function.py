@@ -15,6 +15,8 @@ def main(args=None):
     obj = yf_node.ObjectsArray()
     goal = yf_node.GoalPub()
     poc = yf_node.PointCloud() 
+    soll = yf_node.SollSpeed()
+    real = yf_node.RealSpeed()
 #    cost = yf_node.CostMap() 
     dwa = None
     # 发送节点的首次初始化
@@ -32,7 +34,8 @@ def main(args=None):
         rclpy.spin_once(cam.nodeImg,timeout_sec=0.05) 
         rclpy.spin_once(obj.nodeObj,timeout_sec=0.05)
         rclpy.spin_once(poc.nodePoc,timeout_sec=0.05)
-
+        rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
+        rclpy.spin_once(soll.nodeReal,timeout_sec=0.05)
 
         # Run cam
         res = yf_camera.runCam(cam,obj,poc,goal)
@@ -40,8 +43,13 @@ def main(args=None):
             target,obMap,CostMap,TestMap = res
         else :
             continue
-        
-            
+
+        ################################
+        if soll.soll_speed is None:
+            continue
+        print(soll.soll_speed)
+        ################################
+
 #        # update Position init X
 #        dwa.x[0] = 2.5
 #        dwa.x[1] = 0.0
@@ -53,6 +61,7 @@ def main(args=None):
 #        u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap, 5/100)
 #        wheel_speed = np.array([u_soll[0], u_soll[1], u_soll[0], u_soll[1]]) *60/(2*np.pi)
 #        outPrint = np.around(wheel_speed,decimals=3)
+#        real.real_callback(wheel_speed)
 #        np.savetxt("/home/yf/yifan/soll.txt",outPrint)
             
         
