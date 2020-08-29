@@ -17,8 +17,8 @@ def main(args=None):
     obj = yf_node.ObjectsArray()
     goal = yf_node.GoalPub()
     poc = yf_node.PointCloud() 
-    soll = yf_node.SollSpeed()
-    real = yf_node.RealSpeed()
+    real = yf_node.SUB_RealSpeed_Main()
+    soll = yf_node.PUB_SollSpeed_Main()
 #    cost = yf_node.CostMap() 
     dwa = None
     # 发送节点的首次初始化
@@ -33,6 +33,8 @@ def main(args=None):
     dwa = dwa_module.DWA_Controller()
     trajectory_ist = dwa.x
     idx = 0
+    init = True
+    signal = 1
     while 1:  
         # 接受 图像，物体，点云信息
         rclpy.spin_once(cam.nodeImg,timeout_sec=0.05) 
@@ -48,12 +50,30 @@ def main(args=None):
         else :
             continue
 
-        '''################################
+        ################################
         if real.real_speed is None:
             print("Waiting for soll_speed")
             continue
-        print(real.real_speed)
-        ################################'''
+
+        
+        real_wheel = real.real_speed
+        if init:
+            init = False
+            real_wheel = np.array([200,200, 200, 200])
+
+        if 200 <= real_wheel[0] <= 800:
+            real_wheel += signal
+        elif real_wheel[0] > 800:
+            signal *= -1            
+            real_wheel += signal
+        elif real_wheel[0] < 200:
+            signal *= -1            
+            real_wheel += signal
+        
+        soll.soll_publish(real_wheel)
+
+
+        ################################
 #        if Motor_serial.start():
 #            Motor_serial.wait()
 #            Motor_serial.stop()
@@ -72,7 +92,7 @@ def main(args=None):
 #        u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap, 5/100)
 #        wheel_speed = np.array([u_soll[0], u_soll[1], u_soll[0], u_soll[1]]) *60/(2*np.pi)
 #        outPrint = np.around(wheel_speed,decimals=3)
-#        real.real_callback(wheel_speed)
+    #    soll.soll_callback(wheel_speed)
 #        np.savetxt("/home/yf/yifan/soll.txt",outPrint)
             
         

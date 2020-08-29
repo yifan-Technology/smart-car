@@ -2,6 +2,8 @@ import serial
 import threading
 import struct
 import time
+import yf_node
+import rclpy
 
 class SerialThread:
     """
@@ -96,23 +98,18 @@ class SerialThread:
 
 if __name__ == "__main__":
     Motor_serial = SerialThread("/dev/ttyUSB0")
-    while True:
-        if Motor_serial.control_data == [800, 800, 800, 800]:
-            Motor_serial.control_data = [200,200,200,200]
-        elif Motor_serial.control_data == [200,200,200,200]:
-            Motor_serial.control_data = [800, 800, 800, 800]
+    
+    real = yf_node.PUB_RealSpeed_Serial()
+    soll = yf_node.SUB_SollSpeed_Serial()
+    while True:        
+        # set data        
+        rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
+        Motor_serial.control_data = soll.soll_speed
+        # pub data
+        real.real_publish(Motor_serial.read_data)
+        rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
+        # give it to A
         if Motor_serial.start():
             Motor_serial.wait()
             Motor_serial.stop()
-
-        if Motor_serial.alive == True:
-            Motor_serial.stop()
-
-        time.sleep(0.05)
-
-
-
-
-    print("END")
-
-    del my_serial
+    # del my_serial

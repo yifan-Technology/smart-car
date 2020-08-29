@@ -2,6 +2,7 @@ import rclpy
 import numpy as np
 from sensor_msgs.msg import Image
 from std_msgs.msg import Int8MultiArray
+from std_msgs.msg import Float32MultiArray
 from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import MarkerArray
 from geometry_msgs.msg import PoseStamped
@@ -9,11 +10,11 @@ from geometry_msgs.msg import Twist
 from cv_bridge import CvBridge
 import ros2_numpy
 
-class RealSpeed():
+class SUB_RealSpeed_Main():
     def __init__(self):
         self._nodeReal = rclpy.create_node('RealSpeed')
         self.subReal = self._nodeReal.create_subscription(
-            Twist,
+            Float32MultiArray,
             '/real_speed',
             self.real_callback,
             1)
@@ -22,11 +23,9 @@ class RealSpeed():
         self._real_speed = None
 
     def real_callback(self, msg):
-        left_front = msg.linear.x
-        right_front = msg.linear.y
-        left_back = msg.angular.x
-        right_back = msg.angular.y
-        self._real_speed = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
+        left_front,_,right_front,_,left_back,_,right_back = msg.data
+        #self._real_speed = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
+        self._real_speed = np.array([(left_front,right_front,left_back,right_back)])
     
     @property
     def nodeReal(self):
@@ -35,22 +34,66 @@ class RealSpeed():
     def real_speed(self):
         return self._real_speed
 
-class SollSpeed():
+class PUB_RealSpeed_Serial():
+    def __init__(self):
+        self._nodeReal = rclpy.create_node('RealSpeed')
+        self.pubReal = self._nodeReal.create_publisher(
+            Float32MultiArray,
+            '/real_speed',
+            1)
+        self.pubReal  # prevent unused variable warning       
+
+    def real_publish(self,real_speed):
+        msg = Float32MultiArray()
+        msg.data = real_speed
+        self.pubReal.publish(msg)
+    
+    @property
+    def nodeReal(self):
+        return self._nodeReal  
+
+    @property
+    def real_speed(self):
+        return self._real_speed
+
+
+class SUB_SollSpeed_Serial():
+    def __init__(self):
+        self._nodeSoll = rclpy.create_node('SollSpeed')
+        self.subSoll = self._nodeSoll.create_subscription(
+            Float32MultiArray,
+            '/soll_speed',
+            self.Soll_callback,
+            1)
+        self.subSoll # prevent unused variable warning
+
+        self._soll_speed = None
+
+    def soll_callback(self, msg):
+        left_front,right_front,left_back,right_back = msg.data
+        self._soll_speed = np.array([left_front,right_front,left_back,right_back])
+    
+    @property
+    def nodeSoll(self):
+        return self._nodeSoll 
+    @property
+    def soll_speed(self):
+        return self._soll_speed
+
+class PUB_SollSpeed_Main():
     def __init__(self):
         self._nodeSoll = rclpy.create_node('SollSpeed')
         self.pubSoll = self._nodeSoll.create_publisher(
-            Twist,
-            '/Soll_speed',
+            Float32MultiArray,
+            '/soll_speed',
             1)
         self.pubSoll  # prevent unused variable warning       
 
-    def Soll_callback(self,wheel_speed):
+    def soll_publish(self,wheel_speed):
         lf,rf,lb,rb = wheel_speed
-        msg = Twist()
-        msg.linear.x = lf
-        msg.linear.y = rf
-        msg.angular.x = lb
-        msg.angular.y = rb
+        output = np.array([lf,0.0,rf,0.0,lb,0.0,rb,0.0])
+        msg = Float32MultiArray()
+        msg.data = output
         self.pubSoll.publish(msg)
     
     @property
@@ -60,6 +103,58 @@ class SollSpeed():
     @property
     def soll_speed(self):
         return self._soll_speed
+
+# class RealSpeed():
+#     def __init__(self):
+#         self._nodeReal = rclpy.create_node('RealSpeed')
+#         self.subReal = self._nodeReal.create_subscription(
+#             Twist,
+#             '/real_speed',
+#             self.real_callback,
+#             1)
+#         self.subReal # prevent unused variable warning
+
+#         self._real_speed = None
+
+#     def real_callback(self, msg):
+#         left_front = msg.linear.x
+#         right_front = msg.linear.y
+#         left_back = msg.angular.x
+#         right_back = msg.angular.y
+#         self._real_speed = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
+    
+#     @property
+#     def nodeReal(self):
+#         return self._nodeReal 
+#     @property
+#     def real_speed(self):
+#         return self._real_speed
+
+# class SollSpeed():
+#     def __init__(self):
+#         self._nodeSoll = rclpy.create_node('SollSpeed')
+#         self.pubSoll = self._nodeSoll.create_publisher(
+#             Twist,
+#             '/Soll_speed',
+#             1)
+#         self.pubSoll  # prevent unused variable warning       
+
+#     def Soll_callback(self,wheel_speed):
+#         lf,rf,lb,rb = wheel_speed
+#         msg = Twist()
+#         msg.linear.x = lf
+#         msg.linear.y = rf
+#         msg.angular.x = lb
+#         msg.angular.y = rb
+#         self.pubSoll.publish(msg)
+    
+#     @property
+#     def nodeSoll(self):
+#         return self._nodeSoll  
+
+#     @property
+#     def soll_speed(self):
+#         return self._soll_speed
     
 
 class PointCloud():
