@@ -12,7 +12,7 @@ import ros2_numpy
 
 class SUB_RealSpeed_Main():
     def __init__(self):
-        self._nodeReal = rclpy.create_node('RealSpeed')
+        self._nodeReal = rclpy.create_node('RealSpeedSUB')
         self.subReal = self._nodeReal.create_subscription(
             Float32MultiArray,
             '/real_speed',
@@ -23,9 +23,9 @@ class SUB_RealSpeed_Main():
         self._real_speed = None
 
     def real_callback(self, msg):
-        left_front,_,right_front,_,left_back,_,right_back = msg.data
+        left_front,_,right_front,_,left_back,_,right_back,_ = msg.data
         #self._real_speed = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
-        self._real_speed = np.array([(left_front,right_front,left_back,right_back)])
+        self._real_speed = np.array([left_front,0.0,right_front,0.0,left_back,0.0,right_back,0.0])
     
     @property
     def nodeReal(self):
@@ -36,7 +36,7 @@ class SUB_RealSpeed_Main():
 
 class PUB_RealSpeed_Serial():
     def __init__(self):
-        self._nodeReal = rclpy.create_node('RealSpeed')
+        self._nodeReal = rclpy.create_node('RealSpeedPUB')
         self.pubReal = self._nodeReal.create_publisher(
             Float32MultiArray,
             '/real_speed',
@@ -45,6 +45,7 @@ class PUB_RealSpeed_Serial():
 
     def real_publish(self,real_speed):
         msg = Float32MultiArray()
+#        print(type(np.array(real_speed).astype(np.float)))
         msg.data = real_speed
         self.pubReal.publish(msg)
     
@@ -59,17 +60,18 @@ class PUB_RealSpeed_Serial():
 
 class SUB_SollSpeed_Serial():
     def __init__(self):
-        self._nodeSoll = rclpy.create_node('SollSpeed')
+        self._nodeSoll = rclpy.create_node('SollSpeedSUB')
         self.subSoll = self._nodeSoll.create_subscription(
             Float32MultiArray,
             '/soll_speed',
-            self.Soll_callback,
+            self.soll_callback,
             1)
         self.subSoll # prevent unused variable warning
 
-        self._soll_speed = None
+        self._soll_speed = [200.0,200.0,200.0,200.0]
 
     def soll_callback(self, msg):
+        print("msg.data: ",msg.data)
         left_front,right_front,left_back,right_back = msg.data
         self._soll_speed = np.array([left_front,right_front,left_back,right_back])
     
@@ -82,7 +84,7 @@ class SUB_SollSpeed_Serial():
 
 class PUB_SollSpeed_Main():
     def __init__(self):
-        self._nodeSoll = rclpy.create_node('SollSpeed')
+        self._nodeSoll = rclpy.create_node('SollSpeedPUB')
         self.pubSoll = self._nodeSoll.create_publisher(
             Float32MultiArray,
             '/soll_speed',
@@ -90,10 +92,10 @@ class PUB_SollSpeed_Main():
         self.pubSoll  # prevent unused variable warning       
 
     def soll_publish(self,wheel_speed):
-        lf,rf,lb,rb = wheel_speed
-        output = np.array([lf,0.0,rf,0.0,lb,0.0,rb,0.0])
+#        lf,rf,lb,rb = wheel_speed
+#        output = [lf,rf,lb,rb]
         msg = Float32MultiArray()
-        msg.data = output
+        msg.data = wheel_speed
         self.pubSoll.publish(msg)
     
     @property

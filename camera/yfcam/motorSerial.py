@@ -21,8 +21,8 @@ class SerialThread:
         self.wait_end = None                    # 用来控制主线程
         self.thread_read = None                 # 读线程
         self.thread_write = None                # 写线程
-        self.control_data = [800, 800, 800, 800]
-        self.read_data = None
+        self.control_data = [800.0, 800.0, 800.0, 800.0]
+        self.read_data = [200.0,200.0,200.0,200.0,200.0,200.0,200.0,200.0]
         self.my_serial.open()
 
     def start(self):
@@ -96,11 +96,16 @@ class SerialThread:
         self.wait_end.set()
         self.alive = False
 
-if __name__ == "__main__":
+def main():
+    rclpy.init() 
+    
     Motor_serial = SerialThread("/dev/ttyUSB0")
     
     real = yf_node.PUB_RealSpeed_Serial()
     soll = yf_node.SUB_SollSpeed_Serial()
+    
+    real.real_publish(Motor_serial.read_data)
+    rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
     while True:        
         # set data        
         rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
@@ -113,3 +118,23 @@ if __name__ == "__main__":
             Motor_serial.wait()
             Motor_serial.stop()
     # del my_serial
+
+#if __name__ == "__main__":
+    
+#    Motor_serial = SerialThread("/dev/ttyUSB0")
+#    
+#    real = yf_node.PUB_RealSpeed_Serial()
+#    soll = yf_node.SUB_SollSpeed_Serial()
+#    while True:        
+#        # set data        
+#        rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
+#        Motor_serial.control_data = soll.soll_speed
+#        # pub data
+#        real.real_publish(Motor_serial.read_data)
+#        rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
+#        # give it to A
+#        if Motor_serial.start():
+#            Motor_serial.wait()
+#            Motor_serial.stop()
+#    # del my_serial
+

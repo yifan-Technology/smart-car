@@ -32,5 +32,5 @@ class Template_Matching:
 
         res = cv2.matchTemplate(self.new_tem,self.tem,self.method)
         (_, maxVal, _, _) = cv2.minMaxLoc(res)
-        cv2.imshow("template",self.tem)
+        # cv2.imshow("template",self.tem)
         return maxVal,self.asp

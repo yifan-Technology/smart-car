@@ -28,13 +28,13 @@ def main(args=None):
     # init camera
     yf_camera.init()
 
-    Motor_serial = motorSerial.SerialThread("/dev/ttyUSB0")
+#    Motor_serial = motorSerial.SerialThread("/dev/ttyUSB0")
     
     dwa = dwa_module.DWA_Controller()
     trajectory_ist = dwa.x
     idx = 0
     init = True
-    signal = 1
+    signal = 25.0
     while 1:  
         # 接受 图像，物体，点云信息
         rclpy.spin_once(cam.nodeImg,timeout_sec=0.05) 
@@ -52,25 +52,28 @@ def main(args=None):
 
         ################################
         if real.real_speed is None:
-            print("Waiting for soll_speed")
+            print("Waiting for real_speed")
             continue
-
-        
         real_wheel = real.real_speed
         if init:
             init = False
-            real_wheel = np.array([200,200, 200, 200])
-
+            real_wheel = [200.0,200.0, 200.0, 200.0]
+        print(real_wheel)
         if 200 <= real_wheel[0] <= 800:
-            real_wheel += signal
+            for i in range(len(real_wheel)):
+                real_wheel[i] += signal 
         elif real_wheel[0] > 800:
             signal *= -1            
-            real_wheel += signal
+            for i in range(len(real_wheel)):
+                real_wheel[i] = 750 
         elif real_wheel[0] < 200:
             signal *= -1            
-            real_wheel += signal
-        
-        soll.soll_publish(real_wheel)
+            for i in range(len(real_wheel)):
+                real_wheel[i] = 250.0 
+        if len(real_wheel) == 4:
+            soll.soll_publish(real_wheel)
+        else:
+            soll.soll_publish([real_wheel[0],real_wheel[2],real_wheel[4],real_wheel[6]])
 
 
         ################################
@@ -81,19 +84,13 @@ def main(args=None):
 
 
 
-#        # update Position init X
-#        dwa.x[0] = 2.5
-#        dwa.x[1] = 0.0
-#        dwa.x[2] = 0.5 * np.pi
-#        a,b,c,d  = np.loadtxt("/home/yf/yifan/real.txt")
-#        u_ist = np.array([(a+b)/2,(c+d)/2])*(2*np.pi)/60
-#            
-#        # update u_ist
-#        u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap, 5/100)
-#        wheel_speed = np.array([u_soll[0], u_soll[1], u_soll[0], u_soll[1]]) *60/(2*np.pi)
-#        outPrint = np.around(wheel_speed,decimals=3)
-    #    soll.soll_callback(wheel_speed)
-#        np.savetxt("/home/yf/yifan/soll.txt",outPrint)
+        # update Position init X
+#        u_ist = np.array([(a+b)/2,(c+d)/2])
+#        if target is not None:
+#            # update u_ist
+#            u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap, 5/100)
+#            wheel_speed = np.array([u_soll[0], u_soll[1], u_soll[0], u_soll[1]])
+#            outPrint = np.around(wheel_speed,decimals=3)
             
         
 #            if idx % 15 == 0:
