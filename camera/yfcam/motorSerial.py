@@ -21,7 +21,7 @@ class SerialThread:
         self.wait_end = None                    # 用来控制主线程
         self.thread_read = None                 # 读线程
         self.thread_write = None                # 写线程
-        self.control_data = [800.0, 800.0, 800.0, 800.0]
+        self.control_data = [0.0, 0.0, 0.0, 0.0]
         self.read_data = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
         self.my_serial.open()
 
@@ -103,13 +103,12 @@ def main():
     
     real = yf_node.PUB_RealSpeed_Serial()
     soll = yf_node.SUB_SollSpeed_Serial()
-    
-    real.real_publish(Motor_serial.read_data)
-    rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
+
     
     while True:        
-        print(11)
-        # set data        
+        
+        # set data 
+        print("Waiting soll value")
         rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
         Motor_serial.control_data = soll.soll_speed
         print("got soll value")

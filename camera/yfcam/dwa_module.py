@@ -30,11 +30,11 @@ class DWA_Controller():
         # R_a = 1
         # L_a = 0.01
         # J = 1 / 12 * 0.4 * r ** 2
-        self.max_speed = 0.6  # [m/s]
-        self.min_speed = -1.5  # [m/s]
+        self.max_speed = 0.5  # [m/s]
+        self.min_speed = -1.  # [m/s]
         self.max_yaw_rate = 180.0 * np.pi / 180.0  # [rad/s]
         self.max_accel = 5.0  # [m/ss]
-        self.max_delta_yaw_rate = 180.0 * np.pi / 180.0  # [rad/ss]
+        self.max_delta_yaw_rate = 540.0 * np.pi / 180.0  # [rad/ss]
         self.v_resolution = 0.2  # [m/s]
         self.yaw_rate_resolution = 5. * np.pi / 180.0  # [rad/s]
         self.dt = 0.1  # [s] Time tick for motion prediction
@@ -50,7 +50,7 @@ class DWA_Controller():
         self.robot_radius = 1.5  # [m] for collision check
         self.robot_width = 2 * self.c + 0.1  # [m] for collision check
         self.robot_length = self.a + self.b + 0.1  # [m] for collision check
-        self.target_zone = 1.4
+        self.target_zone = 1.2
 
     def obmap2coordinaten(self, obmap, res):
        return np.argwhere(obmap == 1) * res
@@ -84,9 +84,9 @@ class DWA_Controller():
         # print('motor speed is',motor_ist)
         u_ist = self.speed_change(motor_ist, 'MOTOR_TO_PC')
         # print('input speed is',u_ist)
-        # if self.RESET_STATE:
-        #     state[:3] = np.array([2.5, 0., np.pi / 2])
-        #     state[3:] = u_ist
+        if self.RESET_STATE:
+             state[:3] = np.array([2.5, 0., np.pi / 2])
+             state[3:] = u_ist
 
         dw = self.calc_dynamic_window(state)
         oblist = self.obmap2coordinaten(obstacle, res)
@@ -101,11 +101,11 @@ class DWA_Controller():
         dist_head = self.a * np.array([np.cos(state[2]), np.sin(state[2])])
         self.dist_to_goal = np.linalg.norm(dist_head+ state[:2] - goal)  # generate u = wheel_speed_soll
 
-        if np.linalg.norm(u_soll) < 5.0 and self.dist_to_goal >= self.robot_radius:
-            motor_soll = np.array([400., 0.])
-            print('deadzone checked')
+#        if np.linalg.norm(u_soll) < 5.0 and self.dist_to_goal >= self.robot_radius:
+#            motor_soll = np.array([400., 0.])
+#            print('deadzone checked')
 
-        elif np.linalg.norm(u_ist) < 5.0 and self.dist_to_goal <= self.target_zone:
+        if np.linalg.norm(u_ist) < 5.0 and self.dist_to_goal <= self.target_zone:
             print("Goal!!")
             self.GOAL_ARRIVAED = True
 

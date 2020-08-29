@@ -31,7 +31,7 @@ def main(args=None):
 #    Motor_serial = motorSerial.SerialThread("/dev/ttyUSB0")
     
     dwa = dwa_module.DWA_Controller()
-#    trajectory_ist = dwa.x
+    trajectory_ist = dwa.x
 #    idx = 0
     init = True
 #    signal = 25.0
@@ -46,109 +46,86 @@ def main(args=None):
         # Run cam
         res = yf_camera.runCam(cam,obj,poc,goal)
         if res is not None:
-            target,obMap,CostMap,TestMap = res
+            target,obMap,CostMap,TestMap = res            
+            obMap = np.zeros((100,100)) 
+            obMap[0,0]=1
+            obMap[99,99] = 1
         else :
-            continue
+            target = np.array([2.5, 0.0]) 
+            print(111111)
+#            obMap = np.random.rand(10000)
+#            obMap[obMap>0.5]=1
+#            obMap[obMap<=0.5]=0
+#            obMap = obMap.reshape(100,100)
+#            obMap = np.random.shuffle(obMap)
+            obMap = np.ones((100,100))
 
-        ################################
-#        if real.real_speed is None:
-#            print("Waiting for real_speed")
-#            continue
-#        real_wheel = real.real_speed
-#        if init:
-#            init = False
-#            real_wheel = [200.0,200.0, 200.0, 200.0]
-#        print(real_wheel)
-#        if 200 <= real_wheel[0] <= 800:
-#            for i in range(len(real_wheel)):
-#                real_wheel[i] += signal 
-#        elif real_wheel[0] > 800:
-#            signal *= -1            
-#            for i in range(len(real_wheel)):
-#                real_wheel[i] = 750 
-#        elif real_wheel[0] < 200:
-#            signal *= -1            
-#            for i in range(len(real_wheel)):
-#                real_wheel[i] = 250.0 
-#        if len(real_wheel) == 4:
-#            soll.soll_publish(real_wheel)
-#        else:
-#            soll.soll_publish([real_wheel[0],real_wheel[2],real_wheel[4],real_wheel[6]])
-
-
-        ################################
-#        if Motor_serial.start():
-#            Motor_serial.wait()
-#            Motor_serial.stop()
-#        print(Motor_serial.read_data)
-
-
-
-        # update Position init X
+    
         if real.real_speed is None:
-            print("Waiting for real_speed")
+            print("Waiting for real_speed and publish soll value [0,0,0,0]")
+            soll.soll_publish([0.0,0.0, 0.0, 0.0])
             continue
         
         real_wheel = real.real_speed
-        print(real_wheel)
         
-        a = real_wheel[0]
-        b = real_wheel[2]
-        c = real_wheel[4]
-        d = real_wheel[6]
+#        real_wheel = [200.,0,200.,0,200.,0,200.]
+        print("Got real_wheel: ",real_wheel)
+        left_front = real_wheel[0]
+        right_front = real_wheel[2]
+        left_back = real_wheel[4]
+        right_back = real_wheel[6]
         
-        target = np.array([2.5,12.])
-        u_ist = np.array([(a+b)/2,(c+d)/2])
+#        target = np.array([2.5,4.])
+        u_ist = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
         if target is not None:
             print("target detected")
-            # update u_ist
-            dwa.RESET_STATE = True
+            dwa.Goal_arrived = False
+#            while dwa.Goal_arrived == False :
+            u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap,5/100)
+            u_soll[0] = float(int(u_soll[0]))
+            u_soll[1] = float(int(u_soll[1]))
+            wheel_speed =[u_soll[1], u_soll[0], u_soll[1], u_soll[0]]
+#            trajectory_ist = np.vstack((trajectory_soll, dwa.x))
+#            count = 0
+#            for i in range(10000):
+#                if obMap[]
+#            obmap = dwa.obmap2coordinaten(obMap, 5/100)
+#            if dwa.show_animation:
+#                plt.cla()
+#                # for stopping simulation with the esc key.
+#                plt.gcf().canvas.mpl_connect(
+#                    'key_release_event',
+#                    lambda event: [exit(0) if event.key == 'escape' else None])
+#    
+#                plt.plot(dwa.x[0], dwa.x[1], "xr")
+#                plt.plot(target[0], target[1], "^r")
+#                plt.plot(obmap[:,0], obmap[:,1], "sk")
+#                for i in range(len(all_trajectory)):
+#                    plt.plot(all_trajectory[i][:, 0], all_trajectory[i][:, 1], "-c")
+#                plt.plot(trajectory_soll[:, 0], trajectory_soll[:, 1], "-g")
+#                dwa_module.plot_robot(dwa.x[0], dwa.x[1], dwa.x[2], dwa)
+#                dwa_module.plot_arrow(dwa.x[0], dwa.x[1], dwa.x[2])
+#                plt.plot(trajectory_ist[:, 0], trajectory_ist[:, 1], "-r")
+#                plt.axis("equal")
+#                plt.grid(True)
+#                plt.pause(0.0001)     
+#                print('wheel speed is:',wheel_speed)
+#                print("Position :", dwa.x[:2])
+##            plt.pause(1)
+               
+#                plt.clf()
+#                plt.ioff()         
             
-            u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap, 5/100)
-            wheel1 = float(int(u_soll[0]))
-            wheel2 = float(int(u_soll[1]))
-            wheel_speed = [wheel1, wheel2, wheel1, wheel2]
-#            outPrint = np.around(wheel_speed,decimals=3)
+            if dwa.GOAL_ARRIVAED:
+                wheel_speed = [0.0,0.0,0.0,0.0]
+                dwa.GOAL_ARRIVAED = False 
             print("outprint: ", wheel_speed)
             soll.soll_publish(wheel_speed)
         else:
             print('target not detected')
-            soll.soll_publish([200.0,200.0, 200.0, 200.0])
+            soll.soll_publish([0.0,0.0, 0.0, 0.0])
         
-#            if idx % 15 == 0:
-#                plt.ion()
-#                plt.clf()
-#                dwa.Goal_arrived = False
-#                while dwa.Goal_arrived == False :
-#                    u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(dwa.x,target,obMap)
-#                    wheel_speed = np.array([u_soll[0], u_soll[1], u_soll[0], u_soll[1]]) 
-#                    trajectory_ist = np.vstack((trajectory_ist, dwa.x))
-#                    obmap = dwa.obmap2coordinaten(obMap)
-#                    if dwa.show_animation:
-#                        plt.cla()
-#                        # for stopping simulation with the esc key.
-#                        plt.gcf().canvas.mpl_connect(
-#                            'key_release_event',
-#                            lambda event: [exit(0) if event.key == 'escape' else None])
-#            
-#                        plt.plot(dwa.x[0], dwa.x[1], "xr")
-#                        plt.plot(target[0], target[1], "^r")
-#                        plt.plot(obmap[:,0], obmap[:,1], "sk")
-#                        for i in range(len(all_trajectory)):
-#                            plt.plot(all_trajectory[i][:, 0], all_trajectory[i][:, 1], "-c")
-#                        plt.plot(trajectory_soll[:, 0], trajectory_soll[:, 1], "-g")
-#                        dwa_module.plot_robot(dwa.x[0], dwa.x[1], dwa.x[2], dwa)
-#                        dwa_module.plot_arrow(dwa.x[0], dwa.x[1], dwa.x[2])
-#                        plt.plot(trajectory_ist[:, 0], trajectory_ist[:, 1], "-r")
-#                        plt.axis("equal")
-#                        plt.grid(True)
-#                        plt.pause(0.0001)     
-#                        print('wheel speed is:',wheel_speed)
-#                        print("Position :", dwa.x[:2])
-#                plt.pause(1)
-#                
-#                plt.clf()
-#                plt.ioff()         
+#           
 #               
         
 #        idx += 1

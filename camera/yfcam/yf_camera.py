@@ -63,7 +63,7 @@ def runCam(cam,obj,poc,goal):
             return   
     
         person = None
-        cache_acc = 0.6859
+        cache_acc = 100.6859
         image_origin = copy.copy(image_np)
         for objects in object_array.markers:
             top_left = (int(objects.points[0].x), int(objects.points[0].y))

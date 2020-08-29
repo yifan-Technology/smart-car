@@ -23,9 +23,9 @@ class SUB_RealSpeed_Main():
         self._real_speed = None
 
     def real_callback(self, msg):
-        left_front,_,right_front,_,left_back,_,right_back,_ = msg.data
+        left_front,left_front_angle,right_front,right_front_angle,left_back,left_back_angle,right_back,right_back_angle = msg.data
         #self._real_speed = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
-        self._real_speed = np.array([left_front,0.0,right_front,0.0,left_back,0.0,right_back,0.0])
+        self._real_speed = np.array([left_front,left_front_angle,right_front,right_front_angle,left_back,left_back_angle,right_back,right_back_angle])
     
     @property
     def nodeReal(self):
@@ -68,7 +68,7 @@ class SUB_SollSpeed_Serial():
             1)
         self.subSoll # prevent unused variable warning
 
-        self._soll_speed = [200.0,200.0,200.0,200.0]
+        self._soll_speed = [0.0,0.0,0.0,0.0]
 
     def soll_callback(self, msg):
         print("msg.data: ",msg.data)
