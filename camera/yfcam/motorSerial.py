@@ -104,6 +104,8 @@ def main():
     real = yf_node.PUB_RealSpeed_Serial()
     soll = yf_node.SUB_SollSpeed_Serial()
 
+
+    rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
     
     while True:        
         

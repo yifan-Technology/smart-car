@@ -259,6 +259,28 @@ class GoalPub():
     @goal.setter
     def goal(self, incoming):
         self._goal = incoming
+
+
+class GoalSub():
+    def __init__(self):
+        self._nodeGoal = rclpy.create_node('goal')
+        self.subGoal = self._nodeGoal.create_subscription(
+            PoseStamped,
+            '/move_base_simple/goal',
+            1)
+        self.subGoal  # prevent unused variable warning
+
+        self._goal = None
+
+    def goal_callback(self,msg):
+        self._goal = msg
+    
+    @property
+    def nodeGoal(self):
+        return self._nodeGoal     
+    @property
+    def goal(self):
+        return self._goal 
         
 class CostMap():
     def __init__(self):
