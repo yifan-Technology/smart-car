@@ -82,20 +82,20 @@ class DWA_Controller():
         """
         state = np.copy(x_pre)
         # print('motor speed is',motor_ist)
-        u_ist = self.speed_change(motor_ist, 'MOTOR_TO_PC')
+        u_is = self.speed_change(motor_ist, 'MOTOR_TO_PC')
         # print('input speed is',u_ist)
         if self.RESET_STATE:
              state[:3] = np.array([2.5, 0., np.pi / 2])
-             state[3:] = u_ist
+             state[3:] = u_is
 
         dw = self.calc_dynamic_window(state)
         oblist = self.obmap2coordinaten(obstacle, res)
         u_cal, traj_soll, all_traj = self.calc_control_and_trajectory(state, dw, goal, oblist)
         vtrans = np.array([[1, -self.c], [1, self.c]]) / self.r
 
-        u_soll = np.dot(vtrans, u_cal)
+        u_should = np.dot(vtrans, u_cal)
         # print('output speed untransformed is',u_soll)
-        motor_soll = self.speed_change(u_soll,'PC_TO_MOTOR')
+        motor_soll = self.speed_change(u_should,'PC_TO_MOTOR')
 
         # check reaching goal
         dist_head = self.a * np.array([np.cos(state[2]), np.sin(state[2])])
@@ -109,21 +109,10 @@ class DWA_Controller():
             print("Goal!!")
             self.GOAL_ARRIVAED = True
 
-        self.x = self.motion(self.x, u_ist, self.dt)
+        self.x = self.motion(self.x, u_is, self.dt)
 
         return motor_soll, traj_soll, all_traj
 
-    def motion_traj(self, state, u, tl):
-        timeline = tl[None,:]
-        wspeed = u[:,None]
-        vx = self.r * (wspeed[:,0] + wspeed[:,1]) / 2
-        omega = self.r * (- wspeed[:,0] + wspeed[:,1]) / (2 * self.c)
-        vy = -self.x0 * omega
-        theta = wspeed.dot(timeline)
-
-        dX = np.cos(theta) * vx - np.sin(theta) * vy
-        dY = np.sin(theta) * vx + np.cos(theta) * vy
-#        inertial_velo = np.array([dX, dY])
 
 
     def motion(self, state, u, dt):
@@ -345,6 +334,7 @@ if __name__ == '__main__':
     # test_dwa.RESET_STATE = True
     # test_dwa.show_animation = False
     while True:
+#            u_soll[1] = float(int(u_soll[1]))
         start = time.time()
         wheelspeed_soll, trajectory_soll, all_trajectory = test_dwa.dwa_control(wheelspeed_ist, test_dwa.x, target, ob,
                                                                                resolution)
@@ -352,6 +342,7 @@ if __name__ == '__main__':
 
         print('current wheel speed soll ', wheelspeed_soll)
         wheelspeed_ist = wheelspeed_soll
+#            u_soll[1] = float(int(u_soll[1]))
         trajectory_ist = np.vstack((trajectory_ist, test_dwa.x))
         obmap_display = test_dwa.obmap2coordinaten(ob, resolution)
         # print('elasped time:',time.time()- start)

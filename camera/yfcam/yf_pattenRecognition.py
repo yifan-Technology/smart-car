@@ -39,6 +39,7 @@ class Feature_Space:
             return 0
         # 获得方差均值
         var,mean = self.get_mean()
+        # print("fs: ",self.fs)
 #        print("var,mean:",self.get_mean())
 #        print("inpu: ",data)
 #        print("in fs:",(data-mean))

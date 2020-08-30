@@ -237,7 +237,7 @@ class LeftCam():
 
 class GoalPub():
     def __init__(self):
-        self._nodeGoal = rclpy.create_node('goal')
+        self._nodeGoal = rclpy.create_node('goalPUB')
         self.pubGoal = self._nodeGoal.create_publisher(
             PoseStamped,
             '/move_base_simple/goal',
@@ -263,10 +263,11 @@ class GoalPub():
 
 class GoalSub():
     def __init__(self):
-        self._nodeGoal = rclpy.create_node('goal')
+        self._nodeGoal = rclpy.create_node('goalSUB')
         self.subGoal = self._nodeGoal.create_subscription(
             PoseStamped,
             '/move_base_simple/goal',
+            self.goal_callback,
             1)
         self.subGoal  # prevent unused variable warning
 

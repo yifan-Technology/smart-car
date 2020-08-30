@@ -29,7 +29,7 @@ class costMap:
         # 构造数组
         gridmap = np.zeros_like(pcl)
         # 赋予左右方向的值 + offset
-        gridmap[:,0] = pcl[:,1] + self.feld/2
+        gridmap[:,0] = pcl[:,1] + int(self.feld/2)
         # 赋予前后方向的值
         gridmap[:,1] = pcl[:,0]
         # 赋予上下方向的值

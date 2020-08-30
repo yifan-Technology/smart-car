@@ -9,7 +9,7 @@ import yf_humanDetect
 import yf_pattenRecognition
 
 import yaml
-
+import time
 
 def init():    
     # 全局化模板匹配
@@ -49,7 +49,7 @@ def runCam(cam,obj,goal):
     # 声明中间变量 Person
     person = None
     # 确定全局阈值
-    cache_acc = 100.6859
+    stand_acc = 0.6859
     # 图像复制（避免画框后阻碍获取模板）
     image_origin = copy.copy(image_np)
 
@@ -64,11 +64,12 @@ def runCam(cam,obj,goal):
         # 模板匹配，获得置信度
         temAcc,_ = TemMatch.new_template(image_origin,(top_left,down_right))        
         # 将置信度，目标的XYZ位置放入特征空间，计算acc
-        acc = FeaSpace.predict([temAcc,objects.pose.position.x,objects.pose.position.y,objects.pose.position.z])        
+        feature = [temAcc,objects.pose.position.x,objects.pose.position.y,objects.pose.position.z]
+        acc = FeaSpace.predict(feature)        
         # print(acc)
         # 阈值判定
-        if cache_acc > acc:
-            person = [top_left,down_right,objects,[temAcc, distance]]
+        if stand_acc > acc:
+            person = [top_left,down_right,objects,feature]
             
     # 若找到匹配目标后
     if person is not None:
@@ -76,6 +77,7 @@ def runCam(cam,obj,goal):
         goal.goal.header = person[2].header
         goal.goal.pose = person[2].pose
         # 将特征空间 & 模板匹配 更新
+        # TODO: if acc > (1-stand_acc):
         FeaSpace.push(person[3])
         TemMatch.new_template(image_origin,(person[0],person[1]))
         TemMatch.set_tem()
@@ -83,12 +85,16 @@ def runCam(cam,obj,goal):
         target = np.array([person[2].pose.position.y+2.5,person[2].pose.position.x])
         # 广播节点信息，spin
         goal.goal_callback()
-        rclpy.spin_once(goal.nodeGoal,timeout_sec=0.05)
+        rclpy.spin_once(goal.nodeGoal,timeout_sec=0.001)
         # 绘制目标框（含中心标定点）
         cv2.rectangle(image_np, person[0], person[1], (0,0,255), 3)
         cv2.circle(image_np, (int((person[0][0] + person[1][0]) / 2),
                             int((person[0][1] + person[1][1]) / 2)), 
                             2, (0,0,255), 3)  
+    
+    # print live video        
+    if showImg[2]:       
+        cv2.imshow("LiveVideo",image_np) 
     return target
     
 def main(args=None):
@@ -100,16 +106,21 @@ def main(args=None):
     obj = yf_node.ObjectsArray()
     goal = yf_node.GoalPub()
     # 广播节点的首次初始化
-    rclpy.spin_once(goal.nodeGoal,timeout_sec=0.05)   
+    rclpy.spin_once(goal.nodeGoal,timeout_sec=0.001)   
     # 相机初始化
     yf_camera.init()
+    # init a time point for fps
+    t = time.time()
 
     while 1:  
         # 接受 图像，物体，点云信息
-        rclpy.spin_once(cam.nodeImg,timeout_sec=0.05) 
-        rclpy.spin_once(obj.nodeObj,timeout_sec=0.05)
-        # 运行数据捕捉
-        res = yf_camera.runCam(cam,obj,goal)
+        rclpy.spin_once(cam.nodeImg,timeout_sec=0.001) 
+        rclpy.spin_once(obj.nodeObj,timeout_sec=0.001)
+        # 运行数据捕捉: become target only for debug
+        _ = yf_camera.runCam(cam,obj,goal)          
+#        # print fps
+#        print("fps: ", int(1/(time.time()-t)))        
+#        t = time.time() 
         # 中断守护
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
