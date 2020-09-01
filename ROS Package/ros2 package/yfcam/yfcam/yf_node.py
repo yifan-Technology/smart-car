@@ -71,7 +71,7 @@ class SUB_SollSpeed_Serial():
         self._soll_speed = [0.0,0.0,0.0,0.0]
 
     def soll_callback(self, msg):
-        print("msg.data: ",msg.data)
+#        print("msg.data: ",msg.data)
         left_front,right_front,left_back,right_back = msg.data
         self._soll_speed = np.array([left_front,right_front,left_back,right_back])
     

@@ -20,7 +20,7 @@ class SerialThread:
         self.thread_read = None                 # 读线程
         self.thread_write = None                # 写线程
         self.control_data = [800, -800, 200, -200]
-        self.read_data = None
+        self.read_data = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 
     def start(self):
         self.my_serial.open()
@@ -56,7 +56,7 @@ class SerialThread:
         while self.alive:
             try:
                 n = self.my_serial.inWaiting()                       # 返回接收缓存中的字节数
-                if n:
+                if n == 40:
                     myByte = self.my_serial.read(40)
                     if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[2] == 97:
                         if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
@@ -83,8 +83,10 @@ class SerialThread:
                 end = 100
                 data = struct.pack("<B4fB", start, self.control_data[0], self.control_data[1], self.control_data[2],
                                    self.control_data[3], end)
-                self.my_serial.write(data)     # 解码成 gbk 码（处理中文字符问题）
+                self.my_serial.write(data)     # 
+                #self.my_serial.flush()
                 print(self.control_data)
+                
             except Exception as ex:
                 print(ex)
 

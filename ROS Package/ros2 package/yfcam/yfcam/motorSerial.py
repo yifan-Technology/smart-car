@@ -59,7 +59,7 @@ class SerialThread:
         while self.alive:
             try:
                 n = self.my_serial.inWaiting()                       # 返回接收缓存中的字节数
-                if n:
+                if n == 40:
                     myByte = self.my_serial.read(40)
                     if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[2] == 97:
                         if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
@@ -71,8 +71,10 @@ class SerialThread:
                                 break # 线程结束
 
                             except Exception as ex:
+                                print("struct:")
                                 print(ex)
             except Exception as ex:
+                print("all:")
                 print(ex)
 
         self.wait_end.set()

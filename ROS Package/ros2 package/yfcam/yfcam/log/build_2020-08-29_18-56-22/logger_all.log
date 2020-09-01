@@ -1,0 +1,86 @@
+[1.635s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[1.636s] DEBUG:colcon:Parsed command line arguments: Namespace(ament_cmake_args=None, base_paths=['.'], build_base='build', catkin_cmake_args=None, catkin_skip_building_tests=False, cmake_args=None, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, cmake_target=None, cmake_target_skip_unavailable=False, continue_on_error=False, event_handlers=None, executor='parallel', ignore_user_meta=False, install_base='install', log_base=None, log_level=None, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7f8e109ef0>>, merge_install=False, metas=['./colcon.meta'], packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_end=None, packages_ignore=None, packages_ignore_regex=None, packages_select=None, packages_select_build_failed=False, packages_select_by_dep=None, packages_select_regex=None, packages_select_test_failures=False, packages_skip=None, packages_skip_build_finished=False, packages_skip_by_dep=None, packages_skip_regex=None, packages_skip_test_passed=False, packages_skip_up_to=None, packages_start=None, packages_up_to=None, packages_up_to_regex=None, parallel_workers=6, paths=None, symlink_install=False, test_result_base=None, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7f8e109ef0>, verb_name='build', verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7f8e117278>)
+[2.019s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[2.020s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[2.021s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[2.021s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[2.021s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[2.023s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[2.023s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/yf/dev_ws/src/yfcam/yfcam'
+[2.024s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[2.025s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[2.025s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[2.025s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[2.026s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[2.026s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[2.026s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[2.026s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[2.027s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[2.152s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[2.153s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[2.153s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[2.154s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[2.154s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[2.155s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[2.156s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[2.156s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[2.158s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extensions ['ignore', 'ignore_ament_install']
+[2.158s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'ignore'
+[2.159s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'ignore_ament_install'
+[2.159s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extensions ['colcon_pkg']
+[2.159s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'colcon_pkg'
+[2.159s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extensions ['colcon_meta']
+[2.160s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'colcon_meta'
+[2.160s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extensions ['ros']
+[2.160s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'ros'
+[2.161s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extensions ['cmake', 'python']
+[2.161s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'cmake'
+[2.161s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'python'
+[2.162s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extensions ['python_setup_py']
+[2.162s] Level 1:colcon.colcon_core.package_identification:_identify(data) by extension 'python_setup_py'
+[2.163s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[2.163s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[2.163s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[2.164s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[2.165s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[2.165s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[2.165s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extensions ['ignore', 'ignore_ament_install']
+[2.166s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'ignore'
+[2.166s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'ignore_ament_install'
+[2.167s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extensions ['colcon_pkg']
+[2.167s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'colcon_pkg'
+[2.167s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extensions ['colcon_meta']
+[2.167s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'colcon_meta'
+[2.167s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extensions ['ros']
+[2.168s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'ros'
+[2.168s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extensions ['cmake', 'python']
+[2.168s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'cmake'
+[2.169s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'python'
+[2.169s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extensions ['python_setup_py']
+[2.169s] Level 1:colcon.colcon_core.package_identification:_identify(old version) by extension 'python_setup_py'
+[2.169s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[2.170s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[2.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[2.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[2.171s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[2.195s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[2.214s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[2.215s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[2.216s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[2.217s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[2.217s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[2.283s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[2.283s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[2.284s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[2.519s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[2.565s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[2.567s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/yf/dev_ws/src/yfcam/yfcam/install/local_setup.ps1'
+[2.574s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/yf/dev_ws/src/yfcam/yfcam/install/_local_setup_util_ps1.py'
+[2.582s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/yf/dev_ws/src/yfcam/yfcam/install/setup.ps1'
+[2.673s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/yf/dev_ws/src/yfcam/yfcam/install/local_setup.sh'
+[2.676s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/yf/dev_ws/src/yfcam/yfcam/install/_local_setup_util_sh.py'
+[2.680s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/yf/dev_ws/src/yfcam/yfcam/install/setup.sh'
+[2.760s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/yf/dev_ws/src/yfcam/yfcam/install/local_setup.bash'
+[2.764s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/yf/dev_ws/src/yfcam/yfcam/install/setup.bash'
+[2.851s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/yf/dev_ws/src/yfcam/yfcam/install/local_setup.zsh'
+[2.853s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/yf/dev_ws/src/yfcam/yfcam/install/setup.zsh'
