@@ -12,5 +12,15 @@ pR:
 showImg:
     ObMap: 0
     CostMap: 0
-    LiveVideo: 1
+    LiveVideo: 0
     PointCloud: 0
+RosTopic:
+    Image: '/zed2/zed_node/left/image_rect_color'
+    PointCloud: '/zed2/zed_node/point_cloud/cloud_registered'
+    ObjectsArray: '/zed2/zed_node/obj_det/objects_yf'
+    Goal: '/move_base_simple/goal'
+    CostMap: '/yf_camera/obmap'
+    RealSpeed: '/real_speed'
+    SollSpeed: '/soll_speed'
+    ObjectFlag: '/yf_camera/flag'
+    ShowMap: '/yf_camera/costmap'

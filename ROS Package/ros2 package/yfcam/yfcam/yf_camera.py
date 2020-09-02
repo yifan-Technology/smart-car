@@ -2,7 +2,8 @@ import copy
 import cv2
 import numpy as np
 import rclpy
-import yf_node
+#import yf_node
+import node_test as yf_node
 import yf_camera
 
 import yf_humanDetect
@@ -18,6 +19,8 @@ def init():
     global FeaSpace 
     # 全局化图像展示
     global showImg
+    # 全局化节点名称
+    global nodeName
     # 读取yaml文件
     with open("/home/yf/yifan/config.yaml","r") as f:
         config=yaml.load(f)        
@@ -33,12 +36,14 @@ def init():
                config["showImg"]["CostMap"],
                config["showImg"]["LiveVideo"],
                config["showImg"]["PointCloud"]]
+    # 读取节点名称参数
+    nodeName = config["RosTopic"]
 
 def runCam(cam,obj,goal): 
     # 声明 & 获取： 目标、图像、物体信息
     target = None
-    image_np = cam.image_data
-    object_array = obj.obj_array    
+    image_np = cam.subMsg
+    object_array = obj.subMsg    
     # 等待捕获所有信息
     if image_np is None:
         print("Waiting for new Image")
@@ -74,8 +79,8 @@ def runCam(cam,obj,goal):
     # 若找到匹配目标后
     if person is not None:
         # 对应键值设置
-        goal.goal.header = person[2].header
-        goal.goal.pose = person[2].pose
+        goal.pubMsg.header = person[2].header
+        goal.pubMsg.pose = person[2].pose
         # 将特征空间 & 模板匹配 更新
         # TODO: if acc > (1-stand_acc):
         FeaSpace.push(person[3])
@@ -84,8 +89,8 @@ def runCam(cam,obj,goal):
         # 计算目标位置：未使用！有利于debug
         target = np.array([person[2].pose.position.y+2.5,person[2].pose.position.x])
         # 广播节点信息，spin
-        goal.goal_callback()
-        rclpy.spin_once(goal.nodeGoal,timeout_sec=0.001)
+        goal.publishMsg()
+        rclpy.spin_once(goal.node,timeout_sec=0.001)
         # 绘制目标框（含中心标定点）
         cv2.rectangle(image_np, person[0], person[1], (0,0,255), 3)
         cv2.circle(image_np, (int((person[0][0] + person[1][0]) / 2),
@@ -102,34 +107,29 @@ def main(args=None):
     init()
     rclpy.init(args=args)
     # 构建相关节点
-    cam = yf_node.LeftCam()
-    obj = yf_node.ObjectsArray()
-    goal = yf_node.GoalPub()
+    cam = yf_node.YF_Image(nodeName['Image'])
+    obj = yf_node.YF_ObjectsArray(nodeName['ObjectsArray'])
+    goal = yf_node.YF_Goal(nodeName['Goal'])
     # 广播节点的首次初始化
-    rclpy.spin_once(goal.nodeGoal,timeout_sec=0.001)   
-    # 相机初始化
-    yf_camera.init()
+    rclpy.spin_once(goal.node,timeout_sec=0.001)   
     # init a time point for fps
     t = time.time()
 
     while 1:  
         # 接受 图像，物体，点云信息
-        rclpy.spin_once(cam.nodeImg,timeout_sec=0.001) 
-        rclpy.spin_once(obj.nodeObj,timeout_sec=0.001)
+        rclpy.spin_once(cam.node,timeout_sec=0.001) 
+        rclpy.spin_once(obj.node,timeout_sec=0.001)
         # 运行数据捕捉: become target only for debug
         _ = yf_camera.runCam(cam,obj,goal)          
-#        # print fps
-#        print("fps: ", int(1/(time.time()-t)))        
-#        t = time.time() 
+        # print fps
+        print("fps: ", int(1/(time.time()-t)))        
+        t = time.time() 
         # 中断守护
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break
     # 杀死所有订阅节点
-    cam.nodeImg.destroy_node()
-    obj.nodeObj.destroy_node()
+    cam.node.destroy_node()
+    obj.node.destroy_node()
     # 结束rclpy
     rclpy.shutdown()
-
-# if __name__ == '__main__':
-#     main()

@@ -2,9 +2,8 @@ import numpy as np
 import cv2
 import copy
 import rclpy
-import yaml
-import yf_costmap
 import yf_node
+import node_test
 import dwa_module
 import matplotlib.pyplot as plt
 import motorSerial 
@@ -14,7 +13,9 @@ def init():
     # 全局化损耗地图
     global CostMap 
     # 全局化图像展示
-    global showImg    
+    global showImg  
+    # 全局化节点名称
+    global nodeName  
     # 读取yaml文件
     with open("/home/yf/yifan/config.yaml","r") as f:
         config=yaml.load(f)  
@@ -31,34 +32,8 @@ def init():
                config["showImg"]["CostMap"],
                config["showImg"]["LiveVideo"],
                config["showImg"]["PointCloud"]]
-
-def get_obMap(pcl,poc,target):  
-    # 生成必要图像
-    CostMap.pointCloud2map(pcl)
-    obMap = CostMap.obstaclemap()
-    # 展示图像
-    if showImg[0]:
-        maps = cv2.resize(obMap,(500,500))
-        maps[maps>0] = 255
-        sendMap = np.zeros([500,500,3])
-        sendMap[:,:,0] = maps
-        sendMap[:,:,1] = maps
-        sendMap[:,:,2] = maps
-        
-        y = int(target[0] * 100)
-        x = int(target[1] * 100)
-        
-        sendMap[(x-10):(x+10),(y-10):(y+10),0] = 0
-        sendMap[(x-10):(x+10),(y-10):(y+10),1] = 0
-        sendMap[(x-10):(x+10),(y-10):(y+10),2] = 255
-        cv2.imshow("Send Map",sendMap[::-1,::-1]) 
-    if showImg[1]:        
-        testmap = CostMap.visualMap()
-        cv2.imshow("Cost Map",testmap)  
-    if showImg[3]:
-        point_cloud = poc.poc_image
-        cv2.imshow("Point Cloud",point_cloud)
-    return obMap
+    # 读取节点名称参数
+    nodeName = config["RosTopic"]
 
 def get_target(ziel):
     # 计算坐标位置
@@ -95,19 +70,17 @@ def matplotlib_show(trajectory_soll,dwa,obmap,target,all_trajectory):
 #        print('wheel speed is:',wheel_speed)
         print("Position :", dwa.x[:2])
 #            plt.pause(1)
-        
         plt.clf()
         plt.ioff() 
 
 def main():    
     # 初始化 ros2 python - rclpy & 外置参数引入
-    init()
     rclpy.init()     
     # 构建相关节点
-    poc = yf_node.PointCloud()     
+    maps = node_test.YF_CostMap(nodeName["CostMap"])    
     real = yf_node.SUB_RealSpeed_Main()
     soll = yf_node.PUB_SollSpeed_Main()  
-    ziel = yf_node.GoalSub()       
+    ziel = node_test.YF_Goal(nodeName["Goal"])       
     # 广播节点的首次初始化
     rclpy.spin_once(soll.nodeSoll,timeout_sec=0.001)
     # 构建DWA控制类
@@ -115,40 +88,40 @@ def main():
     old_target = np.array([-1.,-1.])
     # init a time point for fps
     t = time.time()
-    u_soll =np.array([0.,0.])
+    u_soll = np.array([0.,0.])
     while True:           
         # 中断守护
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break
         # 刷新订阅的节点
-        rclpy.spin_once(poc.nodePoc,timeout_sec=0.001)
-        rclpy.spin_once(ziel.nodeGoal,timeout_sec=0.001)
+        rclpy.spin_once(maps.node,timeout_sec=0.001)
+        rclpy.spin_once(ziel.node,timeout_sec=0.001)
         rclpy.spin_once(real.nodeReal,timeout_sec=0.001)
         # 广播节点        
         rclpy.spin_once(soll.nodeSoll,timeout_sec=0.001)
         # 捕获数据           
-        pcl = poc.poc_array        
-        zielMsg = ziel.goal
+        obMap = maps.subMsg        
+        zielMsg = ziel.subMsg
         # print fps
         print("fps: ", int(1/(time.time()-t)))        
         t = time.time() 
         # 等待捕获所有信息
         
-        if pcl is None:
-            print("Waiting for new Point Cloud")
+        if obMap is None:
+            print("Waiting for new obMap")
             continue  
         if zielMsg is None:
             print("Waiting for new target")
             continue 
         else:
             target = get_target(zielMsg)
-            #target = np.array([2.5,5.])
+            # target = np.array([2.5,5.])
             if (old_target != target).any():
                 dwa.RESET_STATE = True 
-                obMap = get_obMap(pcl,poc,target)
-#                np.save('/home/yf/dev_ws/src/yfcam/yfcam/test_map.npy',obMap)
-                #obMap = np.load('/home/yf/dev_ws/src/yfcam/yfcam/test_map.npy')
+                
+                # np.save('/home/yf/dev_ws/src/yfcam/yfcam/test_map.npy',obMap)
+                # obMap = np.load('/home/yf/dev_ws/src/yfcam/yfcam/test_map.npy')
                 old_target = target
                 print('old target:',old_target)
                 print('update obmap')
@@ -163,44 +136,42 @@ def main():
                   
         # 捕获真实速度值
         real_wheel = real.real_speed
-#        
-#        real_wheel = [200.,0,200.,0,200.,0,200.]
-##        print("Got real_wheel: ",real_wheel)
+        
+        # real_wheel = [200.,0,200.,0,200.,0,200.]
+        # print("Got real_wheel: ",real_wheel)
         left_front = real_wheel[0]
         right_front = real_wheel[2]
         left_back = real_wheel[4]
         right_back = real_wheel[6]
         
-#        target = np.array([2.5,4.])
+        # target = np.array([2.5,4.])
         u_ist = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
         if target is not None:
             print("target detected")
             dwa.GOAL_ARRIVAED = False
-#            while dwa.Goal_arrived == False :
-#            t1 = time.time()
+            # while dwa.Goal_arrived == False :
+            # t1 = time.time()
             u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x,target,obMap,5/100)
-#            t2 = time.time()
-#            print("run time:", t2-t1)
-#            u_ist = u_soll
-#            print('u_ist:',u_ist)
-#            print('u_soll:',u_soll)
+            t2 = time.time()
+            print("run time:", t2-t1)
+            u_ist = u_soll
+            print('u_ist:',u_ist)
+            print('u_soll:',u_soll)
             # speed infomation transforamtion
             u_soll[0] = float(int(u_soll[0]))
             u_soll[1] = float(int(u_soll[1]))
             wheel_speed =[u_soll[0], u_soll[1], u_soll[0], u_soll[1]]
             # # 使用Matplotlib展示地图
-#            matplotlib_show(trajectory_soll,dwa,obMap,target,all_trajectory)
+            matplotlib_show(trajectory_soll,dwa,obMap,target,all_trajectory)
             if dwa.GOAL_ARRIVAED:
                 wheel_speed = [0.0,0.0,0.0,0.0]
                 dwa.GOAL_ARRIVAED = False 
-#            print("wheel speed: ", wheel_speed)
-            soll.soll_publish(wheel_speed)
-       
-        
+            print("wheel speed: ", wheel_speed)
+            soll.soll_publish(wheel_speed)        
     # 杀死无用节点
-    poc.nodePoc.destroy_node()
+    maps.node.destroy_node()
     soll.nodeSoll.destroy_node()
-    ziel.nodeGoal.destroy_node()
+    ziel.node.destroy_node()
     real.nodeReal.destroy_node()
         
         

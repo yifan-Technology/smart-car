@@ -1,7 +1,10 @@
 import cv2
 import numpy as np
-
-
+import node_test as yf_node
+import time 
+import rclpy
+import yaml
+   
 class costMap:
     '''
     损耗地图 类
@@ -80,3 +83,98 @@ class costMap:
         testmap[:,:,0][testmap[:,:,2]==255] = 0
 
         return testmap
+
+def init():    
+    # 全局化损耗地图
+    global CostMap 
+    # 全局化图像展示
+    global showImg  
+    # 全局化节点名称
+    global nodeName  
+    # 读取yaml文件
+    with open("/home/yf/yifan/config.yaml","r") as f:
+        config=yaml.load(f)  
+    # 读取损耗地图参数
+    mapSize = config["costMap"]["mapSize"]
+    visSize = config["costMap"]["visSize"]
+    h_self = config["costMap"]["h_self"]
+    h_top = config["costMap"]["h_top"]
+    feld = config["costMap"]["feld"]
+    CostMap = costMap(mapSize=mapSize,visSize=visSize,h_self=h_self,
+                                 h_top=h_top,feld=feld)
+    # 读取图像展示参数
+    showImg = [config["showImg"]["ObMap"],
+               config["showImg"]["CostMap"],
+               config["showImg"]["LiveVideo"],
+               config["showImg"]["PointCloud"]]
+    # 读取节点名称参数
+    nodeName = config["RosTopic"]
+
+def get_obMap(pcl,poc,target):  
+    # 生成必要图像
+    CostMap.pointCloud2map(pcl)
+    obMap = CostMap.obstaclemap()
+    # 展示图像
+    if showImg[0]:
+        maps = cv2.resize(obMap,(500,500))
+        maps[maps>0] = 255
+        sendMap = np.zeros([500,500,3])
+        sendMap[:,:,0] = maps
+        sendMap[:,:,1] = maps
+        sendMap[:,:,2] = maps
+        
+        y = int(target[0] * 100)
+        x = int(target[1] * 100)
+        
+        sendMap[(x-10):(x+10),(y-10):(y+10),0] = 0
+        sendMap[(x-10):(x+10),(y-10):(y+10),1] = 0
+        sendMap[(x-10):(x+10),(y-10):(y+10),2] = 255
+        sendMap = sendMap[::-1,::-1]
+        cv2.imshow("Send Map",sendMap) 
+    if showImg[1]:        
+        testmap = CostMap.visualMap()
+        cv2.imshow("Cost Map",testmap)  
+    if showImg[3]:
+        point_cloud = poc.poc_image
+        cv2.imshow("Point Cloud",point_cloud)
+    return obMap,sendMap
+ 
+def main():    
+    # 初始化 ros2 python - rclpy & 外置参数引入
+    init()
+    rclpy.init()     
+    # 构建相关节点
+    poc = yf_node.YF_PointCloud(nodeName["PointCloud"]) 
+    cost = yf_node.YF_CostMap(nodeName["CostMap"]) 
+    showMap = yf_node.YF_Image(nodeName["ShowMap"])    
+    # 广播节点的首次初始化
+    rclpy.spin_once(cost.node,timeout_sec=0.001)  
+    rclpy.spin_once(showMap.node,timeout_sec=0.001)   
+    # init a time point for fps
+    t = time.time()
+    while True:         
+        # 中断守护
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+            cv2.destroyAllWindows()
+            break       
+        # 刷新订阅的节点
+        rclpy.spin_once(poc.node,timeout_sec=0.001)    
+        rclpy.spin_once(cost.node,timeout_sec=0.001)    
+        rclpy.spin_once(showMap.node,timeout_sec=0.001)      
+        # print fps
+        print("fps: ", int(1/(time.time()-t)))        
+        t = time.time()         
+        # 捕获数据
+        pcl = poc.poc_array  
+        if pcl is None:
+            print("Waiting for new Point Cloud")
+            continue  
+        # 获得地图
+        obMap,sendMap = get_obMap(pcl,poc,target)
+        # 广播地图
+        cost.publishMsg(obMap)
+        showMap.publishMsg(sendMap)
+    # 杀死无用节点
+    poc.node.destroy_node()
+    cost.node.destroy_node()
+    showMap.node.destroy_node()

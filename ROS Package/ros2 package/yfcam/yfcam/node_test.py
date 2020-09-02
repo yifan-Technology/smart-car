@@ -1,0 +1,151 @@
+import rclpy
+import cv2
+import numpy as np
+from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage
+from cv_bridge import CvBridge
+
+from sensor_msgs.msg import PointCloud2
+from visualization_msgs.msg import MarkerArray
+# from nav_msgs.msg import OccupancyGrid
+from std_msgs.msg import Int8
+from std_msgs.msg import Int8MultiArray
+from std_msgs.msg import Float32MultiArray
+from geometry_msgs.msg import PoseStamped
+# from geometry_msgs.msg import Twist 
+import ros2_numpy
+
+class YF_Node():
+    def __init__(self,nodeName,msgType):
+        self._node = rclpy.create_node(nodeName)
+        self.sub = self._node.create_subscription(
+            msgType,
+            nodeName,
+            self.subscription,
+            1)
+        self.sub
+
+        self.pub = self._node.create_publisher(
+            msgType,
+            nodeName,
+            1)
+        self.pub # prevent unused variable warning
+        self._subMsg = None
+        self._pubMsg = None
+
+    def subscription(self, msg):
+        self._subMsg = msg
+    def publishMsg(self,income):
+        self.pub.publish(income)  
+
+    @property
+    def node(self):
+        return self._node 
+    @property
+    def subMsg(self):
+        return self._subMsg
+    @property
+    def pubMsg(self):
+        return self._pubMsg
+
+class YF_Image(YF_Node):    
+    def __init__(self,nodeName):
+        super().__init__(nodeName, Image)
+        self.bridge = CvBridge()
+        self._pubMsg = Image()
+    def subscription(self, msg): 
+        self._subMsg = self.bridge.imgmsg_to_cv2(msg, "bgr8") 
+          
+    def publishMsg(self,income):        
+        self._pubMsg.header.stamp = self.node.get_clock().now()
+        self._pubMsg.data = self.bridge.cv2_to_imgmsg(income, "bgr8") 
+        self.pub.publish(self._pubMsg)  
+
+class YF_CompressedImage(YF_Node):    
+    def __init__(self,nodeName):
+        super().__init__(nodeName, CompressedImage)
+        self._pubMsg = CompressedImage()
+
+    def subscription(self, msg):         
+        np_arr = np.fromstring(ros_data.data, np.uint8)
+        self._msg = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+          
+    def publishMsg(self,income):
+        self._pubMsg.header.stamp = self.node.get_clock().now()
+        self._pubMsg.format = "jpeg"
+        self._pubMsg.data = np.array(cv2.imencode('.jpg', income)[1]).tostring()
+        self.pub.publish(self._pubMsg)  
+
+class YF_PointCloud(YF_Node):    
+    def __init__(self,nodeName):
+        super().__init__(nodeName, PointCloud2)
+        self._poc_array = None
+        self._poc_image = None
+    
+    def subscription(self, msg):
+        msg = ros2_numpy.numpify(msg)
+        self._poc_array = ros2_numpy.point_cloud2.get_xyz_points(msg, remove_nans=True)
+        self._poc_image = ros2_numpy.point_cloud2.get_xyz_points(msg, remove_nans=False)
+
+    @property
+    def poc_image(self):
+        return self._poc_image 
+    @property
+    def poc_array(self):
+        return self._poc_array
+
+class YF_ObjectsArray(YF_Node):
+    def __init__(self,nodeName):
+        super().__init__(nodeName, MarkerArray)
+
+class YF_Goal(YF_Node):
+    def __init__(self,nodeName):
+        super().__init__(nodeName, PoseStamped)
+
+class YF_CostMap(YF_Node):
+    def __init__(self,nodeName):
+        super().__init__(nodeName, Int8MultiArray)
+        self._pubMsg = Int8MultiArray()
+    
+    def subscription(self, msg):
+        self._msg = msg.data
+    def publishMsg(self,income):
+        self._pubMsg.data = income.tolist()
+        self.pub.publish(self._pubMsg)  
+
+class YF_SollSpeed(YF_Node):
+    def __init__(self,nodeName):
+        super().__init__(nodeName, Float32MultiArray)
+        self._subMsg = [0.0,0.0,0.0,0.0]
+        self._pubMsg = Float32MultiArray()
+
+    def subscription(self, msg):
+        self._msg = np.array(msg.data)
+    def publishMsg(self,income):
+        self._pubMsg.data = income
+        self.pub.publish(self._pubMsg)  
+
+class YF_RealSpeed(YF_Node):
+    def __init__(self,nodeName):
+        super().__init__(nodeName, Float32MultiArray)
+        self._pubMsg = Float32MultiArray()
+
+    def subscription(self, msg):
+        self._msg = np.array(msg.data)
+    def publishMsg(self,income):
+        self._pubMsg.data = income
+        self.pub.publish(self._pubMsg)  
+  
+class YF_ObjectFlag(YF_Node):
+    def __init__(self,nodeName):
+        super().__init__(nodeName, Int8)
+        self._pubMsg = Int8()
+        self._pubMsg.data = -1
+
+    def subscription(self, msg):
+        self._msg = np.array(msg.data)
+    def publishMsg(self,income):
+        self._pubMsg.data = income
+        self.pub.publish(self._pubMsg)     
+
+ 
