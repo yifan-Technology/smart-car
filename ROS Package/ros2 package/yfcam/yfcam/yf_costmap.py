@@ -114,22 +114,23 @@ def get_obMap(pcl,poc,target):
     # 生成必要图像
     CostMap.pointCloud2map(pcl)
     obMap = CostMap.obstaclemap()
+    
+    maps = cv2.resize(obMap,(500,500))
+    maps[maps>0] = 255
+    sendMap = np.zeros([500,500,3])
+    sendMap[:,:,0] = maps
+    sendMap[:,:,1] = maps
+    sendMap[:,:,2] = maps
+    
+    y = int(target[0] * 100)
+    x = int(target[1] * 100)
+    
+    sendMap[(x-10):(x+10),(y-10):(y+10),0] = 0
+    sendMap[(x-10):(x+10),(y-10):(y+10),1] = 0
+    sendMap[(x-10):(x+10),(y-10):(y+10),2] = 255
+    sendMap = sendMap[::-1,::-1]
     # 展示图像
     if showImg[0]:
-        maps = cv2.resize(obMap,(500,500))
-        maps[maps>0] = 255
-        sendMap = np.zeros([500,500,3])
-        sendMap[:,:,0] = maps
-        sendMap[:,:,1] = maps
-        sendMap[:,:,2] = maps
-        
-        y = int(target[0] * 100)
-        x = int(target[1] * 100)
-        
-        sendMap[(x-10):(x+10),(y-10):(y+10),0] = 0
-        sendMap[(x-10):(x+10),(y-10):(y+10),1] = 0
-        sendMap[(x-10):(x+10),(y-10):(y+10),2] = 255
-        sendMap = sendMap[::-1,::-1]
         cv2.imshow("Send Map",sendMap) 
     if showImg[1]:        
         testmap = CostMap.visualMap()
@@ -139,14 +140,21 @@ def get_obMap(pcl,poc,target):
         cv2.imshow("Point Cloud",point_cloud)
     return obMap,sendMap
  
+def get_target(ziel):
+    # 计算坐标位置
+    target = np.array([ziel.pose.position.y+2.5,ziel.pose.position.x])
+    return target
+
+
 def main():    
     # 初始化 ros2 python - rclpy & 外置参数引入
     init()
     rclpy.init()     
     # 构建相关节点
-    poc = yf_node.YF_PointCloud(nodeName["PointCloud"]) 
-    cost = yf_node.YF_CostMap(nodeName["CostMap"]) 
-    showMap = yf_node.YF_Image(nodeName["ShowMap"])    
+    poc = yf_node.YF_PointCloud(nodeName["PointCloud"],"PointCloud") 
+    cost = yf_node.YF_CostMap(nodeName["CostMap"],"CostMap") 
+    showMap = yf_node.YF_Image(nodeName["ShowMap"],"ShowMap")    
+    ziel = yf_node.YF_Goal(nodeName["Goal"],"Goal")       
     # 广播节点的首次初始化
     rclpy.spin_once(cost.node,timeout_sec=0.001)  
     rclpy.spin_once(showMap.node,timeout_sec=0.001)   
@@ -159,21 +167,30 @@ def main():
             break       
         # 刷新订阅的节点
         rclpy.spin_once(poc.node,timeout_sec=0.001)    
-        rclpy.spin_once(cost.node,timeout_sec=0.001)    
+        rclpy.spin_once(cost.node,timeout_sec=0.001)            
+        rclpy.spin_once(ziel.node,timeout_sec=0.001)
         rclpy.spin_once(showMap.node,timeout_sec=0.001)      
         # print fps
         print("fps: ", int(1/(time.time()-t)))        
         t = time.time()         
         # 捕获数据
-        pcl = poc.poc_array  
+        pcl = poc.poc_array      
+        zielMsg = ziel.subMsg
+        # 等待捕获所有信息
+        
+        if zielMsg is None:
+            print("Waiting for new target")
+            continue 
         if pcl is None:
             print("Waiting for new Point Cloud")
             continue  
         # 获得地图
+        target = get_target(zielMsg)
         obMap,sendMap = get_obMap(pcl,poc,target)
+        obMap = obMap.flatten().astype(np.uint8)
         # 广播地图
         cost.publishMsg(obMap)
-        showMap.publishMsg(sendMap)
+        showMap.publishMsg(sendMap.astype(np.uint8))
     # 杀死无用节点
     poc.node.destroy_node()
     cost.node.destroy_node()

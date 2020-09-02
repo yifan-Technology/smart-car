@@ -16,6 +16,7 @@ showImg:
     PointCloud: 0
 RosTopic:
     Image: '/zed2/zed_node/left/image_rect_color'
+    Video: '/yf_camera/LiveVideo'
     PointCloud: '/zed2/zed_node/point_cloud/cloud_registered'
     ObjectsArray: '/zed2/zed_node/obj_det/objects_yf'
     Goal: '/move_base_simple/goal'

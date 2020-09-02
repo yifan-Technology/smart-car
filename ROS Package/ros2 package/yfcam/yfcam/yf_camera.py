@@ -89,7 +89,7 @@ def runCam(cam,obj,goal):
         # 计算目标位置：未使用！有利于debug
         target = np.array([person[2].pose.position.y+2.5,person[2].pose.position.x])
         # 广播节点信息，spin
-        goal.publishMsg()
+        goal.publishMsg(goal.pubMsg)
         rclpy.spin_once(goal.node,timeout_sec=0.001)
         # 绘制目标框（含中心标定点）
         cv2.rectangle(image_np, person[0], person[1], (0,0,255), 3)
@@ -100,18 +100,20 @@ def runCam(cam,obj,goal):
     # print live video        
     if showImg[2]:       
         cv2.imshow("LiveVideo",image_np) 
-    return target
+    return target,image_np
     
 def main(args=None):
     # 初始化 ros2 python - rclpy & 外置参数引入
     init()
     rclpy.init(args=args)
     # 构建相关节点
-    cam = yf_node.YF_Image(nodeName['Image'])
-    obj = yf_node.YF_ObjectsArray(nodeName['ObjectsArray'])
-    goal = yf_node.YF_Goal(nodeName['Goal'])
+    cam = yf_node.YF_Image(nodeName['Image'],'Image')
+    video = yf_node.YF_Image(nodeName['Video'],'Video')
+    obj = yf_node.YF_ObjectsArray(nodeName['ObjectsArray'],'ObjectsArray')
+    goal = yf_node.YF_Goal(nodeName['Goal'],'Goal')
     # 广播节点的首次初始化
     rclpy.spin_once(goal.node,timeout_sec=0.001)   
+    rclpy.spin_once(video.node,timeout_sec=0.001)   
     # init a time point for fps
     t = time.time()
 
@@ -119,8 +121,14 @@ def main(args=None):
         # 接受 图像，物体，点云信息
         rclpy.spin_once(cam.node,timeout_sec=0.001) 
         rclpy.spin_once(obj.node,timeout_sec=0.001)
+        rclpy.spin_once(video.node,timeout_sec=0.001)  
         # 运行数据捕捉: become target only for debug
-        _ = yf_camera.runCam(cam,obj,goal)          
+        res = runCam(cam,obj,goal)
+        if res is None:
+            continue
+        else:
+            target,liveVideo = res
+        video.publishMsg(liveVideo.astype(np.uint8))
         # print fps
         print("fps: ", int(1/(time.time()-t)))        
         t = time.time() 

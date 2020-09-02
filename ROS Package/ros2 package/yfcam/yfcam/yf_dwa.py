@@ -8,30 +8,17 @@ import dwa_module
 import matplotlib.pyplot as plt
 import motorSerial 
 import time 
+import yaml
 
 def init():    
-    # 全局化损耗地图
-    global CostMap 
-    # 全局化图像展示
-    global showImg  
     # 全局化节点名称
     global nodeName  
+    global mapSize
     # 读取yaml文件
     with open("/home/yf/yifan/config.yaml","r") as f:
         config=yaml.load(f)  
-    # 读取损耗地图参数
+        
     mapSize = config["costMap"]["mapSize"]
-    visSize = config["costMap"]["visSize"]
-    h_self = config["costMap"]["h_self"]
-    h_top = config["costMap"]["h_top"]
-    feld = config["costMap"]["feld"]
-    CostMap = yf_costmap.costMap(mapSize=mapSize,visSize=visSize,h_self=h_self,
-                                 h_top=h_top,feld=feld)
-    # 读取图像展示参数
-    showImg = [config["showImg"]["ObMap"],
-               config["showImg"]["CostMap"],
-               config["showImg"]["LiveVideo"],
-               config["showImg"]["PointCloud"]]
     # 读取节点名称参数
     nodeName = config["RosTopic"]
 
@@ -77,10 +64,10 @@ def main():
     # 初始化 ros2 python - rclpy & 外置参数引入
     rclpy.init()     
     # 构建相关节点
-    maps = node_test.YF_CostMap(nodeName["CostMap"])    
+    maps = node_test.YF_CostMap(nodeName["CostMap"],"CostMap")    
     real = yf_node.SUB_RealSpeed_Main()
     soll = yf_node.PUB_SollSpeed_Main()  
-    ziel = node_test.YF_Goal(nodeName["Goal"])       
+    ziel = node_test.YF_Goal(nodeName["Goal"],"Goal")       
     # 广播节点的首次初始化
     rclpy.spin_once(soll.nodeSoll,timeout_sec=0.001)
     # 构建DWA控制类
@@ -101,7 +88,8 @@ def main():
         # 广播节点        
         rclpy.spin_once(soll.nodeSoll,timeout_sec=0.001)
         # 捕获数据           
-        obMap = maps.subMsg        
+        obMap = maps.subMsg 
+        obMap = np.resize(obMap,(mapSize,mapSize))
         zielMsg = ziel.subMsg
         # print fps
         print("fps: ", int(1/(time.time()-t)))        
