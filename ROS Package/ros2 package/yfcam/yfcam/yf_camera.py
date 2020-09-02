@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import rclpy
 #import yf_node
-import node_test as yf_node
+import yf_node
 import yf_camera
 
 import yf_humanDetect

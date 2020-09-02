@@ -1,7 +1,213 @@
-import node_test as yf_node
-import cv2
+import yf_node
 import rclpy
 import yaml
+import numpy as np
+import tkinter as tk
+import tkinter.messagebox
+import PIL.Image, PIL.ImageTk
+
+class GUI():
+    root = tk.Tk()
+    var_ObjectNum = tk.StringVar()
+    Var_SollSpeed1 = tk.StringVar()
+    Var_RealSpeed1 = tk.StringVar()
+    Var_SollSpeed2 = tk.StringVar()
+    Var_RealSpeed2 = tk.StringVar()
+    Var_SollSpeed3 = tk.StringVar()
+    Var_RealSpeed3 = tk.StringVar()
+    Var_SollSpeed0 = tk.StringVar()
+    Var_RealSpeed0 = tk.StringVar()
+    def __init__(self,flag):
+        self.nodeFlag = flag            
+        fakeImg = np.random.random([320,640,3])*255
+        photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(fakeImg)).convert('RGB'))
+        self.sollspeed = [0.0,0.0,0.0,0.0]
+        self.realspeed = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+
+        self.liveVideo = photo
+        self.costMap = photo  
+
+        self.speed = 0
+        self.rotate = 0      
+        
+        self.targetIdx = None
+        self.entryMsg = None
+
+        self.updata_vars()
+        self.set_Button()
+        self.set_Image()
+        self.set_Text()
+        self.set_Scale()
+
+        tk.Entry(self.root, textvariable=self.var_ObjectNum,  bg='green', width=30
+            ).grid(row=5, column=3, padx=2, pady=2, columnspan=2, rowspan=1)
+
+    def set_Scale(self):
+		# Scale in column 4
+        tk.Scale(self.root, orient='vertical', from_=200, to=0, width=15, length=550, tickinterval=100, command=self.set_speed
+            ).grid(row=1, column=11, padx=2, pady=2, columnspan=1, rowspan=4)
+        tk.Scale(self.root, orient='vertical', from_=250, to=0, width=15, length=550, tickinterval=100, command=self.set_rotate
+            ).grid(row=1, column=12, padx=2, pady=2, columnspan=1, rowspan=4)
+
+    def updata_vars(self,soll):        
+        self.Var_SollSpeed0.set(str(self.sollspeed[0]))
+        self.Var_SollSpeed1.set(str(self.sollspeed[1]))
+        self.Var_SollSpeed2.set(str(self.sollspeed[2]))
+        self.Var_SollSpeed3.set(str(self.sollspeed[3]))
+
+        self.Var_RealSpeed0.set(str(self.realspeed[0]))
+        self.Var_RealSpeed1.set(str(self.realspeed[2]))
+        self.Var_RealSpeed2.set(str(self.realspeed[4]))
+        self.Var_RealSpeed3.set(str(self.realspeed[6]))
+        
+        soll.publishMsg(self.sollspeed)
+        self.entryMsg = self.var_ObjectNum.get()
+
+    def set_Text(self):
+        tk.Label(self.root, text="Speed Type",width=15
+            ).grid(row=2, column=1, padx=2, pady=2)
+        tk.Label(self.root, text="左前",width=15
+            ).grid(row=2, column=2, padx=2, pady=2)
+        tk.Label(self.root, text="右前",width=15
+            ).grid(row=2, column=3, padx=2, pady=2)
+        tk.Label(self.root, text="左后",width=15
+            ).grid(row=2, column=4, padx=2, pady=2)
+        tk.Label(self.root, text="右后",width=15
+            ).grid(row=2, column=5, padx=2, pady=2)
+        tk.Label(self.root, text="加速度",width=15
+            ).grid(row=5, column=11, padx=2, pady=2)
+        tk.Label(self.root, text="转速差",width=15
+            ).grid(row=5, column=12, padx=2, pady=2)
+        tk.Label(self.root, text="请选择跟踪目标（输入序号）： ",width=30
+            ).grid(row=5, column=1, padx=2, pady=2, columnspan=2)
+
+        tk.Label(self.root, text="叠加转速=500，转速差=100，初始sollspeed=[0,0,0,0]。 前进：[500,-500,500,-500], 左转：[450,-550,450,-550]\n左前：[450,-500,450,-550], 重置：[0,0,0,0]。其余选项同理对称。调整完成后，Soll Speed显示对应的改变",width=90
+            ).grid(row=2, column=6, padx=2, pady=2, columnspan=5)
+
+        tk.Label(self.root, text="Soll Speed",width=15
+            ).grid(row=3, column=1, padx=2, pady=2)
+        tk.Label(self.root, text="Real Speed",width=15
+            ).grid(row=4, column=1, padx=2, pady=2)
+            
+        tk.Label(self.root ,textvariable=self.Var_SollSpeed0, bg='yellow', width=15
+            ).grid(row=3, column=2, padx=2, pady=2)
+        tk.Label(self.root ,textvariable=self.Var_RealSpeed0, bg='yellow', width=15
+            ).grid(row=4, column=2, padx=2, pady=2)
+        tk.Label(self.root ,textvariable=self.Var_SollSpeed1, bg='yellow', width=15
+            ).grid(row=3, column=3, padx=2, pady=2)
+        tk.Label(self.root ,textvariable=self.Var_RealSpeed1, bg='yellow', width=15
+            ).grid(row=4, column=3, padx=2, pady=2)
+        tk.Label(self.root ,textvariable=self.Var_SollSpeed2, bg='yellow', width=15
+            ).grid(row=3, column=4, padx=2, pady=2)
+        tk.Label(self.root ,textvariable=self.Var_RealSpeed2, bg='yellow', width=15
+            ).grid(row=4, column=4, padx=2, pady=2)
+        tk.Label(self.root ,textvariable=self.Var_SollSpeed3, bg='yellow', width=15
+            ).grid(row=3, column=5, padx=2, pady=2)
+        tk.Label(self.root ,textvariable=self.Var_RealSpeed3, bg='yellow', width=15
+            ).grid(row=4, column=5, padx=2, pady=2)
+
+    def set_Image(self):
+        tk.Label(self.root, image=self.liveVideo
+            ).grid(row=1, column=1, padx=2, pady=2, columnspan=5, rowspan=1)
+        tk.Label(self.root, image=self.costMap
+            ).grid(row=1, column=6, padx=2, pady=2, columnspan=5, rowspan=1)
+
+    def set_Button(self):
+        
+        tk.Button(self.root, text='                  \n\n\n开\n\n始\n\n追\n\n踪\n\n\n   ', command=self.tracking_flag
+            ).grid(row=3, column=6, padx=2, pady=2, columnspan=2, rowspan=3)
+        tk.Button(self.root, text='\n               确定               \n', command=self.send_objectNum
+            ).grid(row=5, column=5, padx=2, pady=2, columnspan=1, rowspan=1)
+        
+        tk.Button(self.root, text='\n               左前               \n', command=self.left_front
+            ).grid(row=3, column=8, padx=2, pady=2)
+        tk.Button(self.root, text='\n               前进               \n', command=self.direct_front
+            ).grid(row=3, column=9, padx=2, pady=2)
+        tk.Button(self.root, text='\n               右前               \n', command=self.right_front
+            ).grid(row=3, column=10, padx=2, pady=2)
+
+        tk.Button(self.root, text='\n               左转               \n', command=self.direct_left 
+            ).grid(row=4, column=8, padx=2, pady=2)
+        tk.Button(self.root, text='\n               重置               \n', command=self.reset 
+            ).grid(row=4, column=9, padx=2, pady=2)
+        tk.Button(self.root, text='\n               右转               \n', command=self.direct_right
+            ).grid(row=4, column=10, padx=2, pady=2)
+
+        tk.Button(self.root, text='\n               左后               \n', command=self.left_back 
+            ).grid(row=5, column=8, padx=2, pady=2)
+        tk.Button(self.root, text='\n               后退               \n', command=self.direct_back 
+            ).grid(row=5, column=9, padx=2, pady=2)
+        tk.Button(self.root, text='\n               右后               \n', command=self.right_back 
+            ).grid(row=5, column=10, padx=2, pady=2)
+
+    def tracking_flag(self):
+        self.targetIdx = 0
+        # TODO： 反向发送
+        self.nodeFlag.publishMsg(self.targetIdx)
+
+    def send_objectNum(self):
+        if self.entryMsg == "":
+            tk.messagebox.showerror('错误',"请输入序号！")
+            return
+        elif not self.entryMsg.isdecimal():
+            tk.messagebox.showerror('错误',"请输入正整数！")
+            return
+        entryMsg = int(self.entryMsg)
+        if self.targetIdx == None:
+            tk.messagebox.showerror('错误',"请先点击“开始追踪”按钮")
+            return
+        else:
+            idx = int(self.targetIdx)
+            if idx < 0:
+                maxInput = abs(idx)
+                if maxInput < entryMsg:
+                    tk.messagebox.showerror('错误',"请输入正确的序号！(1-{})".format(maxInput))
+                else:
+                    self.targetIdx = self.entryMsg                    
+                    self.nodeFlag.publishMsg(self.targetIdx)
+            elif idx == 0:
+                tkinter.messagebox.showinfo('提示','请稍后，目标识别中~')
+            elif idx > 0:
+                tkinter.messagebox.showwarning('警告','正在追踪中，点击“开始追踪”重新开始')
+
+
+    def set_speed(self,var):
+        self.speed = int(var)
+    def set_rotate(self,var):
+        self.rotate = int(int(var)/2)
+
+    def reset(self):
+        self.sollspeed = [0,0,0,0]
+    # direction
+    def left_front(self):
+        currentSpeed = self.sollspeed
+        self.sollspeed = [currentSpeed[0]+self.rotate,currentSpeed[1],currentSpeed[2]+self.rotate,currentSpeed[3]]
+    def direct_front(self):
+        currentSpeed = self.sollspeed  
+        self.sollspeed = [currentSpeed[0]+self.speed,currentSpeed[1]-self.speed,currentSpeed[2]+self.speed,currentSpeed[3]-self.speed]
+    def right_front(self):
+        currentSpeed = self.sollspeed
+        self.sollspeed = [currentSpeed[0],currentSpeed[1]-self.rotate,currentSpeed[2],currentSpeed[3]-self.rotate]
+    
+
+    def direct_left(self):
+        currentSpeed = self.sollspeed
+        self.sollspeed = [currentSpeed[0]-self.rotate,currentSpeed[1]+self.rotate,currentSpeed[2]-self.rotate,currentSpeed[3]+self.rotate]
+    def speed_reset(self):
+        self.sollspeed = [0,0,0,0]
+    def direct_right(self):
+        currentSpeed = self.sollspeed
+        self.sollspeed = [currentSpeed[0]+self.rotate,currentSpeed[1]-self.rotate,currentSpeed[2]+self.rotate,currentSpeed[3]-self.rotate]
+        
+    def left_back(self):   
+        currentSpeed = self.sollspeed     
+        self.sollspeed = [currentSpeed[0]-self.rotate,currentSpeed[1],currentSpeed[2]-self.rotate,currentSpeed[3]]
+    def direct_back(self):
+        currentSpeed = self.sollspeed
+        self.sollspeed = [currentSpeed[0]-self.speed,currentSpeed[1]+self.speed,currentSpeed[2]-self.speed,currentSpeed[3]+self.speed]
+    def right_back(self):
+        currentSpeed = self.sollspeed
+        self.sollspeed = [currentSpeed[0],currentSpeed[1]+self.rotate,currentSpeed[2],currentSpeed[3]+self.rotate]
 
 
 def init():    
@@ -15,23 +221,37 @@ def init():
 
 def main(args=None):
     init()
-    rclpy.init()     
-    cam = yf_node.YF_Image(nodeName['Image'],'Image')     
+    rclpy.init()  
+
     video = yf_node.YF_Image(nodeName['Video'],'Video')     
     showMap = yf_node.YF_Image(nodeName["ShowMap"],"ShowMap")
+    flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'],'ObjectFlag')
+    real = yf_node.YF_RealSpeed(nodeName['RealSpeed'],'RealSpeed')
+    soll = yf_node.YF_SollSpeed(nodeName['SollSpeed'],'SollSpeed')
+    
+    gui = GUI(flag) 
+
     while True:
-        rclpy.spin_once(cam.node,timeout_sec=0.001) 
         rclpy.spin_once(video.node,timeout_sec=0.001)
         rclpy.spin_once(showMap.node,timeout_sec=0.001)
+        rclpy.spin_once(flag.node,timeout_sec=0.001) 
+        rclpy.spin_once(real.node,timeout_sec=0.001)
+        rclpy.spin_once(soll.node,timeout_sec=0.001)
+
         if video.subMsg is None:
             print("Waiting for video")
             continue 
         if showMap.subMsg is None:
             print("Waiting for showMap")
-            continue  
-        cv2.imshow("LiveVideo",video.subMsg)
-        cv2.imshow("CostMap",showMap.subMsg)
+            continue
+
+        gui.realspeed = real.subMsg
+        gui.targetIdx = flag.subMsg
+        gui.liveVideo = video.subMsg
+        gui.costMap = showMap.subMsg
         
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            cv2.destroyAllWindows()
-            break
+        gui.updata_vars()
+        GUI.root.update()
+
+
+        

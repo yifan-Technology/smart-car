@@ -1,130 +1,92 @@
 import rclpy
+import cv2
 import numpy as np
 from sensor_msgs.msg import Image
-from std_msgs.msg import Int8MultiArray
-from std_msgs.msg import Float32MultiArray
+from sensor_msgs.msg import CompressedImage
+from cv_bridge import CvBridge
+
 from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import MarkerArray
+# from nav_msgs.msg import OccupancyGrid
+from std_msgs.msg import Int8
+from std_msgs.msg import Int8MultiArray
+from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Twist 
-from cv_bridge import CvBridge
+# from geometry_msgs.msg import Twist 
 import ros2_numpy
 
-class SUB_RealSpeed_Main():
-    def __init__(self):
-        self._nodeReal = rclpy.create_node('RealSpeedSUB')
-        self.subReal = self._nodeReal.create_subscription(
-            Float32MultiArray,
-            '/real_speed',
-            self.real_callback,
+class YF_Node():
+    def __init__(self,nodeName,name,msgType):
+        self._node = rclpy.create_node(name)
+        self.sub = self._node.create_subscription(
+            msgType,
+            nodeName,
+            self.subscription,
             1)
-        self.subReal # prevent unused variable warning
+        self.sub
 
-        self._real_speed = None
-
-    def real_callback(self, msg):
-        left_front,left_front_angle,right_front,right_front_angle,left_back,left_back_angle,right_back,right_back_angle = msg.data
-        #self._real_speed = np.array([(left_front+left_back)/2,(right_front+right_back)/2])
-        self._real_speed = np.array([left_front,left_front_angle,right_front,right_front_angle,left_back,left_back_angle,right_back,right_back_angle])
-    
-    @property
-    def nodeReal(self):
-        return self._nodeReal 
-    @property
-    def real_speed(self):
-        return self._real_speed
-
-class PUB_RealSpeed_Serial():
-    def __init__(self):
-        self._nodeReal = rclpy.create_node('RealSpeedPUB')
-        self.pubReal = self._nodeReal.create_publisher(
-            Float32MultiArray,
-            '/real_speed',
+        self.pub = self._node.create_publisher(
+            msgType,
+            nodeName,
             1)
-        self.pubReal  # prevent unused variable warning       
+        self.pub # prevent unused variable warning
+        self._subMsg = None
+        self._pubMsg = None
 
-    def real_publish(self,real_speed):
-        msg = Float32MultiArray()
-        # print(type(np.array(real_speed).astype(np.float)))
-        msg.data = real_speed
-        self.pubReal.publish(msg)
-    
-    @property
-    def nodeReal(self):
-        return self._nodeReal  
+    def subscription(self, msg):
+        self._subMsg = msg
+    def publishMsg(self,income):
+        self.pub.publish(income)  
 
     @property
-    def real_speed(self):
-        return self._real_speed
-
-class SUB_SollSpeed_Serial():
-    def __init__(self):
-        self._nodeSoll = rclpy.create_node('SollSpeedSUB')
-        self.subSoll = self._nodeSoll.create_subscription(
-            Float32MultiArray,
-            '/soll_speed',
-            self.soll_callback,
-            1)
-        self.subSoll # prevent unused variable warning
-
-        self._soll_speed = [0.0,0.0,0.0,0.0]
-
-    def soll_callback(self, msg):
-        # print("msg.data: ",msg.data)
-        left_front,right_front,left_back,right_back = msg.data
-        self._soll_speed = np.array([left_front,right_front,left_back,right_back])
-    
+    def node(self):
+        return self._node 
     @property
-    def nodeSoll(self):
-        return self._nodeSoll 
+    def subMsg(self):
+        return self._subMsg
     @property
-    def soll_speed(self):
-        return self._soll_speed
+    def pubMsg(self):
+        return self._pubMsg
 
-class PUB_SollSpeed_Main():
-    def __init__(self):
-        self._nodeSoll = rclpy.create_node('SollSpeedPUB')
-        self.pubSoll = self._nodeSoll.create_publisher(
-            Float32MultiArray,
-            '/soll_speed',
-            1)
-        self.pubSoll  # prevent unused variable warning       
+class YF_Image(YF_Node):    
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName, name, Image)
+        self.bridge = CvBridge()
+        self._pubMsg = Image()
+    def subscription(self, msg): 
+        self._subMsg = self.bridge.imgmsg_to_cv2(msg, "bgr8") 
+          
+    def publishMsg(self,income):
+        self._pubMsg = self.bridge.cv2_to_imgmsg(income, "bgr8")
+        self._pubMsg.header.stamp = self.node.get_clock().now().to_msg()
+        self.pub.publish(self._pubMsg)  
 
-    def soll_publish(self,wheel_speed):
-        msg = Float32MultiArray()
-        msg.data = wheel_speed
-        self.pubSoll.publish(msg)
-    
-    @property
-    def nodeSoll(self):
-        return self._nodeSoll  
+class YF_CompressedImage(YF_Node):    
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, CompressedImage)
+        self._pubMsg = CompressedImage()
 
-    @property
-    def soll_speed(self):
-        return self._soll_speed
+    def subscription(self, msg):         
+        np_arr = np.fromstring(msg.data, np.uint8)
+        self._subMsg = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+          
+    def publishMsg(self,income):
+        self._pubMsg.header.stamp = self.node.get_clock().now()
+        self._pubMsg.format = "jpeg"
+        self._pubMsg.data = np.array(cv2.imencode('.jpg', income)[1]).tostring()
+        self.pub.publish(self._pubMsg)  
 
-class PointCloud():
-    def __init__(self):
-        self._nodePoc = rclpy.create_node('PointCloud')
-        self.subPoc = self._nodePoc.create_subscription(
-            PointCloud2,
-            '/zed2/zed_node/point_cloud/cloud_registered',
-            self.poc_callback,
-            1)
-        self.subPoc# prevent unused variable warning
-
+class YF_PointCloud(YF_Node):    
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, PointCloud2)
         self._poc_array = None
         self._poc_image = None
-
-    def poc_callback(self, msg):
+    
+    def subscription(self, msg):
         msg = ros2_numpy.numpify(msg)
         self._poc_array = ros2_numpy.point_cloud2.get_xyz_points(msg, remove_nans=True)
         self._poc_image = ros2_numpy.point_cloud2.get_xyz_points(msg, remove_nans=False)
 
-    
-    @property
-    def nodePoc(self):
-        return self._nodePoc    
     @property
     def poc_image(self):
         return self._poc_image 
@@ -132,122 +94,66 @@ class PointCloud():
     def poc_array(self):
         return self._poc_array
 
-class ObjectsArray():
-    def __init__(self):
-        self._nodeObj = rclpy.create_node('objects')
-        self.subObj = self._nodeObj.create_subscription(
-            MarkerArray,
-            '/zed2/zed_node/obj_det/objects_yf',
-            self.obj_callback,
-            1)
-        self.subObj# prevent unused variable warning
+class YF_ObjectsArray(YF_Node):
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, MarkerArray)
 
-        self._obj_array = None
-
-    def obj_callback(self, msg):
-        self._obj_array = msg
-
+class YF_Goal(YF_Node):
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, PoseStamped)
+        self._pubMsg = PoseStamped()
     
-    @property
-    def nodeObj(self):
-        return self._nodeObj    
-    @property
-    def obj_array(self):
-        return self._obj_array
-    
-    
-class LeftCam():
-    def __init__(self):
-        self._nodeImg = rclpy.create_node('image')
-        self.subImg = self._nodeImg.create_subscription(
-            Image,
-            '/zed2/zed_node/left/image_rect_color',
-            self.img_callback,
-            1)
-        self.subImg  # prevent unused variable warning
-
-        self.bridge = CvBridge()
-        self._image_data = None
-
-    def img_callback(self, msg):
-        self._image_data = self.bridge.imgmsg_to_cv2(msg, "bgr8") 
-    
-    @property
-    def nodeImg(self):
-        return self._nodeImg    
-    @property
-    def image_data(self):
-        return self._image_data 
-
-class GoalPub():
-    def __init__(self):
-        self._nodeGoal = rclpy.create_node('goalPUB')
-        self.pubGoal = self._nodeGoal.create_publisher(
-            PoseStamped,
-            '/move_base_simple/goal',
-            1)
-        self.pubGoal  # prevent unused variable warning
-
-        self._goal = PoseStamped()
-
-    def goal_callback(self):
-        self.pubGoal.publish(self._goal)
-    
-    @property
-    def nodeGoal(self):
-        return self._nodeGoal   
-    
-    @property
-    def goal(self):
-        return self._goal 
-    @goal.setter
-    def goal(self, incoming):
-        self._goal = incoming
-
-
-class GoalSub():
-    def __init__(self):
-        self._nodeGoal = rclpy.create_node('goalSUB')
-        self.subGoal = self._nodeGoal.create_subscription(
-            PoseStamped,
-            '/move_base_simple/goal',
-            self.goal_callback,
-            1)
-        self.subGoal  # prevent unused variable warning
-
-        self._goal = None
-
-    def goal_callback(self,msg):
-        self._goal = msg
-    
-    @property
-    def nodeGoal(self):
-        return self._nodeGoal     
-    @property
-    def goal(self):
-        return self._goal 
+    def publishMsg(self,income):
+        self.pub.publish(income)  
         
-class CostMap():
-    def __init__(self):
-        self._nodeCost = rclpy.create_node('costmap')
-        self.pubCost = self._nodeCost.create_publisher(
-            Int8MultiArray,
-            '/yf_camera/costmap',
-            1)
-        self.pubCost  # prevent unused variable warning
 
-        self._cost = Int8MultiArray()
+class YF_CostMap(YF_Node):
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, Int8MultiArray)
+        self._pubMsg = Int8MultiArray()
+    
+    def subscription(self, msg):
+        self._subMsg = msg.data
+    def publishMsg(self,income):
+        self._pubMsg.data = income.tolist()        
+        self.pub.publish(self._pubMsg)  
 
-    def cost_callback(self):
-        self.pubCost.publish(self._cost)
-    
-    @property
-    def nodeCost(self):
-        return self._nodeCost  
-    
-    @property
-    def cost(self):
-        return self._cost 
-    @cost.setter
-    def cost(self, incoming):
-        self._cost = incoming
+class YF_SollSpeed(YF_Node):
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, Float32MultiArray)
+        self._subMsg = [0.0,0.0,0.0,0.0]
+        self._pubMsg = Float32MultiArray()
+
+    def subscription(self, msg):
+        self._subMsg = np.array(msg.data)
+    def publishMsg(self,income):
+        self._pubMsg.data = income
+        self.pub.publish(self._pubMsg)  
+
+class YF_RealSpeed(YF_Node):
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, Float32MultiArray)
+        self._subMsg = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        self._pubMsg = Float32MultiArray()
+
+    def subscription(self, msg):
+        self._subMsg = np.array(msg.data)
+    def publishMsg(self,income):
+        self._pubMsg.data = income
+        self.pub.publish(self._pubMsg)  
+  
+class YF_ObjectFlag(YF_Node):
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName,name, Int8)
+        self._subMsg = Int8()
+        self._subMsg.data = None
+        self._pubMsg = Int8()
+        self._pubMsg.data = None
+
+    def subscription(self, msg):
+        self._subMsg = np.array(msg.data)
+    def publishMsg(self,income):
+        self._pubMsg.data = income
+        self.pub.publish(self._pubMsg)     
+
+ 

@@ -4,6 +4,21 @@ import struct
 import time
 import yf_node
 import rclpy
+import yaml
+
+
+def init():    
+    # 全局化节点名称
+    global nodeName  
+    global mapSize
+    # 读取yaml文件
+    with open("/home/yf/yifan/config.yaml","r") as f:
+        config=yaml.load(f)  
+        
+    mapSize = config["costMap"]["mapSize"]
+    # 读取节点名称参数
+    nodeName = config["RosTopic"]
+
 
 class SerialThread:
     """
@@ -99,27 +114,22 @@ class SerialThread:
         self.alive = False
 
 def main():
-    rclpy.init() 
-    
+    init()
+    rclpy.init()     
     Motor_serial = SerialThread("/dev/ttyUSB0")
-    
-    real = yf_node.PUB_RealSpeed_Serial()
-    soll = yf_node.SUB_SollSpeed_Serial()
-
-
-    rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
-    
-    while True:        
-        
+    real = yf_node.YF_RealSpeed(nodeName["RealSpeed"],"RealSpeed")
+    soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"],"SollSpeed")
+    rclpy.spin_once(soll.node,timeout_sec=0.05)    
+    while True:
         # set data 
         print("Waiting soll value")
-        rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
-        Motor_serial.control_data = soll.soll_speed
+        rclpy.spin_once(soll.node,timeout_sec=0.05)
+        Motor_serial.control_data = soll.subMsg
         print("got soll value")
         print("soll value: ",  Motor_serial.control_data)
         # pub data
-        real.real_publish(Motor_serial.read_data)
-        rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
+        real.publishMsg(Motor_serial.read_data)
+        rclpy.spin_once(real.node,timeout_sec=0.05)
         print("sent real value")
         print("real value: ", Motor_serial.read_data[0], Motor_serial.read_data[2],  Motor_serial.read_data[4],  Motor_serial.read_data[6])
         # give it to A
@@ -132,15 +142,16 @@ def main():
     
 #    Motor_serial = SerialThread("/dev/ttyUSB0")
 #    
-#    real = yf_node.PUB_RealSpeed_Serial()
-#    soll = yf_node.SUB_SollSpeed_Serial()
+#    
+#    real = yf_node.YF_RealSpeed(nodeName["RealSpeed"],"RealSpeed")
+#    soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"],"SollSpeed")
 #    while True:        
 #        # set data        
-#        rclpy.spin_once(soll.nodeSoll,timeout_sec=0.05)
-#        Motor_serial.control_data = soll.soll_speed
+#        rclpy.spin_once(soll.node,timeout_sec=0.05)
+#        Motor_serial.control_data = soll.subMsg
 #        # pub data
-#        real.real_publish(Motor_serial.read_data)
-#        rclpy.spin_once(real.nodeReal,timeout_sec=0.05)
+#        real.publishMsg(Motor_serial.read_data)
+#        rclpy.spin_once(real.node,timeout_sec=0.05)
 #        # give it to A
 #        if Motor_serial.start():
 #            Motor_serial.wait()

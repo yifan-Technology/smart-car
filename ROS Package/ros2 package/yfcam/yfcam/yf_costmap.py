@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import node_test as yf_node
+import yf_node
 import time 
 import rclpy
 import yaml
