@@ -2,6 +2,7 @@ import yf_node
 import rclpy
 import yaml
 import numpy as np
+import time
 import tkinter as tk
 import tkinter.messagebox
 import PIL.Image, PIL.ImageTk
@@ -33,9 +34,8 @@ class GUI():
         self.targetIdx = None
         self.entryMsg = None
 
-        self.updata_vars()
         self.set_Button()
-        self.set_Image()
+        self.update_Image()
         self.set_Text()
         self.set_Scale()
 
@@ -62,6 +62,7 @@ class GUI():
         
         soll.publishMsg(self.sollspeed)
         self.entryMsg = self.var_ObjectNum.get()
+        self.update_Image()
 
     def set_Text(self):
         tk.Label(self.root, text="Speed Type",width=15
@@ -106,7 +107,7 @@ class GUI():
         tk.Label(self.root ,textvariable=self.Var_RealSpeed3, bg='yellow', width=15
             ).grid(row=4, column=5, padx=2, pady=2)
 
-    def set_Image(self):
+    def update_Image(self):
         tk.Label(self.root, image=self.liveVideo
             ).grid(row=1, column=1, padx=2, pady=2, columnspan=5, rowspan=1)
         tk.Label(self.root, image=self.costMap
@@ -153,11 +154,11 @@ class GUI():
             tk.messagebox.showerror('错误',"请输入正整数！")
             return
         entryMsg = int(self.entryMsg)
-        if self.targetIdx == None:
+        idx = int(self.targetIdx)
+        if self.targetIdx == 101:
             tk.messagebox.showerror('错误',"请先点击“开始追踪”按钮")
             return
         else:
-            idx = int(self.targetIdx)
             if idx < 0:
                 maxInput = abs(idx)
                 if maxInput < entryMsg:
@@ -167,7 +168,7 @@ class GUI():
                     self.nodeFlag.publishMsg(self.targetIdx)
             elif idx == 0:
                 tkinter.messagebox.showinfo('提示','请稍后，目标识别中~')
-            elif idx > 0:
+            elif 100 > idx > 0:
                 tkinter.messagebox.showwarning('警告','正在追踪中，点击“开始追踪”重新开始')
 
 
@@ -231,6 +232,7 @@ def main(args=None):
     
     gui = GUI(flag) 
 
+    t = time.time()
     while True:
         rclpy.spin_once(video.node,timeout_sec=0.001)
         rclpy.spin_once(showMap.node,timeout_sec=0.001)
@@ -244,13 +246,18 @@ def main(args=None):
         if showMap.subMsg is None:
             print("Waiting for showMap")
             continue
-
+        
+        # print fps
+        print("fps: ", int(1/(time.time()-t)))        
+        t = time.time() 
+        
         gui.realspeed = real.subMsg
         gui.targetIdx = flag.subMsg
-        gui.liveVideo = video.subMsg
-        gui.costMap = showMap.subMsg
         
-        gui.updata_vars()
+        gui.liveVideo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(video.subMsg[:,:,::-1])).convert('RGB'))        
+        gui.costMap = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(showMap.subMsg[:,:,::-1])).convert('RGB'))
+        
+        gui.updata_vars(soll)
         GUI.root.update()
 
 

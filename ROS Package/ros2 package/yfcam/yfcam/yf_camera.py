@@ -2,9 +2,7 @@ import copy
 import cv2
 import numpy as np
 import rclpy
-#import yf_node
 import yf_node
-import yf_camera
 
 import yf_humanDetect
 import yf_pattenRecognition

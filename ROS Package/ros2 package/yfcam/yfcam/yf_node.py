@@ -146,9 +146,9 @@ class YF_ObjectFlag(YF_Node):
     def __init__(self,nodeName, name):
         super().__init__(nodeName,name, Int8)
         self._subMsg = Int8()
-        self._subMsg.data = None
+        self._subMsg.data = 101
         self._pubMsg = Int8()
-        self._pubMsg.data = None
+        self._pubMsg.data = 101
 
     def subscription(self, msg):
         self._subMsg = np.array(msg.data)
