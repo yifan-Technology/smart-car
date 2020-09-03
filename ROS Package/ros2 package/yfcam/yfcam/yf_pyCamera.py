@@ -179,7 +179,7 @@ def runTrack(liveImage,objectArray,goal):
         TemMatch.new_template(image_origin,(person[0],person[1]))
         TemMatch.set_tem()
         # 计算目标位置
-        target = np.array([person[2].position[0]-2.5,person[2].position[2]])
+        target = np.array([-1 * person[2].position[0]-2.5,person[2].position[2]])
         
         # 广播节点信息，spin
         goal.publishMsg(goal.pubMsg)
@@ -199,10 +199,10 @@ def main():
     rclpy.init()
     # 构建相关节点    
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'],'ObjectFlag')
-    video = yf_node.YF_Image_PY(nodeName['Video'],'Video')
+    video = yf_node.YF_CompressedImage(nodeName['Video'],'Video')
     goal = yf_node.YF_Goal(nodeName['Goal'],'Goal')
     cost = yf_node.YF_CostMap(nodeName["CostMap"],"CostMap") 
-    showMap = yf_node.YF_Image(nodeName["ShowMap"],"ShowMap")   
+    showMap = yf_node.YF_CompressedImage(nodeName["ShowMap"],"ShowMap")   
     #   set init flag = 101
     flag.publishMsg(101)    
     # 广播节点的首次初始化

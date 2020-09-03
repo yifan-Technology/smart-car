@@ -250,8 +250,8 @@ def main(args=None):
     init()
     rclpy.init()  
 
-    video = yf_node.YF_Image_PY(nodeName['Video'],'Video')     
-    showMap = yf_node.YF_Image(nodeName["ShowMap"],"ShowMap")
+    video = yf_node.YF_CompressedImage(nodeName['Video'],'Video')     
+    showMap = yf_node.YF_CompressedImage(nodeName["ShowMap"],"ShowMap")
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'],'ObjectFlag')
     real = yf_node.YF_RealSpeed(nodeName['RealSpeed'],'RealSpeed')
     soll = yf_node.YF_SollSpeed(nodeName['SollSpeed'],'SollSpeed')

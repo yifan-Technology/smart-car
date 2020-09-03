@@ -18,6 +18,7 @@ setup(
 		(package_name+"/yf_camera.py"),
 		(package_name+"/yf_GUI.py"),
 		(package_name+"/yf_pyCamera.py"),
+		(package_name+"/yf_track.py"),
 		(package_name+"/yf_pyCostmap.py"),
 		(package_name+"/motorSerial.py"),
 		(package_name+"/dwa_module.py")
@@ -37,7 +38,7 @@ setup(
 		'mapGenerator = yfcam.yf_costmap:main',
 		'gui = yfcam.yf_GUI:main',
 		'ros2Camera = yfcam.yf_pyCamera:main',
-		'ros2Map = yfcam.yf_pyCostmap:main',
+		'trackTarget = yfcam.yf_track:main',
         ],
     },
 )
