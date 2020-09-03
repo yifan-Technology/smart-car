@@ -74,7 +74,7 @@ class costMap:
         testmap[gridmap[small,1],gridmap[small,0],1] = 1
         testmap[gridmap[large,1],gridmap[large,0],2] = 1
         # 将整张地图设置为蓝色
-        testmap[:,:,0] = 255
+        testmap[:,:,0] = 0
         # 完成红，绿两通道的膨胀
         testmap[:,:,1] = cv2.dilate(testmap[:,:,1],kernel,iterations=1)*255
         testmap[:,:,2] = cv2.dilate(testmap[:,:,2],kernel,iterations=1)*255
@@ -136,7 +136,7 @@ def get_obMap(pcl,poc,target,CostMap,showImg):
         testmap = CostMap.visualMap()
         cv2.imshow("Cost Map",testmap)  
     if showImg[3]:
-        point_cloud = poc.poc_image
+        point_cloud = poc
         cv2.imshow("Point Cloud",point_cloud)
     return obMap,sendMap
  
@@ -155,9 +155,9 @@ def PointCloud2_Img2Array(cloud_array, remove_nans=True, dtype=np.float):
         cloud_array = cloud_array[mask]
     # pull out x, y, and z values
     points = np.zeros([np.sum(mask),3], dtype=dtype)
-    points[:,0] = cloud_array[:,0]
-    points[:,1] = cloud_array[:,1]
-    points[:,2] = cloud_array[:,2]
+    points[:,0] = cloud_array[:,2] # 012 120 021 102 201 210
+    points[:,1] = -1*cloud_array[:,0]
+    points[:,2] = -1*cloud_array[:,1]
     return points
 
 

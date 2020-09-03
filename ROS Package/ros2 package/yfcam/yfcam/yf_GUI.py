@@ -19,8 +19,9 @@ class GUI():
     Var_RealSpeed3 = tk.StringVar()
     Var_SollSpeed0 = tk.StringVar()
     Var_RealSpeed0 = tk.StringVar()
-    def __init__(self,flag):
-        self.nodeFlag = flag            
+    def __init__(self,flag,soll):
+        self.nodeFlag = flag   
+        self.nodeSoll = soll         
         fakeImg = np.random.random([320,640,3])*255
         photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(fakeImg)).convert('RGB'))
         
@@ -57,7 +58,7 @@ class GUI():
         tk.Scale(self.root, orient='vertical', from_=250, to=0, width=15, length=550, tickinterval=100, command=self.set_rotate
             ).grid(row=1, column=12, padx=2, pady=2, columnspan=1, rowspan=4)
 
-    def updata_vars(self,soll,real):        
+    def updata_vars(self,real):        
         self.Var_SollSpeed0.set(str(self.sollspeed[0]))
         self.Var_SollSpeed1.set(str(self.sollspeed[1]))
         self.Var_SollSpeed2.set(str(self.sollspeed[2]))
@@ -68,11 +69,12 @@ class GUI():
         self.Var_RealSpeed2.set(str(self.realspeed[4]))
         self.Var_RealSpeed3.set(str(self.realspeed[6]))
         
-        soll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(real.node,timeout_sec=0.05)
         self.realspeed = real.subMsg
+        
         self.entryMsg = self.var_ObjectNum.get()  
         self.targetIdx = self.nodeFlag.subMsg.data
-        # print(self.targetIdx.tolist())
+        print(self.targetIdx.tolist())
         
     def set_Text(self):
         tk.Label(self.root, text="Speed Type",width=15
@@ -119,7 +121,7 @@ class GUI():
 
 
     def set_Button(self):        
-        tk.Button(self.root, text='                  \n\n\n开\n\n始\n\n追\n\n踪\n\n\n   ', command=self.tracking_flag
+        tk.Button(self.root, text='                  \n\n\n屏\n\n幕\n\n锁\n\n定\n\n\n   ', command=self.tracking_flag
             ).grid(row=3, column=6, padx=2, pady=2, columnspan=2, rowspan=3)
         tk.Button(self.root, text='\n               确定               \n', command=self.send_objectNum
             ).grid(row=5, column=5, padx=2, pady=2, columnspan=1, rowspan=1)
@@ -182,32 +184,50 @@ class GUI():
     def left_front(self):
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0]+self.rotate,currentSpeed[1],currentSpeed[2]+self.rotate,currentSpeed[3]]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def direct_front(self):
         currentSpeed = self.sollspeed  
         self.sollspeed = [currentSpeed[0]+self.speed,currentSpeed[1]-self.speed,currentSpeed[2]+self.speed,currentSpeed[3]-self.speed]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def right_front(self):
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0],currentSpeed[1]-self.rotate,currentSpeed[2],currentSpeed[3]-self.rotate]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     
 
     def direct_left(self):
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0]-self.rotate,currentSpeed[1]+self.rotate,currentSpeed[2]-self.rotate,currentSpeed[3]+self.rotate]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def speed_reset(self):
         self.sollspeed = [0.0,0.0,0.0,0.0]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def direct_right(self):
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0]+self.rotate,currentSpeed[1]-self.rotate,currentSpeed[2]+self.rotate,currentSpeed[3]-self.rotate]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
         
     def left_back(self):   
         currentSpeed = self.sollspeed     
         self.sollspeed = [currentSpeed[0]-self.rotate,currentSpeed[1],currentSpeed[2]-self.rotate,currentSpeed[3]]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def direct_back(self):
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0]-self.speed,currentSpeed[1]+self.speed,currentSpeed[2]-self.speed,currentSpeed[3]+self.speed]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def right_back(self):
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0],currentSpeed[1]+self.rotate,currentSpeed[2],currentSpeed[3]+self.rotate]
+        self.nodeSoll.publishMsg(self.sollspeed)        
+        rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
 
 
 def init():    
@@ -219,9 +239,9 @@ def init():
     # 读取节点名称参数
     nodeName = config["RosTopic"]
 
-def cv2PIL(imgMsg,label,size=(672,376)):
+def cv2PIL(imgMsg,label):#size=(672,376)
     img = imgMsg.subMsg[:,:,0:3][:,:,::-1]
-    img = cv2.resize(img,size)
+    #img = cv2.resize(img,size)
     pilImg = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(img)).convert('RGB'))
     label.configure(image=pilImg)
     label.image = pilImg
@@ -236,15 +256,13 @@ def main(args=None):
     real = yf_node.YF_RealSpeed(nodeName['RealSpeed'],'RealSpeed')
     soll = yf_node.YF_SollSpeed(nodeName['SollSpeed'],'SollSpeed')
     
-    gui = GUI(flag) 
+    gui = GUI(flag,soll) 
 
     t = time.time()
     while True:
         rclpy.spin_once(video.node,timeout_sec=0.001)
         rclpy.spin_once(showMap.node,timeout_sec=0.001)
         rclpy.spin_once(flag.node,timeout_sec=0.001) 
-        rclpy.spin_once(real.node,timeout_sec=0.001)
-        rclpy.spin_once(soll.node,timeout_sec=0.001)
 
         if video.subMsg is None:
             print("Waiting for video")
@@ -253,13 +271,13 @@ def main(args=None):
             print("Waiting for showMap")
             continue
         
-#        # print fps
-#        print("fps: ", int(1/(time.time()-t)))        
-#        t = time.time() 
+        # print fps
+        print("fps: ", int(1/(time.time()-t)))        
+        t = time.time() 
         
         cv2PIL(video,gui.videoLabel)
         cv2PIL(showMap,gui.costMapLabel)
-        gui.updata_vars(soll,real)
+        gui.updata_vars(real)
         GUI.root.update()
     
     # 杀死所有订阅节点

@@ -159,7 +159,7 @@ def runTrack(liveImage,objectArray,goal):
         # TODO：尝试使用RGB & all 四个通道进行模板匹配，获得4D特征空间
         # 模板匹配，获得置信度
         temAcc,_ = TemMatch.new_template(image_origin,(top_left,down_right))        
-        # 将置信度，目标的XYZ位置放入特征空间，计算acc
+        # 将置信度，目标的XYZ位置放入特征空间，计算acc #0: left right  1:up down 2: back front
         feature = [temAcc,objects.position[0],objects.position[1],objects.position[2]]
         acc = FeaSpace.predict(feature)        
         # print(acc)
@@ -178,8 +178,9 @@ def runTrack(liveImage,objectArray,goal):
         FeaSpace.push(person[3])
         TemMatch.new_template(image_origin,(person[0],person[1]))
         TemMatch.set_tem()
-        # 计算目标位置：未使用！有利于debug
-        target = np.array([person[2].position[1]+2.5,person[2].position[0]])
+        # 计算目标位置
+        target = np.array([person[2].position[0]-2.5,person[2].position[2]])
+        
         # 广播节点信息，spin
         goal.publishMsg(goal.pubMsg)
         rclpy.spin_once(goal.node,timeout_sec=0.01)
@@ -241,7 +242,7 @@ def main():
             time.sleep(0.2)
             continue
         
-        # print(signal)
+        print(signal)
         if signal == 101:            
             liveVideo,_ = runObjectDetection(liveImage, objectArray)
         elif signal == 0 and not frozenFrame:   

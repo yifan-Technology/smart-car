@@ -109,7 +109,7 @@ class SerialThread:
             except Exception as ex:
                 print(ex)
 
-            time.sleep(0.03)
+            time.sleep(0.05)
 
         self.wait_end.set()
         self.alive = False
@@ -124,15 +124,12 @@ def main():
     key = ""
     while key != 113: 
         # set data 
-        print("Waiting soll value")
         rclpy.spin_once(soll.node,timeout_sec=0.05)
         Motor_serial.control_data = soll.subMsg
-        print("got soll value")
         print("soll value: ",  Motor_serial.control_data)
         # pub data
         real.publishMsg(Motor_serial.read_data)
         rclpy.spin_once(real.node,timeout_sec=0.05)
-        print("sent real value")
         print("real value: ", Motor_serial.read_data[0], Motor_serial.read_data[2],  Motor_serial.read_data[4],  Motor_serial.read_data[6])
         # give it to A
         if Motor_serial.start():
