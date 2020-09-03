@@ -37,8 +37,8 @@ class Template_Matching:
         self.new_tem = self.ready_tem(img, objs)
         # 将第一个obj作为目标
         if self.tem is None:
-            self.tem = self.new_tem
-            return 1,self.asp
+            print("error: did not set template")
+            return 0,0
         # 模板匹配函数
         res = cv2.matchTemplate(self.new_tem,self.tem,self.method)
         # 获得最高的置信度

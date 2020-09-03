@@ -5,6 +5,7 @@ import time
 import yf_node
 import rclpy
 import yaml
+import cv2
 
 
 def init():    
@@ -120,7 +121,8 @@ def main():
     real = yf_node.YF_RealSpeed(nodeName["RealSpeed"],"RealSpeed")
     soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"],"SollSpeed")
     rclpy.spin_once(soll.node,timeout_sec=0.05)    
-    while True:
+    key = ""
+    while key != 113: 
         # set data 
         print("Waiting soll value")
         rclpy.spin_once(soll.node,timeout_sec=0.05)
@@ -136,6 +138,8 @@ def main():
         if Motor_serial.start():
             Motor_serial.wait()
             Motor_serial.stop()
+        
+        key = cv2.waitKey(1)
     # del my_serial
 
 #if __name__ == "__main__":

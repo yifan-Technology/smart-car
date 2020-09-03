@@ -106,7 +106,7 @@ def main(args=None):
     rclpy.init(args=args)
     # 构建相关节点
     cam = yf_node.YF_Image(nodeName['Image'],'Image')
-    video = yf_node.YF_Image(nodeName['Video'],'Video')
+    video = yf_node.YF_CompressedImage(nodeName['Video'],'Video')
     obj = yf_node.YF_ObjectsArray(nodeName['ObjectsArray'],'ObjectsArray')
     goal = yf_node.YF_Goal(nodeName['Goal'],'Goal')
     # 广播节点的首次初始化
@@ -116,10 +116,10 @@ def main(args=None):
     t = time.time()
 
     while 1:  
-        # 接受 图像，物体，点云信息
+        # 接受 图像，物体，点云信息 
+        rclpy.spin_once(goal.node,timeout_sec=0.001) 
         rclpy.spin_once(cam.node,timeout_sec=0.001) 
-        rclpy.spin_once(obj.node,timeout_sec=0.001)
-        rclpy.spin_once(video.node,timeout_sec=0.001)  
+        rclpy.spin_once(obj.node,timeout_sec=0.001) 
         # 运行数据捕捉: become target only for debug
         res = runCam(cam,obj,goal)
         if res is None:
@@ -127,9 +127,10 @@ def main(args=None):
         else:
             target,liveVideo = res
         video.publishMsg(liveVideo.astype(np.uint8))
-        # print fps
-        print("fps: ", int(1/(time.time()-t)))        
-        t = time.time() 
+        rclpy.spin_once(video.node,timeout_sec=0.001) 
+#        # print fps
+#        print("fps: ", int(1/(time.time()-t)))        
+#        t = time.time() 
         # 中断守护
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
@@ -137,5 +138,7 @@ def main(args=None):
     # 杀死所有订阅节点
     cam.node.destroy_node()
     obj.node.destroy_node()
+    goal.node.destroy_node()
+    video.node.destroy_node()
     # 结束rclpy
     rclpy.shutdown()

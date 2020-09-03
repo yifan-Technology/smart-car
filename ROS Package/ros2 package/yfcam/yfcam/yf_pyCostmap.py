@@ -110,7 +110,7 @@ def init():
     # 读取节点名称参数
     nodeName = config["RosTopic"]
 
-def get_obMap(pcl,poc,target):  
+def get_obMap(pcl,poc,target,CostMap,showImg):  
     # 生成必要图像
     CostMap.pointCloud2map(pcl)
     obMap = CostMap.obstaclemap()
@@ -142,58 +142,73 @@ def get_obMap(pcl,poc,target):
  
 def get_target(ziel):
     # 计算坐标位置
-    target = np.array([ziel.pose.position.y+2.5,ziel.pose.position.x])
+    target = np.array([ziel.position.y+2.5,ziel.position.x])
     return target
+
+def PointCloud2_Img2Array(cloud_array, remove_nans=True, dtype=np.float):
+    '''Pulls out x, y, and z columns from the cloud recordarray, and returns
+    a 3xN matrix.
+    '''
+    # remove crap points
+    if remove_nans:
+        mask = np.isfinite(cloud_array[:,:,0]) & np.isfinite(cloud_array[:,:,1]) & np.isfinite(cloud_array[:,:,2])
+        cloud_array = cloud_array[mask]
+    # pull out x, y, and z values
+    points = np.zeros([np.sum(mask),3], dtype=dtype)
+    points[:,0] = cloud_array[:,0]
+    points[:,1] = cloud_array[:,1]
+    points[:,2] = cloud_array[:,2]
+    return points
 
 
 def main():    
     # 初始化 ros2 python - rclpy & 外置参数引入
     init()
-    rclpy.init()     
+#    rclpy.init()     
     # 构建相关节点
     poc = yf_node.YF_PointCloud(nodeName["PointCloud"],"PointCloud") 
     cost = yf_node.YF_CostMap(nodeName["CostMap"],"CostMap") 
     showMap = yf_node.YF_CompressedImage(nodeName["ShowMap"],"ShowMap")    
-    ziel = yf_node.YF_Goal(nodeName["Goal"],"Goal")       
+    goal = yf_node.YF_Goal(nodeName["Goal"],"GoalCostMap")       
     # 广播节点的首次初始化
+    rclpy.spin_once(poc.node,timeout_sec=0.01)
     rclpy.spin_once(cost.node,timeout_sec=0.01)  
-    rclpy.spin_once(showMap.node,timeout_sec=0.01)   
+    rclpy.spin_once(showMap.node,timeout_sec=0.01)  
+    rclpy.spin_once(goal.node,timeout_sec=0.01)   
     # init a time point for fps
     t = time.time()
+    ziel = [0,0]
     while True:         
         # 中断守护
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break       
-        # 刷新订阅的节点
-        rclpy.spin_once(poc.node,timeout_sec=0.001)    
-        rclpy.spin_once(cost.node,timeout_sec=0.001)            
-        rclpy.spin_once(ziel.node,timeout_sec=0.001)
+        # 刷新订阅的节点  
+        rclpy.spin_once(cost.node,timeout_sec=0.001)   
         rclpy.spin_once(showMap.node,timeout_sec=0.001)      
-#        # print fps
-#        print("fps: ", int(1/(time.time()-t)))        
-#        t = time.time()         
-        # 捕获数据
-        pcl = poc.poc_array
-        zielMsg = ziel.subMsg
+        # print fps
+        print("CostMap Fps: ", int(1/(time.time()-t)))        
+        t = time.time()         
         # 等待捕获所有信息
-        if zielMsg is None:
+        pcl = poc.poc_array
+        ziel = goal.subMsg
+        if pcl is not None:
+            print("Waiting for new point cloud")
+            continue
+        if ziel is not None:
             print("Waiting for new target")
-            continue 
-        if pcl is None:
-            print("Waiting for new Point Cloud")
-            continue  
+            continue
         # 获得地图
-        target = get_target(zielMsg)
+        target = get_target(ziel)
         obMap,sendMap = get_obMap(pcl,poc,target)
         obMap = obMap.flatten().astype(np.uint8)
         # 广播地图
         cost.publishMsg(obMap)
         showMap.publishMsg(sendMap.astype(np.uint8))
     # 杀死无用节点
-    poc.node.destroy_node()
     cost.node.destroy_node()
-    ziel.node.destroy_node()
     showMap.node.destroy_node()
+    poc.node.destroy_node()
+    goal.node.destroy_node()
     # 结束rclpy
     rclpy.shutdown()

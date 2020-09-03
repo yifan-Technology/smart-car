@@ -12,6 +12,7 @@ from std_msgs.msg import Int8
 from std_msgs.msg import Int8MultiArray
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import PoseStamped
+
 # from geometry_msgs.msg import Twist 
 import ros2_numpy
 
@@ -48,6 +49,19 @@ class YF_Node():
     def pubMsg(self):
         return self._pubMsg
 
+class YF_Image_PY(YF_Node):    
+    def __init__(self,nodeName, name):
+        super().__init__(nodeName, name, Image)
+        self.bridge = CvBridge()
+        self._pubMsg = Image()
+    def subscription(self, msg): 
+        self._subMsg = self.bridge.imgmsg_to_cv2(msg, "bgra8") 
+          
+    def publishMsg(self,income):
+        self._pubMsg = self.bridge.cv2_to_imgmsg(income, "bgra8")
+        self._pubMsg.header.stamp = self.node.get_clock().now().to_msg()
+        self.pub.publish(self._pubMsg)  
+
 class YF_Image(YF_Node):    
     def __init__(self,nodeName, name):
         super().__init__(nodeName, name, Image)
@@ -67,11 +81,11 @@ class YF_CompressedImage(YF_Node):
         self._pubMsg = CompressedImage()
 
     def subscription(self, msg):         
-        np_arr = np.fromstring(msg.data, np.uint8)
+        np_arr = np.fromstring(np.array(msg.data), np.uint8)
         self._subMsg = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
           
     def publishMsg(self,income):
-        self._pubMsg.header.stamp = self.node.get_clock().now()
+        self._pubMsg.header.stamp = self.node.get_clock().now().to_msg()
         self._pubMsg.format = "jpeg"
         self._pubMsg.data = np.array(cv2.imencode('.jpg', income)[1]).tostring()
         self.pub.publish(self._pubMsg)  
@@ -86,6 +100,11 @@ class YF_PointCloud(YF_Node):
         msg = ros2_numpy.numpify(msg)
         self._poc_array = ros2_numpy.point_cloud2.get_xyz_points(msg, remove_nans=True)
         self._poc_image = ros2_numpy.point_cloud2.get_xyz_points(msg, remove_nans=False)
+        
+    def publishMsg(self,income):        
+        self._pubMsg = ros2_numpy.point_cloud2.array_to_pointcloud2(income)
+        self._pubMsg.header.stamp = self.node.get_clock().now().to_msg()
+        self.pub.publish(self._pubMsg)  
 
     @property
     def poc_image(self):
@@ -100,7 +119,7 @@ class YF_ObjectsArray(YF_Node):
 
 class YF_Goal(YF_Node):
     def __init__(self,nodeName, name):
-        super().__init__(nodeName,name, PoseStamped)
+        super().__init__(nodeName, name, PoseStamped)
         self._pubMsg = PoseStamped()
     
     def publishMsg(self,income):
@@ -146,14 +165,12 @@ class YF_ObjectFlag(YF_Node):
     def __init__(self,nodeName, name):
         super().__init__(nodeName,name, Int8)
         self._subMsg = Int8()
-        self._subMsg.data = 101
+        self._subMsg.data = 127
         self._pubMsg = Int8()
-        self._pubMsg.data = 101
+        self._pubMsg.data = 127
 
     def subscription(self, msg):
         self._subMsg = np.array(msg.data)
     def publishMsg(self,income):
         self._pubMsg.data = income
         self.pub.publish(self._pubMsg)     
-
- 

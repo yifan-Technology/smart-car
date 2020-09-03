@@ -5,6 +5,7 @@ import numpy as np
 import time
 import tkinter as tk
 import tkinter.messagebox
+import cv2
 import PIL.Image, PIL.ImageTk
 
 class GUI():
@@ -22,20 +23,27 @@ class GUI():
         self.nodeFlag = flag            
         fakeImg = np.random.random([320,640,3])*255
         photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(fakeImg)).convert('RGB'))
+        
+        
         self.sollspeed = [0.0,0.0,0.0,0.0]
         self.realspeed = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 
         self.liveVideo = photo
-        self.costMap = photo  
+        self.costMap = photo    
+        
+        self.videoLabel = tk.Label(self.root, image=self.liveVideo)
+        self.videoLabel.grid(row=1, column=1, padx=2, pady=2, columnspan=5, rowspan=1)
+        self.costMapLabel = tk.Label(self.root, image=self.costMap)
+        self.costMapLabel.grid(row=1, column=6, padx=2, pady=2, columnspan=5, rowspan=1)
 
         self.speed = 0
         self.rotate = 0      
         
-        self.targetIdx = None
+        self.nodeFlag.publishMsg(101)
+        self.targetIdx = memoryview(bytes([101]))
         self.entryMsg = None
 
         self.set_Button()
-        self.update_Image()
         self.set_Text()
         self.set_Scale()
 
@@ -49,7 +57,7 @@ class GUI():
         tk.Scale(self.root, orient='vertical', from_=250, to=0, width=15, length=550, tickinterval=100, command=self.set_rotate
             ).grid(row=1, column=12, padx=2, pady=2, columnspan=1, rowspan=4)
 
-    def updata_vars(self,soll):        
+    def updata_vars(self,soll,real):        
         self.Var_SollSpeed0.set(str(self.sollspeed[0]))
         self.Var_SollSpeed1.set(str(self.sollspeed[1]))
         self.Var_SollSpeed2.set(str(self.sollspeed[2]))
@@ -60,10 +68,12 @@ class GUI():
         self.Var_RealSpeed2.set(str(self.realspeed[4]))
         self.Var_RealSpeed3.set(str(self.realspeed[6]))
         
-        soll.publishMsg(self.sollspeed)
-        self.entryMsg = self.var_ObjectNum.get()
-        self.update_Image()
-
+        soll.publishMsg(self.sollspeed)        
+        self.realspeed = real.subMsg
+        self.entryMsg = self.var_ObjectNum.get()  
+        self.targetIdx = self.nodeFlag.subMsg.data
+        # print(self.targetIdx.tolist())
+        
     def set_Text(self):
         tk.Label(self.root, text="Speed Type",width=15
             ).grid(row=2, column=1, padx=2, pady=2)
@@ -107,14 +117,8 @@ class GUI():
         tk.Label(self.root ,textvariable=self.Var_RealSpeed3, bg='yellow', width=15
             ).grid(row=4, column=5, padx=2, pady=2)
 
-    def update_Image(self):
-        tk.Label(self.root, image=self.liveVideo
-            ).grid(row=1, column=1, padx=2, pady=2, columnspan=5, rowspan=1)
-        tk.Label(self.root, image=self.costMap
-            ).grid(row=1, column=6, padx=2, pady=2, columnspan=5, rowspan=1)
 
-    def set_Button(self):
-        
+    def set_Button(self):        
         tk.Button(self.root, text='                  \n\n\n开\n\n始\n\n追\n\n踪\n\n\n   ', command=self.tracking_flag
             ).grid(row=3, column=6, padx=2, pady=2, columnspan=2, rowspan=3)
         tk.Button(self.root, text='\n               确定               \n', command=self.send_objectNum
@@ -129,7 +133,7 @@ class GUI():
 
         tk.Button(self.root, text='\n               左转               \n', command=self.direct_left 
             ).grid(row=4, column=8, padx=2, pady=2)
-        tk.Button(self.root, text='\n               重置               \n', command=self.reset 
+        tk.Button(self.root, text='\n               重置               \n', command=self.speed_reset 
             ).grid(row=4, column=9, padx=2, pady=2)
         tk.Button(self.root, text='\n               右转               \n', command=self.direct_right
             ).grid(row=4, column=10, padx=2, pady=2)
@@ -141,10 +145,8 @@ class GUI():
         tk.Button(self.root, text='\n               右后               \n', command=self.right_back 
             ).grid(row=5, column=10, padx=2, pady=2)
 
-    def tracking_flag(self):
-        self.targetIdx = 0
-        # TODO： 反向发送
-        self.nodeFlag.publishMsg(self.targetIdx)
+    def tracking_flag(self):        
+        self.nodeFlag.publishMsg(0)
 
     def send_objectNum(self):
         if self.entryMsg == "":
@@ -154,8 +156,8 @@ class GUI():
             tk.messagebox.showerror('错误',"请输入正整数！")
             return
         entryMsg = int(self.entryMsg)
-        idx = int(self.targetIdx)
-        if self.targetIdx == 101:
+        idx = self.targetIdx.tolist()
+        if idx == 101:
             tk.messagebox.showerror('错误',"请先点击“开始追踪”按钮")
             return
         else:
@@ -163,9 +165,8 @@ class GUI():
                 maxInput = abs(idx)
                 if maxInput < entryMsg:
                     tk.messagebox.showerror('错误',"请输入正确的序号！(1-{})".format(maxInput))
-                else:
-                    self.targetIdx = self.entryMsg                    
-                    self.nodeFlag.publishMsg(self.targetIdx)
+                else:                    
+                    self.nodeFlag.publishMsg(int(self.entryMsg))
             elif idx == 0:
                 tkinter.messagebox.showinfo('提示','请稍后，目标识别中~')
             elif 100 > idx > 0:
@@ -177,8 +178,6 @@ class GUI():
     def set_rotate(self,var):
         self.rotate = int(int(var)/2)
 
-    def reset(self):
-        self.sollspeed = [0,0,0,0]
     # direction
     def left_front(self):
         currentSpeed = self.sollspeed
@@ -195,7 +194,7 @@ class GUI():
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0]-self.rotate,currentSpeed[1]+self.rotate,currentSpeed[2]-self.rotate,currentSpeed[3]+self.rotate]
     def speed_reset(self):
-        self.sollspeed = [0,0,0,0]
+        self.sollspeed = [0.0,0.0,0.0,0.0]
     def direct_right(self):
         currentSpeed = self.sollspeed
         self.sollspeed = [currentSpeed[0]+self.rotate,currentSpeed[1]-self.rotate,currentSpeed[2]+self.rotate,currentSpeed[3]-self.rotate]
@@ -220,11 +219,18 @@ def init():
     # 读取节点名称参数
     nodeName = config["RosTopic"]
 
+def cv2PIL(imgMsg,label,size=(672,376)):
+    img = imgMsg.subMsg[:,:,0:3][:,:,::-1]
+    img = cv2.resize(img,size)
+    pilImg = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(img)).convert('RGB'))
+    label.configure(image=pilImg)
+    label.image = pilImg
+
 def main(args=None):
     init()
     rclpy.init()  
 
-    video = yf_node.YF_Image(nodeName['Video'],'Video')     
+    video = yf_node.YF_Image_PY(nodeName['Video'],'Video')     
     showMap = yf_node.YF_Image(nodeName["ShowMap"],"ShowMap")
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'],'ObjectFlag')
     real = yf_node.YF_RealSpeed(nodeName['RealSpeed'],'RealSpeed')
@@ -247,18 +253,23 @@ def main(args=None):
             print("Waiting for showMap")
             continue
         
-        # print fps
-        print("fps: ", int(1/(time.time()-t)))        
-        t = time.time() 
+#        # print fps
+#        print("fps: ", int(1/(time.time()-t)))        
+#        t = time.time() 
         
-        gui.realspeed = real.subMsg
-        gui.targetIdx = flag.subMsg
-        
-        gui.liveVideo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(video.subMsg[:,:,::-1])).convert('RGB'))        
-        gui.costMap = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(showMap.subMsg[:,:,::-1])).convert('RGB'))
-        
-        gui.updata_vars(soll)
+        cv2PIL(video,gui.videoLabel)
+        cv2PIL(showMap,gui.costMapLabel)
+        gui.updata_vars(soll,real)
         GUI.root.update()
+    
+    # 杀死所有订阅节点
+    showMap.node.destroy_node()
+    flag.node.destroy_node()
+    soll.node.destroy_node()
+    real.node.destroy_node()
+    video.node.destroy_node()    
+    # 结束rclpy
+    rclpy.shutdown()
 
 
         

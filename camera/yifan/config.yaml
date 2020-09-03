@@ -12,8 +12,10 @@ pR:
 showImg:
     ObMap: 0
     CostMap: 0
-    LiveVideo: 0
+    LiveVideo: 1
     PointCloud: 0
+FPS:
+    FPS: 1
 RosTopic:
     Image: '/zed2/zed_node/left/image_rect_color'
     Video: '/yf_camera/LiveVideo'

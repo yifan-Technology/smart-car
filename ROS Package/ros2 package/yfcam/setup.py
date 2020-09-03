@@ -17,7 +17,8 @@ setup(
 		(package_name+"/yf_pattenRecognition.py"),
 		(package_name+"/yf_camera.py"),
 		(package_name+"/yf_GUI.py"),
-		(package_name+"/node_test.py"),
+		(package_name+"/yf_pyCamera.py"),
+		(package_name+"/yf_pyCostmap.py"),
 		(package_name+"/motorSerial.py"),
 		(package_name+"/dwa_module.py")
 		],
@@ -35,6 +36,8 @@ setup(
 		'dwaControll = yfcam.yf_dwa:main',
 		'mapGenerator = yfcam.yf_costmap:main',
 		'gui = yfcam.yf_GUI:main',
+		'ros2Camera = yfcam.yf_pyCamera:main',
+		'ros2Map = yfcam.yf_pyCostmap:main',
         ],
     },
 )
