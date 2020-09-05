@@ -15,7 +15,7 @@ import time
 
 def init():    
     # 全局化节点名称
-    global nodeName, target_x,target_y
+    global nodeName, target_x,target_y,patient
     # 读取yaml文件
     with open("/home/yf/yifan/config.yaml","r") as f:
         config=yaml.load(f)  
@@ -31,9 +31,9 @@ def controlalgorithm(goal_x, goal_y):
     robot_homePosition_y = 0
     r_d = 0.8     #safe distance
     v_max = 0.5
-    w_max = 3.14/12
+    w_max = 3.14/8
 
-    r_speedCut = 0.5 # design parameter for distanz speed cut
+    r_speedCut = 0.3 # design parameter for distanz speed cut
 
 
     delta_x = goal_x - robot_homePosition_x
@@ -43,13 +43,13 @@ def controlalgorithm(goal_x, goal_y):
         phi = 0.0
     else:
         phi = math.atan(delta_x / delta_y)
-    
+    # print(phi)
     
     r = math.sqrt(goal_x**2 + goal_y**2)
     r_expect = r - r_d
     
     k_max = np.abs(w_max) - 0.5 * v_max / r_d #k_max for debug
-    print("k max: ",k_max,phi/3.14*180)
+    # print("k max: ",k_max,phi/3.14*180)
 
     k = 0.5 * k_max       #  k > 0 and k < k_max
 
@@ -74,18 +74,19 @@ def controlalgorithm(goal_x, goal_y):
         
     global target_x
     global target_y
-    if goal_x == target_x and target_y == goal_y:        
+    global patient
+    if goal_x == target_x and target_y == goal_y:
         v = 0
         omega = 0
     
     target_x = goal_x
     target_y = goal_y
 
-    print("v: ", v)
-    print("omega: ", omega)
+    # print("v: ", v)
+    # print("omega: ", omega)
 
-    v_l = v - omega * l /2
-    v_r = v + omega * l /2
+    v_l = v + omega * l /2
+    v_r = v - omega * l /2
 
     return v_l, v_r  # return deine Parametern
 
@@ -93,6 +94,17 @@ def controlalgorithm(goal_x, goal_y):
 def wheel_speed_caculator(v_l,v_r):
     v_l_rpm = float(int((v_l * 19 * 60) / (2 * 3.14 * 0.1)))
     v_r_rpm = float(int((v_r * 19 * 60) / (2 * 3.14 * 0.1)))
+
+    minimal = np.min(np.abs([v_l_rpm,v_r_rpm]))
+    if minimal == 0 and np.max(np.abs([v_l_rpm,v_r_rpm])) == 0:
+        wheel_speed = [v_l_rpm,v_r_rpm,v_l_rpm,v_r_rpm]
+        return wheel_speed
+
+    shift = 300 - minimal
+    v_l_rpm += np.sign(v_l_rpm) * shift
+    v_r_rpm += np.sign(v_r_rpm) * shift
+
+
     wheel_speed = [v_l_rpm,v_r_rpm,v_l_rpm,v_r_rpm]
     return wheel_speed
 
@@ -132,19 +144,19 @@ def main(args=None):  # main Funktion
             print(target)
             v_l, v_r = controlalgorithm(target[0], target[1])
             
-            print("vl vr: ", v_l, v_r)
+            # print("vl vr: ", v_l, v_r)
             
             wheel_speed = wheel_speed_caculator(v_l,v_r)
             print("speed: ", wheel_speed)
             soll.publishMsg(wheel_speed)        
             rclpy.spin_once(goal.node,timeout_sec=0.01) 
             
-#            # print fps
-#            print("fps: ", int(1/(time.time()-t)))        
-#            t = time.time() 
+            # print fps
+            print("fps: ", int(1/(time.time()-t)))        
+            t = time.time() 
         
             time.sleep(0.05)
-        else:
+        else:            
             continue
 
     goal.destroy_node()  # eben vom Oben

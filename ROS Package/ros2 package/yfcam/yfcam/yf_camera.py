@@ -106,7 +106,7 @@ def main(args=None):
     rclpy.init(args=args)
     # 构建相关节点
     cam = yf_node.YF_Image(nodeName['Image'],'Image')
-    video = yf_node.YF_CompressedImage(nodeName['Video'],'Video')
+    video = yf_node.YF_Image_PY(nodeName['Video'],'Video')
     obj = yf_node.YF_ObjectsArray(nodeName['ObjectsArray'],'ObjectsArray')
     goal = yf_node.YF_Goal(nodeName['Goal'],'Goal')
     # 广播节点的首次初始化

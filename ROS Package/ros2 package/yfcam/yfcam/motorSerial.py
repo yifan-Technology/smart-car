@@ -121,8 +121,8 @@ def main():
     real = yf_node.YF_RealSpeed(nodeName["RealSpeed"],"RealSpeed")
     soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"],"SollSpeed")
     rclpy.spin_once(soll.node,timeout_sec=0.05)    
-    key = ""
-    while key != 113: 
+    # key = ""
+    while 1:#:
         # set data 
         rclpy.spin_once(soll.node,timeout_sec=0.05)
         Motor_serial.control_data = soll.subMsg

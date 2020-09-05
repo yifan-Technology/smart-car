@@ -144,7 +144,7 @@ def runTrack(liveImage,objectArray,goal):
     # 声明中间变量 Person
     person = None
     # 确定全局阈值
-    stand_acc = 0.6859
+    stand_acc = 0.7859
     # 图像复制（避免画框后阻碍获取模板）
     image_origin = copy.copy(image_np)
 
@@ -199,10 +199,10 @@ def main():
     rclpy.init()
     # 构建相关节点    
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'],'ObjectFlag')
-    video = yf_node.YF_CompressedImage(nodeName['Video'],'Video')
+    video = yf_node.YF_Image_PY(nodeName['Video'],'Video')
     goal = yf_node.YF_Goal(nodeName['Goal'],'Goal')
     cost = yf_node.YF_CostMap(nodeName["CostMap"],"CostMap") 
-    showMap = yf_node.YF_CompressedImage(nodeName["ShowMap"],"ShowMap")   
+    showMap = yf_node.YF_CompressedImage(nodeName["ShowMap"],"ShowMap")  # YF_CompressedImage YF_Image_PY
     #   set init flag = 101
     flag.publishMsg(101)    
     # 广播节点的首次初始化
@@ -221,6 +221,8 @@ def main():
     videoCache = None
     frozenFrame = False
     trackTarget = False
+
+    patient = 0
     while 1:  
         # 运行数据捕捉: become target only for debug     
         zed.getData()
@@ -264,7 +266,14 @@ def main():
             obj = objectCache[objIdx]
             runTargetSet(obj,videoCache,goal)
         elif 100 > signal > 0 and trackTarget:
+            if len(objectArray) == 0:
+                patient += 1
+                if patient >= 20:
+                    trackTarget = not False
+                    flag.publishMsg(101) 
+                    continue
             target,liveVideo = runTrack(liveImage, objectArray, goal)
+            patient = 0
         else:
             print("Waiting User select target")
             continue

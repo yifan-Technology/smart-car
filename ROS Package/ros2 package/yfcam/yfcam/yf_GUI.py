@@ -53,10 +53,10 @@ class GUI():
 
     def set_Scale(self):
 		# Scale in column 4
-        tk.Scale(self.root, orient='vertical', from_=200, to=0, width=15, length=550, tickinterval=100, command=self.set_speed
-            ).grid(row=1, column=11, padx=2, pady=2, columnspan=1, rowspan=4)
-        tk.Scale(self.root, orient='vertical', from_=250, to=0, width=15, length=550, tickinterval=100, command=self.set_rotate
-            ).grid(row=1, column=12, padx=2, pady=2, columnspan=1, rowspan=4)
+        tk.Scale(self.root, orient='horizontal', from_=0, to=200, width=15, length=2400, tickinterval=100, command=self.set_speed
+            ).grid(row=6, column=2, padx=2, pady=2, columnspan=12, rowspan=1)
+        tk.Scale(self.root, orient='horizontal', from_=0, to=250, width=15, length=2400, tickinterval=100, command=self.set_rotate
+            ).grid(row=7, column=2, padx=2, pady=2, columnspan=12, rowspan=1)
 
     def updata_vars(self,real):        
         self.Var_SollSpeed0.set(str(self.sollspeed[0]))
@@ -88,9 +88,9 @@ class GUI():
         tk.Label(self.root, text="右后",width=15
             ).grid(row=2, column=5, padx=2, pady=2)
         tk.Label(self.root, text="加速度",width=15
-            ).grid(row=5, column=11, padx=2, pady=2)
+            ).grid(row=6, column=1, padx=2, pady=2)
         tk.Label(self.root, text="转速差",width=15
-            ).grid(row=5, column=12, padx=2, pady=2)
+            ).grid(row=7, column=1, padx=2, pady=2)
         tk.Label(self.root, text="请选择跟踪目标（输入序号）： ",width=30
             ).grid(row=5, column=1, padx=2, pady=2, columnspan=2)
 
@@ -250,8 +250,8 @@ def main(args=None):
     init()
     rclpy.init()  
 
-    video = yf_node.YF_CompressedImage(nodeName['Video'],'Video')     
-    showMap = yf_node.YF_CompressedImage(nodeName["ShowMap"],"ShowMap")
+    video = yf_node.YF_Image_PY(nodeName['Video'],'Video')     
+    showMap = yf_node.YF_CompressedImage(nodeName["ShowMap"],"ShowMap") #YF_CompressedImage
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'],'ObjectFlag')
     real = yf_node.YF_RealSpeed(nodeName['RealSpeed'],'RealSpeed')
     soll = yf_node.YF_SollSpeed(nodeName['SollSpeed'],'SollSpeed')
