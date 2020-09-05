@@ -26,8 +26,8 @@ class GUI():
         photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(fakeImg)).convert('RGB'))
         
         
-        self.sollspeed = [0.0,0.0,0.0,0.0]
-        self.realspeed = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
+        self.sollspeed = [0.0, 0.0, 0.0, 0.0]
+        self.realspeed = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         self.liveVideo = photo
         self.costMap = photo    
@@ -183,12 +183,12 @@ class GUI():
     # direction
     def left_front(self):
         currentSpeed = self.sollspeed
-        self.sollspeed = [currentSpeed[0]+self.rotate,currentSpeed[1],currentSpeed[2]+self.rotate,currentSpeed[3]]
+        self.sollspeed = [currentSpeed[0]-self.rotate,currentSpeed[1],currentSpeed[2]-self.rotate,currentSpeed[3]]
         self.nodeSoll.publishMsg(self.sollspeed)        
         rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def direct_front(self):
         currentSpeed = self.sollspeed  
-        self.sollspeed = [currentSpeed[0]+self.speed,currentSpeed[1]-self.speed,currentSpeed[2]+self.speed,currentSpeed[3]-self.speed]
+        self.sollspeed = [currentSpeed[0]+self.speed,currentSpeed[1]+self.speed,currentSpeed[2]+self.speed,currentSpeed[3]+self.speed]
         self.nodeSoll.publishMsg(self.sollspeed)        
         rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def right_front(self):
@@ -215,12 +215,12 @@ class GUI():
         
     def left_back(self):   
         currentSpeed = self.sollspeed     
-        self.sollspeed = [currentSpeed[0]-self.rotate,currentSpeed[1],currentSpeed[2]-self.rotate,currentSpeed[3]]
+        self.sollspeed = [currentSpeed[0]+self.rotate,currentSpeed[1],currentSpeed[2]+self.rotate,currentSpeed[3]]
         self.nodeSoll.publishMsg(self.sollspeed)        
         rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def direct_back(self):
         currentSpeed = self.sollspeed
-        self.sollspeed = [currentSpeed[0]-self.speed,currentSpeed[1]+self.speed,currentSpeed[2]-self.speed,currentSpeed[3]+self.speed]
+        self.sollspeed = [currentSpeed[0]-self.speed,currentSpeed[1]-self.speed,currentSpeed[2]-self.speed,currentSpeed[3]-self.speed]
         self.nodeSoll.publishMsg(self.sollspeed)        
         rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
     def right_back(self):
