@@ -122,7 +122,7 @@ def main(args=None):  # main Funktion
         if signal == 101:
             print("Waiting for a Target")
             continue
-        if signal.tolist() > 0:
+        if signal.tolist() > 0 and signal.tolist() < 101:
             rclpy.spin_once(goal.node,timeout_sec=0.01) 
             ziel = goal.subMsg
             if ziel is None:

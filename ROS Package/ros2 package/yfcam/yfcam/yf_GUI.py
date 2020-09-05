@@ -255,6 +255,7 @@ def main(args=None):
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'],'ObjectFlag')
     real = yf_node.YF_RealSpeed(nodeName['RealSpeed'],'RealSpeed')
     soll = yf_node.YF_SollSpeed(nodeName['SollSpeed'],'SollSpeed')
+    soll_from_web = yf_node.YF_SUB_SollSpeed_WEB(nodeName['SollSpeedWEB'],'SollSpeedWEB')
     
     gui = GUI(flag,soll) 
 
@@ -263,6 +264,7 @@ def main(args=None):
         rclpy.spin_once(video.node,timeout_sec=0.001)
         rclpy.spin_once(showMap.node,timeout_sec=0.001)
         rclpy.spin_once(flag.node,timeout_sec=0.001) 
+        rclpy.spin_once(soll_from_web.node,timeout_sec=0.001) 
 
         if video.subMsg is None:
             print("Waiting for video")
@@ -278,6 +280,13 @@ def main(args=None):
         cv2PIL(video,gui.videoLabel)
         cv2PIL(showMap,gui.costMapLabel)
         gui.updata_vars(real)
+
+        idx = self.targetIdx.tolist()
+        if idx == 101:
+            self.sollspeed = [soll_from_web.subMsg[0],soll_from_web.subMsg[1],soll_from_web.subMsg[2],soll_from_web.subMsg[3]]
+            self.nodeSoll.publishMsg(self.sollspeed)        
+            rclpy.spin_once(self.nodeSoll.node,timeout_sec=0.01)
+
         GUI.root.update()
     
     # 杀死所有订阅节点

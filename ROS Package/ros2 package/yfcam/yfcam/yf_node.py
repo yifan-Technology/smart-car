@@ -13,7 +13,7 @@ from std_msgs.msg import Int8MultiArray
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import PoseStamped
 
-# from geometry_msgs.msg import Twist 
+from geometry_msgs.msg import Twist 
 import ros2_numpy
 
 class YF_Node():
@@ -174,3 +174,48 @@ class YF_ObjectFlag(YF_Node):
     def publishMsg(self,income):
         self._pubMsg.data = income
         self.pub.publish(self._pubMsg)     
+
+BIG_SPEED = 800
+SMALL_SPEED = 400
+
+class YF_SUB_SollSpeed_WEB(YF_Node):
+    def __init__(self):
+        super().__init__(nodeName,name, Twist)
+        self._nodeSoll = rclpy.create_node('WEBSollSpeedSUB')
+        self._subMsg = Twist()
+        self._subMsg = [0.0,0.0,0.0,0.0]
+
+    def subscription(self, msg):
+        print("SollSpeed from Web: ",msg)
+
+        linear_speed, angualr_speed = msg.linear.x, msg.angular.z
+
+        if linear_speed > 0:
+            # move forwrd
+            left_front,right_front,left_back,right_back = BIG_SPEED, BIG_SPEED, BIG_SPEED, BIG_SPEED
+            if angualr_speed > 0:
+                # move forward and turn left at same time
+                left_front, left_back = SMALL_SPEED, SMALL_SPEED
+            else:
+                # move forward and turn right at same time
+                right_front, right_back = SMALL_SPEED, SMALL_SPEED
+        elif linear_speed < 0:
+            #move backward
+            left_front,right_front,left_back,right_back = -BIG_SPEED, -BIG_SPEED, -BIG_SPEED, -BIG_SPEED
+            if angualr_speed < 0:
+                # move backward and turn left at same time
+                left_front, left_back = -SMALL_SPEED, -SMALL_SPEED
+            else:
+                # move backward and turn right at same time
+                right_front, right_back = -SMALL_SPEED, -SMALL_SPEED
+         else:
+            # dont move and maybe turn left or turn right
+            left_front,right_front,left_back,right_back = 0, 0, 0, 0
+            if angualr_speed > 0:
+                # turn left
+                right_front, right_back = BIG_SPEED, BIG_SPEED
+            else:
+                # turn right
+                left_front, left_back = BIG_SPEED, BIG_SPEED
+
+        self._subMsg = [left_front,right_front,left_back,right_back]

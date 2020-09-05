@@ -27,3 +27,4 @@ RosTopic:
     SollSpeed: '/soll_speed'
     ObjectFlag: '/yf_camera/flag'
     ShowMap: '/yf_camera/costmap'
+    SollSpeedWEB: '/SollSpeed'
