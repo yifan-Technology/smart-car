@@ -17,7 +17,7 @@ class DWA_Controller():
         self.x0 = 0.01
         self.a = 0.661 / 2
         self.b = 0.661 / 2
-        self.c = 0.504 / 2
+        self.c = 0.504 / 2  # 0.504/2
         self.h = 0.4
         self.r = 0.095
         self.x = np.array([2.5, 0., np.pi / 2, 0.0, 0.0])
@@ -30,30 +30,61 @@ class DWA_Controller():
         # R_a = 1
         # L_a = 0.01
         # J = 1 / 12 * 0.4 * r ** 2
-        self.max_speed = 0.3 # [m/s]
-        self.min_speed = -0.3  # [m/s]
-        self.max_yaw_rate = 360.0 * np.pi / 180.0  # [rad/s]
-        self.max_accel = 5.0  # [m/ss]
-        self.max_delta_yaw_rate = 540.0 * np.pi / 180.0  # [rad/ss]
+        self.max_speed = 1.3  # [m/s]
+        self.min_speed = -0.8  # [m/s]
+        self.max_yaw_rate = 180.0 * np.pi / 180.0  # [rad/s]
+        self.max_accel = 4.0  # [m/ss]
+        self.max_delta_yaw_rate = 360.0 * np.pi / 180.0  # [rad/ss]
         self.v_resolution = 0.2  # [m/s]
         self.yaw_rate_resolution = 15. * np.pi / 180.0  # [rad/s]
-        self.dt = 0.1  # [s] Time tick for motion prediction
-        self.predict_time = 0.5  # [s]  less and more flexible
+        self.dt = 0.2  # [s] Time tick for motion prediction
+        self.predict_time = 2.5  # [s]  less and more flexible
         self.to_goal_cost_gain = 0.3
         self.speed_cost_gain = 0.394
-        self.obstacle_cost_gain = 1.29
+        self.obstacle_cost_gain = 0.6
         self.dist_to_goal = 1e10
         self.GOAL_ARRIVAED = False
         self.RESET_STATE = False
-
+        self.HUMAN_SHAPE = False
+        self.MAP_TO_OBCOORD = True
+        self.MEASURE_TIME = False
+        self.dead_count = 0
         # Also used to check if goal is reached in both types
-        self.robot_radius = 1.5  # [m] for collision check
+        self.robot_radius = 1.  # [m] for collision check
         self.robot_width = 2 * self.c + 0.1  # [m] for collision check
         self.robot_length = self.a + self.b + 0.1  # [m] for collision check
-        self.target_zone = 1.2
+        self.goal_range_1 = 10.
+        self.goal_range_2 = 2.
 
     def obmap2coordinaten(self, obmap, res):
-       return np.argwhere(obmap == 1) * res
+        return np.argwhere(obmap == 1) * res
+
+    def inverse_transforamtion(self, goal, ob_cood, res):
+        theta = self.x[2] - np.pi / 2
+        Rot_i2b = np.array([[np.cos(theta), np.sin(theta)],
+                            [-np.sin(theta), np.cos(theta)]])
+
+        goal_i = goal - self.x[:2]
+        goal_b = Rot_i2b.dot(goal_i) + np.array([2.5, 0.])
+        print("goal:", goal_b)
+
+        ob_b = np.zeros((np.shape(ob_cood)))
+        ob_i = ob_cood[:, :2] - self.x[:2]
+        for i in range(len(ob_b)):
+            rotob = Rot_i2b.dot(ob_i[i,:2])
+            ob_b[i, :2] = rotob + np.array([2.5, 0.])
+
+        return goal_b, ob_b
+
+    def inverse_inverse(self, goal):
+        theta = -np.pi / 2 + self.x[2]
+        Rot_b2i = np.array([[np.cos(theta), np.sin(theta)],
+                            [-np.sin(theta), np.cos(theta)]])
+
+        goal_i = Rot_b2i.dot(goal - np.array([2.5, 0.])) + self.x[:2]
+
+        print('goal before transforamtion:', goal_i)
+        return goal_i
 
     def koordianten_transformation(self, wheel_speed, theta):
         omega_l = wheel_speed[0]
@@ -70,7 +101,7 @@ class DWA_Controller():
         return inertial_velo, vx, omega
 
     def speed_change(self, u_in, mode):
-        speed_gain = 60 / (2 * np.pi) * 3591/187
+        speed_gain = 60 / (2 * np.pi) * 3591 / 187
         if mode == 'MOTOR_TO_PC':
             return u_in / speed_gain
         elif mode == 'PC_TO_MOTOR':
@@ -82,40 +113,54 @@ class DWA_Controller():
         """
         state = np.copy(x_pre)
         # print('motor speed is',motor_ist)
-        u_is = self.speed_change(motor_ist, 'MOTOR_TO_PC')
+        u_ist = self.speed_change(motor_ist, 'MOTOR_TO_PC')
+        _, vx_ist, omega_ist = self.koordianten_transformation(u_ist, state[2])
         # print('input speed is',u_ist)
+
         if self.RESET_STATE:
-             state[:3] = np.array([2.5, 0., np.pi / 2])
-             state[3:] = u_is
+            state[:3] = np.array([2.5, 0., np.pi / 2])
+            state[3:] = np.array([vx_ist, omega_ist])
 
         dw = self.calc_dynamic_window(state)
-        oblist = self.obmap2coordinaten(obstacle, res)
-#        t1 = time.time()
-        u_cal, traj_soll, all_traj = self.calc_control_and_trajectory(state, dw, goal, oblist)
-        
-        vtrans = np.array([[1, -self.c], [1, self.c]]) / self.r
 
-        u_should = np.dot(vtrans, u_cal)
-        # print('output speed untransformed is',u_soll)
-        motor_soll = self.speed_change(u_should,'PC_TO_MOTOR')
-        
+        ob_list = obstacle
+
+        if self.HUMAN_SHAPE:
+            ob_list = np.vstack((ob_list, human_obmap(target)))
+
+        u_cal, traj_soll, all_traj = self.calc_control_and_trajectory(state, dw, goal, ob_list)
+        vtrans = np.array([[1, -self.c], [1, self.c]]) / self.r
+        u_soll = np.dot(vtrans, u_cal)
+        motor_soll = self.speed_change(u_soll, 'PC_TO_MOTOR')
+
         # check reaching goal
         dist_head = self.a * np.array([np.cos(state[2]), np.sin(state[2])])
-        self.dist_to_goal = np.linalg.norm(dist_head+ state[:2] - goal)  # generate u = wheel_speed_soll
+        self.dist_to_goal = np.linalg.norm(dist_head + state[:2] - goal)  # generate u = wheel_speed_soll
 
-#        if np.linalg.norm(u_should) < 5.0 and self.dist_to_goal >= self.robot_radius:
-#            motor_soll = np.array([400., -400.])
-#            print('deadzone checked')
+        if self.dist_to_goal >= self.goal_range_1:
+            self.to_goal_cost_gain = 0.3
 
-        if np.linalg.norm(u_is) < 5.0 and self.dist_to_goal <= self.target_zone:
+        elif self.dist_to_goal < self.goal_range_1 and self.dist_to_goal >= self.goal_range_2:
+            self.to_goal_cost_gain = 0.21
+        else:
+            self.to_goal_cost_gain = 0.6
+
+        # print('cost param', self.to_goal_cost_gain)
+        if np.linalg.norm(motor_soll) < 400.0 and self.dist_to_goal >= self.robot_radius:
+            motor_soll = np.array([600., -600.])
+            self.dead_count += 1
+            if self.dead_count % 10 == 0:
+                np.random.shuffle(motor_soll)
+
+            print('deadzone checked')
+
+        if self.dist_to_goal <= self.robot_radius:
             print("Goal!!")
             self.GOAL_ARRIVAED = True
 
-        self.x = self.motion(self.x, u_is, self.dt)
+        self.x = self.motion(state, u_ist, self.dt)
 
         return motor_soll, traj_soll, all_traj
-
-
 
     def motion(self, state, u, dt):
         """
@@ -156,7 +201,6 @@ class DWA_Controller():
         """
         predict trajectory with an input
         """
-#        t1 = time.time()
         speed_soll = np.array([v_soll, omega_soll])
         x = np.copy(x_init)
         trajectory = np.copy(x)
@@ -165,14 +209,11 @@ class DWA_Controller():
         wheel_speed = np.dot(Vtrans, speed_soll)
         # timeline = np.arange(self.dt,self.predict_time + self.dt, self.dt)
         # trajectory = self.motion_traj(x, wheel_speed, timeline)
-        
         while count_time <= self.predict_time:  # now is 2s
             x = self.motion(x, wheel_speed, self.dt)
             trajectory = np.vstack((trajectory, x))
             count_time += self.dt
-#        print('predic cal time',time.tim
 
-#        print('traj num',trajectory.shape)
         return trajectory
 
     def calc_control_and_trajectory(self, state, dw, goal, obstacle):
@@ -187,7 +228,7 @@ class DWA_Controller():
         # evaluate all trajectory with sampled input in dynamic window
         for v in np.arange(dw[0], dw[1], self.v_resolution):
             for omega in np.arange(dw[2], dw[3], self.yaw_rate_resolution):
-#                t1 = time.time()    
+
                 traj = self.predict_trajectory(x_init, v, omega)
                 all_traj.append(traj)
                 # calc cost
@@ -202,16 +243,14 @@ class DWA_Controller():
                     min_cost = final_cost
                     best_u = np.array([v, omega])
                     best_traj = traj
-#                print('loop cal time', time.time()-t1)
-#        print('v num', np.arange(dw[0], dw[1], self.v_resolution).shape)
-#        print('omega num', np.arange(dw[2], dw[3], self.yaw_rate_resolution).shape)
+
         return best_u, best_traj, all_traj
 
     def calc_obstacle_cost(self, trajectory, obstacle):
         """
             calc obstacle cost inf: collision
         """
-#        start = time.time()
+
         ox = obstacle[:, 0]  # (15,)
         oy = obstacle[:, 1]
         dx = trajectory[:, 0] - ox[:, None]  # 因为障碍物和轨迹点数量不等,所以增加一列来表示
@@ -240,16 +279,13 @@ class DWA_Controller():
         #    if np.array(rho <= self.robot_radius).any():
         #        return float("Inf")
         min_r = np.min(rho)
-#        print('obstacle calcu time:',time.time()-start)
-#        print('calcu points num:',local_ob.shape)
         # print(min_r)
-        return 1.0 / min_r  # OK
+        return 1.0 / min_r ** 2  # OK
 
     def calc_to_goal_cost(self, trajectory, goal):
         """
             calc to goal cost with angle difference
         """
-
         dx = goal[0] - trajectory[-1, 0]
         dy = goal[1] - trajectory[-1, 1]
         error_angle = np.arctan2(dy, dx)
@@ -259,24 +295,24 @@ class DWA_Controller():
         return cost
 
 
-def human_obmap(goal, Obmap, scale):
-    shape = np.shape(Obmap)
-    cx = int(goal[0] / scale)
-    cy = int(goal[1] / scale)
-    testmap = np.zeros((shape[0], shape[1]))
-    human_length = int(0.35 / scale)
-    human_width = int(0.2 / scale)
-
-    for i in np.linspace(0, 2 * np.pi, 100):
-        x = (cx + human_length * np.cos(i)).astype(np.uint8)
-        y = (cy +human_width + human_width * np.sin(i)).astype(np.uint8)
-        testmap[x][y] = 1
-    Obmap += testmap.astype(np.uint8)
-    return Obmap
+def human_obmap(goal):
+    cx = int(goal[0])
+    cy = int(goal[1])
+    human_length = 0.35
+    human_width = 0.2
+    i = np.linspace(0, 2 * np.pi, 10)
+    x = (cx + human_length - human_length * np.cos(i))
+    y = (cy + human_width - human_width * np.sin(i))
+    human_shape = np.vstack((x, y)).T
+    return human_shape
 
 
-def plot_arrow(x, y, yaw, length=1.0, width=0.3):  # pragma: no cover
-    plt.arrow(x, y, length * np.cos(yaw), length * np.sin(yaw),
+def plot_arrow(dwa, length=0.6, width=0.3):
+    dist_head = dwa.a * np.array([np.cos(dwa.x[2]), np.sin(dwa.x[2])])  # pragma: no cover
+    x = dwa.x[0] + dist_head[0]
+    y = dwa.x[1] + dist_head[1]
+    # print('current head position:({:.2f},{:.2f})'.format(x, y))
+    plt.arrow(x, y, length * np.cos(dwa.x[2]), length * np.sin(dwa.x[2]),
               head_length=width, head_width=width)
     plt.plot(x, y)
 
@@ -307,8 +343,16 @@ def plot_robot(x, y, yaw, dwa_config):  # pragma: no cover
     #    plt.plot([x, out_x], [y, out_y], "-k")
 
 
+def ob_to_obmap(obkood, res):
+    map0 = np.zeros((500, 500))
+    obkood += np.array([2., 2.])
+    index = (obkood / res).astype(int)
+    map0[index[:, 0], index[:, 1]] = 1
+    return map0
+
+
 if __name__ == '__main__':
-    target = np.array([2.5, 4.0])
+
     # ob = np.array([[-1, -1],
     #                [-1.5, -1.5],
     #                [-2, -2],
@@ -324,61 +368,89 @@ if __name__ == '__main__':
     #                [8.0, 9.0],
     #                [7.0, 9.0],
     #                [8.0, 10.0],
-    #                [9.0, 11.0],obstacle_loc
+    #                [9.0, 11.0],
     #                [12.0, 13.0],
     #                [12.0, 12.0],
     #                [15.0, 15.0],
     #                [13.0, 13.0]
     #                ])
-    obmap = np.load('test_map.npy')
+    obmap = np.load('obstacle_loc.npy')
 
     test_dwa = DWA_Controller()
     trajectory_ist = test_dwa.x
     print(" start!!")
-
-    map_range = 5.  #[m/s]
+    target = np.array([3.5, 8.0])
+    map_range = 15.
     map_pixel = 100
     resolution = map_range / map_pixel
-#    ob = human_obmap(target, obmap, resolution)
-    ob = obmap
+    # ob = ob_to_obmap(ob, resolution)
+    # obmap = np.zeros((map_pixel, map_pixel))
+    # obmap[0, 0] = 1
+    # obmap = np.load('obstacle_loc.npy')
+    oblist = test_dwa.obmap2coordinaten(obmap, resolution)
+    # oblist = ob
     wheelspeed_ist = np.array([0., 0.])
-    # test_dwa.RESET_STATE = True
+    test_dwa.RESET_STATE = True
     # test_dwa.show_animation = False
-    while True:
-#            u_soll[1] = float(int(u_soll[1]))
-        start = time.time()
-        wheelspeed_soll, trajectory_soll, all_trajectory = test_dwa.dwa_control(wheelspeed_ist, test_dwa.x, target, ob,
-                                                                               resolution)
-        # input ist_wheel_speed and set test_dwa.RESET_STATE = True
+    # test_dwa.MEASURE_TIME =True
+    goal_traj = np.copy(target)
+    goal_ori_traj = np.copy(target)
 
-        print('current wheel speed soll ', wheelspeed_soll)
+    while True:
+        start = time.time()
+        wheelspeed_soll, trajectory_soll, all_trajectory = test_dwa.dwa_control(wheelspeed_ist, test_dwa.x, target,
+                                                                                oblist,
+                                                                                resolution)
+        # print('current state:', test_dwa.x)
+        if test_dwa.RESET_STATE:
+            target, oblist = test_dwa.inverse_transforamtion(target, oblist, resolution)
+            goal_reset = test_dwa.inverse_inverse(target)
+            goal_traj = np.vstack((goal_traj, target))
+            # goal_ori_traj = np.vstack((goal_ori_traj, goal_reset))
+
+        # print('current wheel speed soll ', wheelspeed_soll)
         wheelspeed_ist = wheelspeed_soll
-#            u_soll[1] = float(int(u_soll[1]))
         trajectory_ist = np.vstack((trajectory_ist, test_dwa.x))
-        obmap_display = test_dwa.obmap2coordinaten(ob, resolution)
-        print('elasped time:',time.time()- start)
+
+        if test_dwa.HUMAN_SHAPE:
+            oblist = np.vstack((oblist, human_obmap(target)))
+
+        if test_dwa.MEASURE_TIME:
+            print('elasped time:', time.time() - start)
+
         if test_dwa.show_animation:
             plt.cla()
+            figManager = plt.get_current_fig_manager()
+            figManager.window.showMaximized()
             # for stopping simulation with the esc key.
             plt.gcf().canvas.mpl_connect(
                 'key_release_event',
                 lambda event: [exit(0) if event.key == 'escape' else None])
 
             plt.plot(test_dwa.x[0], test_dwa.x[1], "xr")
-            plt.plot(obmap_display[:, 0], obmap_display[:, 1], "sk")
+            plt.plot(oblist[:, 0], oblist[:, 1], "sk")
+
             for i in range(len(all_trajectory)):
                 plt.plot(all_trajectory[i][:, 0], all_trajectory[i][:, 1], "-c")
-            print('traj num:',np.shape(all_trajectory))
+            # print(trajectory_soll)
             plt.plot(trajectory_soll[:, 0], trajectory_soll[:, 1], "-g")
             plot_robot(test_dwa.x[0], test_dwa.x[1], test_dwa.x[2], test_dwa)
-            plot_arrow(test_dwa.x[0], test_dwa.x[1], test_dwa.x[2])
+            plot_arrow(test_dwa)
+
+            if test_dwa.RESET_STATE:
+                plt.plot(goal_traj[:, 0], goal_traj[:, 1], color='purple')
+                # plt.plot(goal_ori_traj[:, 0], goal_ori_traj[:, 1], color='orange')
+            else:
+                plt.plot(trajectory_ist[:, 0], trajectory_ist[:, 1], "-r")
+
             plt.plot(target[0], target[1], "^r")
             plt.axis("equal")
             plt.grid(True)
-            plt.pause(0.0001)
+            plt.pause(0.1)
 
         if test_dwa.GOAL_ARRIVAED:
             break
+
     print("Done")
     print('dwa process time:', time.time() - start)
     if test_dwa.show_animation:
