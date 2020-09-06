@@ -195,6 +195,7 @@ def runTrack(liveImage,objectArray,goal,flag):
     else :
         if patient >= 3:
             flag.publishMsg(100) 
+        patient += 1
 
                             
     
