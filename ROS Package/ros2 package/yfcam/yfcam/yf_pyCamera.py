@@ -69,6 +69,8 @@ def init():
     # 全局化节点名称
     global nodeName
     global FPS
+    global patient 
+    patient = 0
     # 读取yaml文件
     with open("/home/yf/yifan/config.yaml","r") as f:
         config=yaml.load(f)        
@@ -136,7 +138,7 @@ def runTargetSet(obj,videoCache,goal):
     goal.publishMsg(goal.pubMsg)
     rclpy.spin_once(goal.node,timeout_sec=0.01)
 
-def runTrack(liveImage,objectArray,goal): 
+def runTrack(liveImage,objectArray,goal,flag): 
     # 声明 & 获取： 目标、图像、物体信息
     target = None
     image_np = liveImage
@@ -169,6 +171,7 @@ def runTrack(liveImage,objectArray,goal):
             
     # 若找到匹配目标后
     if person is not None:
+        patient = 0
         # 对应键值设置
         goal.pubMsg.pose.position.x = person[2].position[0]
         goal.pubMsg.pose.position.y = person[2].position[1]
@@ -189,6 +192,11 @@ def runTrack(liveImage,objectArray,goal):
         cv2.circle(image_np, (int((person[0][0] + person[1][0]) / 2),
                             int((person[0][1] + person[1][1]) / 2)), 
                             2, (0,0,255), 3)  
+    else :
+        if patient >= 3:
+            flag.publishMsg(100) 
+
+                            
     
     return target,image_np
             
@@ -222,7 +230,6 @@ def main():
     frozenFrame = False
     trackTarget = False
 
-    patient = 0
     while 1:  
         # 运行数据捕捉: become target only for debug     
         zed.getData()
@@ -259,21 +266,14 @@ def main():
             trackTarget = False
         elif signal == 0 and frozenFrame:
             continue
-        elif 100 > signal > 0 and not trackTarget:
+        elif 100 >= signal > 0 and not trackTarget:
             frozenFrame = False            
             trackTarget = True
             objIdx = flag.subMsg.tolist()-1
             obj = objectCache[objIdx]
             runTargetSet(obj,videoCache,goal)
-        elif 100 > signal > 0 and trackTarget:
-            if len(objectArray) == 0:
-                patient += 1
-                if patient >= 20:
-                    trackTarget = not False
-                    flag.publishMsg(101) 
-                    continue
-            target,liveVideo = runTrack(liveImage, objectArray, goal)
-            patient = 0
+        elif 100 >= signal > 0 and trackTarget:
+            target,liveVideo = runTrack(liveImage, objectArray, goal,flag)
         else:
             print("Waiting User select target")
             continue

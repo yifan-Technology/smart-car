@@ -75,9 +75,6 @@ def controlalgorithm(goal_x, goal_y):
     global target_x
     global target_y
     global patient
-    if goal_x == target_x and target_y == goal_y:
-        v = 0
-        omega = 0
     
     target_x = goal_x
     target_y = goal_y
@@ -134,7 +131,7 @@ def main(args=None):  # main Funktion
         if signal == 101:
             print("Waiting for a Target")
             continue
-        if signal.tolist() > 0:
+        if 100 > signal.tolist() > 0:
             rclpy.spin_once(goal.node,timeout_sec=0.01) 
             ziel = goal.subMsg
             if ziel is None:
@@ -156,7 +153,14 @@ def main(args=None):  # main Funktion
             t = time.time() 
         
             time.sleep(0.05)
-        else:            
+        elif signal.tolist() == 100:
+            # TODO: target lost            
+            print("speed: ", wheel_speed)
+            soll.publishMsg([0.,0.,0.,0.])
+            print("Target lost, wait for new target")  
+            time.sleep(0.1)  
+        else:
+            print("Waiting User select target")
             continue
 
     goal.destroy_node()  # eben vom Oben
