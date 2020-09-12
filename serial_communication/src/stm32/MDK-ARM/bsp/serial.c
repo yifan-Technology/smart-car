@@ -1,6 +1,8 @@
 #include "serial.h"
 
-
+extern float set_spd[4];
+extern float soll_speed[4];
+extern float step_add[4];
 uint8_t rData[18];  //  for saving RX Data
 uint8_t rDataCount = 0;  //  count Data bytes
 
@@ -10,19 +12,19 @@ void updateRSRA(float *real_left_front_rs, float *real_left_front_ra, float *rea
   // get current rotate spped and rotate angle
   
   *real_left_front_rs = moto_chassis[0].speed_rpm;
-  *real_left_front_ra = pid_spd[0].pos_out;
+  *real_left_front_ra = moto_chassis[0].last_angle;
 
   *real_right_front_rs = -moto_chassis[2].speed_rpm;
-  *real_right_front_ra = pid_spd[2].pos_out;
+  *real_right_front_ra = -moto_chassis[2].last_angle;
   
   *real_left_back_rs = moto_chassis[1].speed_rpm;
-  *real_left_back_ra = pid_spd[1].pos_out;
+  *real_left_back_ra = moto_chassis[1].last_angle;
 
   *real_right_back_rs = -moto_chassis[3].speed_rpm;
-  *real_right_back_ra = pid_spd[3].pos_out;
+  *real_right_back_ra = -moto_chassis[3].last_angle;
 }
 
-void send(float *set_spd, float *real_left_front_rs, float *real_left_front_ra, float *real_right_front_rs, float *real_right_front_ra, float *real_left_back_rs, float *real_left_back_ra, float *real_right_back_rs, float *real_right_back_ra)
+void send(float *real_left_front_rs, float *real_left_front_ra, float *real_right_front_rs, float *real_right_front_ra, float *real_left_back_rs, float *real_left_back_ra, float *real_right_back_rs, float *real_right_back_ra)
 {	 
 	if (rDataFlag==1) {
 		//HAL_UART_Transmit(&huart6, rDataBuffer, sizeof(rDataBuffer), 0xffff);
@@ -57,6 +59,10 @@ void send(float *set_spd, float *real_left_front_rs, float *real_left_front_ra, 
     set_spd[2] = (*soll_right_front_rs);
 		set_spd[3] = (*soll_right_back_rs);
 		
+//		for (int i = 0; i < 4; i++) {
+//			step_add[i] = (soll_speed[i] - set_spd[i]) / 5;
+//		}
+//		
 		updateRSRA(real_left_front_rs, real_left_front_ra, real_right_front_rs, real_right_front_ra, real_left_back_rs, real_left_back_ra, real_right_back_rs, real_right_back_ra);
 
 		uint8_t send_info[] = {0x61,0x61,0x61,0x61, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x62,0x62,0x62,0x62};

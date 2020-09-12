@@ -9,11 +9,26 @@
 #include "mytype.h"
 #include "serial.h"
 
+#define ABS(x)		((x>0)? (x): (-x)) 
+
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void Error_Handler(void);
 void MX_FREERTOS_Init(void);
 
+int du_count[] = {0, 0, 0, 0};
+int huifu_count[] = {0, 0, 0, 0};
+float temp_soll_speed[] = {0, 0, 0, 0};
+int count = 0;
+unsigned char want_send[] = "\r\n hello world!";
+void vuser_send_string(UART_HandleTypeDef *handle, unsigned char *ubyte)
+{
+	while(*ubyte)
+	{
+		HAL_UART_Transmit(handle, ubyte, 1, 0xff);
+		ubyte++;
+	}
+}
 
 void init()
 {
@@ -33,7 +48,10 @@ void init()
   //osKernelStart();
 }
 
+int protection_count = 0;
 float set_spd[4];
+float soll_speed[4];
+float step_add[4];
 float real_left_front_rs = 0.0;  
 float real_left_front_ra = 0.0; 
 float real_right_front_rs = 0.0;          
@@ -50,7 +68,7 @@ int main(void)
 	
 	for(int i=0; i<4; i++)
 	{
-		PID_struct_init(&pid_spd[i], POSITION_PID, 20000, 20000,
+		PID_struct_init(&pid_spd[i], POSITION_PID, 16384, 16384,
 									1.5f,	0.1f,	0.0f	);  //4 motos angular rate closeloop.
 	}
 	
@@ -78,40 +96,57 @@ int main(void)
 	bool protection = false; 
   while (1)
   {
-		send(set_spd, &real_left_front_rs, &real_left_front_ra, &real_right_front_rs, &real_right_front_ra, &real_left_back_rs, &real_left_back_ra, &real_right_back_rs, &real_right_back_ra);
-		
-		for(int i=0; i<2; i++)
-		{
-			pid_calc(&pid_spd[i], moto_chassis[i].speed_rpm, set_spd[i]);
-		}
-		
-		for(int i=2; i<4; i++)
-		{
-			pid_calc(&pid_spd[i], moto_chassis[i].speed_rpm, -set_spd[i]);
-		}
+		send(&real_left_front_rs, &real_left_front_ra, &real_right_front_rs, &real_right_front_ra, &real_left_back_rs, &real_left_back_ra, &real_right_back_rs, &real_right_back_ra);
 		
 		for (int i = 0; i < 4; i++) {
 			
-			if ((moto_chassis[i].speed_rpm > 2000) || (moto_chassis[i].speed_rpm < -2000)) {
+			if ((moto_chassis[i].speed_rpm > 4000) || (moto_chassis[i].speed_rpm < -4000)) {
 				protection = true;
 				break;
-			}
+			} 
 		}
 		
 		if (protection) {
 			set_moto_current(&hcan1, 0, 0, 0, 0);
+			for (int i = 0; i < 4; i++) {
+				pid_calc(&pid_spd[i],0, 0);
+				pid_spd[i].pos_out = 0;	
+				set_spd[i] = 0;
+				pid_spd[i].iout = 0;
+			}
+			
+			protection = false;
+
+			for (int i = 0; i < 4; i++) {
+				if (moto_chassis[i].speed_rpm <= -100.0 || moto_chassis[i].speed_rpm >= 100.0){ 				
+					protection = true;
+					break;
+				} 
+			}
+			
 		} else{
-			set_moto_current(&hcan1, pid_spd[0].pos_out, 
-									pid_spd[1].pos_out,
-									pid_spd[2].pos_out,
-									pid_spd[3].pos_out);
+				for (int i = 0; i < 4; i++) {
+					if (i < 2)
+					{
+						pid_calc(&pid_spd[i], moto_chassis[i].speed_rpm, set_spd[i]);
+					}
+					else
+					{
+						pid_calc(&pid_spd[i], moto_chassis[i].speed_rpm, -set_spd[i]);
+					}
+				}
+				set_moto_current(&hcan1, pid_spd[0].pos_out, 
+										pid_spd[1].pos_out,
+										pid_spd[2].pos_out,
+										pid_spd[3].pos_out);
 		}
-		HAL_Delay(10);
+		//HAL_Delay(10);
+		//vuser_send_string(&huart6, want_send);
 		
-//    HAL_Delay(5);
-//    TX_MODE();
-//    HAL_Delay(5);
-//		RX_MODE();
+			
+    HAL_Delay(10);
+		if (++count % 100 == 0)
+			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_7);
   }
 }
 
