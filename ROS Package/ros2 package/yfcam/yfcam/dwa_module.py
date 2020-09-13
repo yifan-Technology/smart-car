@@ -1,7 +1,6 @@
-"""
-Mobile robot motion planning sample with Dynamic Window Approach
-author: Atsushi Sakai (@Atsushi_twi), Göktuğ Karakaşlı TONGJUECEHEN
-"""
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -30,7 +29,7 @@ class DWA_Controller():
         # R_a = 1
         # L_a = 0.01
         # J = 1 / 12 * 0.4 * r ** 2
-        self.max_speed = 1.3  # [m/s]
+        self.max_speed = 0.8  # [m/s]
         self.min_speed = -0.8  # [m/s]
         self.max_yaw_rate = 180.0 * np.pi / 180.0  # [rad/s]
         self.max_accel = 4.0  # [m/ss]
@@ -38,8 +37,8 @@ class DWA_Controller():
         self.v_resolution = 0.2  # [m/s]
         self.yaw_rate_resolution = 15. * np.pi / 180.0  # [rad/s]
         self.dt = 0.2  # [s] Time tick for motion prediction
-        self.predict_time = 2.5  # [s]  less and more flexible
-        self.to_goal_cost_gain = 0.3
+        self.predict_time = 0.8  # [s]  less and more flexible
+        self.to_goal_cost_gain = 0.16
         self.speed_cost_gain = 0.394
         self.obstacle_cost_gain = 0.6
         self.dist_to_goal = 1e10
@@ -48,6 +47,7 @@ class DWA_Controller():
         self.HUMAN_SHAPE = False
         self.MAP_TO_OBCOORD = True
         self.MEASURE_TIME = False
+        self.TRANSFORM_MAP = False
         self.dead_count = 0
         # Also used to check if goal is reached in both types
         self.robot_radius = 1.  # [m] for collision check
@@ -59,32 +59,47 @@ class DWA_Controller():
     def obmap2coordinaten(self, obmap, res):
         return np.argwhere(obmap == 1) * res
 
-    def inverse_transforamtion(self, goal, ob_cood, res):
+    def inverse_transforamtion(self, goal, ob_cood):
         theta = self.x[2] - np.pi / 2
         Rot_i2b = np.array([[np.cos(theta), np.sin(theta)],
                             [-np.sin(theta), np.cos(theta)]])
 
         goal_i = goal - self.x[:2]
         goal_b = Rot_i2b.dot(goal_i) + np.array([2.5, 0.])
-        print("goal:", goal_b)
+        # print("goal:", goal_b)
 
-        ob_b = np.zeros((np.shape(ob_cood)))
-        ob_i = ob_cood[:, :2] - self.x[:2]
-        for i in range(len(ob_b)):
-            rotob = Rot_i2b.dot(ob_i[i,:2])
-            ob_b[i, :2] = rotob + np.array([2.5, 0.])
+        if self.TRANSFORM_MAP:
+            ob_b = np.zeros((np.shape(ob_cood)))
+            ob_i = ob_cood[:, :2] - self.x[:2]
+            for i in range(len(ob_b)):
+                rotob = Rot_i2b.dot(ob_i[i, :2])
+                ob_b[i, :2] = rotob + np.array([2.5, 0.])
+            return goal_b, ob_b
 
-        return goal_b, ob_b
+        else:
+            return goal_b, ob_cood
 
-    def inverse_inverse(self, goal):
-        theta = -np.pi / 2 + self.x[2]
-        Rot_b2i = np.array([[np.cos(theta), np.sin(theta)],
-                            [-np.sin(theta), np.cos(theta)]])
+    def clear_human_shape(self, goal, obstacle, res):
+        goal_inmap = np.array((goal / res), dtype=int)
+        x = goal_inmap[0]
+        y = goal_inmap[1]
+        xlim_l = np.clip(x - int(1 / res), 0, 99)
+        xlim_r = np.clip(x + int(1 / res), 0, 99)
+        ylim_l = np.clip(y - int(1 / res), 0, 99)
+        ylim_r = np.clip(y + int(1 / res), 0, 99)
+        if x - int(0.5 / res) >= 0 and y + int(0.5 / res) < 99:
+            obstacle[xlim_l:xlim_r, ylim_l:ylim_r] = 0
+        return obstacle
 
-        goal_i = Rot_b2i.dot(goal - np.array([2.5, 0.])) + self.x[:2]
-
-        print('goal before transforamtion:', goal_i)
-        return goal_i
+    # def inverse_inverse(self, goal):
+    #     theta = -np.pi / 2 + self.x[2]
+    #     Rot_b2i = np.array([[np.cos(theta), np.sin(theta)],
+    #                         [-np.sin(theta), np.cos(theta)]])
+    #
+    #     goal_i = Rot_b2i.dot(goal - np.array([2.5, 0.])) + self.x[:2]
+    #
+    #     print('goal before transforamtion:', goal_i)
+    #     return goal_i
 
     def koordianten_transformation(self, wheel_speed, theta):
         omega_l = wheel_speed[0]
@@ -107,7 +122,7 @@ class DWA_Controller():
         elif mode == 'PC_TO_MOTOR':
             return u_in * speed_gain
 
-    def dwa_control(self, motor_ist, x_pre, goal, obstacle, res):
+    def dwa_control(self, motor_ist, x_pre, goal, obstacle):
         """
         Dynamic Window Approach control
         """
@@ -137,13 +152,13 @@ class DWA_Controller():
         dist_head = self.a * np.array([np.cos(state[2]), np.sin(state[2])])
         self.dist_to_goal = np.linalg.norm(dist_head + state[:2] - goal)  # generate u = wheel_speed_soll
 
-        if self.dist_to_goal >= self.goal_range_1:
-            self.to_goal_cost_gain = 0.3
-
-        elif self.dist_to_goal < self.goal_range_1 and self.dist_to_goal >= self.goal_range_2:
-            self.to_goal_cost_gain = 0.21
-        else:
-            self.to_goal_cost_gain = 0.6
+        # if self.dist_to_goal >= self.goal_range_1:
+        #     self.to_goal_cost_gain = 0.3
+        #
+        # elif self.dist_to_goal < self.goal_range_1 and self.dist_to_goal >= self.goal_range_2:
+        #     self.to_goal_cost_gain = 0.21
+        # else:
+        #     self.to_goal_cost_gain = 0.6
 
         # print('cost param', self.to_goal_cost_gain)
         if np.linalg.norm(motor_soll) < 400.0 and self.dist_to_goal >= self.robot_radius:
@@ -374,12 +389,12 @@ if __name__ == '__main__':
     #                [15.0, 15.0],
     #                [13.0, 13.0]
     #                ])
-    obmap = np.load('obstacle_loc.npy')
-
+    # obmap = np.load('obstacle_loc.npy')
+    obmap = np.load('sample_map.npy')
     test_dwa = DWA_Controller()
     trajectory_ist = test_dwa.x
     print(" start!!")
-    target = np.array([3.5, 8.0])
+    target = np.array([6.2, 8.0])
     map_range = 15.
     map_pixel = 100
     resolution = map_range / map_pixel
@@ -387,24 +402,28 @@ if __name__ == '__main__':
     # obmap = np.zeros((map_pixel, map_pixel))
     # obmap[0, 0] = 1
     # obmap = np.load('obstacle_loc.npy')
+    # oblist = test_dwa.obmap2coordinaten(obmap, resolution)
+    obmap = test_dwa.clear_human_shape(target, obmap, resolution)
+    obmap[obmap >= 0.4] = 1
+    obmap[obmap < 0.4] = 0
     oblist = test_dwa.obmap2coordinaten(obmap, resolution)
     # oblist = ob
     wheelspeed_ist = np.array([0., 0.])
     test_dwa.RESET_STATE = True
+    test_dwa.TRANSFORM_MAP = True
     # test_dwa.show_animation = False
     # test_dwa.MEASURE_TIME =True
     goal_traj = np.copy(target)
     goal_ori_traj = np.copy(target)
-
+    plt.plot(oblist[:, 0], oblist[:, 1], "sk")
+    plt.show()
     while True:
         start = time.time()
         wheelspeed_soll, trajectory_soll, all_trajectory = test_dwa.dwa_control(wheelspeed_ist, test_dwa.x, target,
-                                                                                oblist,
-                                                                                resolution)
+                                                                                oblist)
         # print('current state:', test_dwa.x)
         if test_dwa.RESET_STATE:
-            target, oblist = test_dwa.inverse_transforamtion(target, oblist, resolution)
-            goal_reset = test_dwa.inverse_inverse(target)
+            target, oblist = test_dwa.inverse_transforamtion(target, oblist)
             goal_traj = np.vstack((goal_traj, target))
             # goal_ori_traj = np.vstack((goal_ori_traj, goal_reset))
 
