@@ -32,6 +32,7 @@ enum{
     
     POSITION_PID,
     DELTA_PID,
+	  ANTIWINDUP_PID
 };
 typedef struct __pid_t
 {

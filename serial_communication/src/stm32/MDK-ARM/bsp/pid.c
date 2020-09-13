@@ -109,6 +109,23 @@ float pid_calc(pid_t* pid, float get, float set){
         abs_limit(&(pid->delta_out), pid->MaxOutput);
         pid->last_delta_out = pid->delta_out;	//update last time
     }
+    else if(pid->pid_mode == ANTIWINDUP_PID)//ANTIWINDUP
+    {
+        pid->pout = pid->p * pid->err[NOW];
+        pid->iout += pid->i * pid->err[NOW];
+        pid->dout = pid->d * (pid->err[NOW] - pid->err[LAST] );
+        pid->pos_out = pid->pout + pid->iout + pid->dout;
+
+        float pos_out_tmp = pid->pos_out;
+        float condition = pid->err[NOW]*pid->pos_out;
+        abs_limit(&(pid->pos_out), pid->MaxOutput);
+
+        if((pos_out_tmp != pid->pos_out)&&(condition >0)) 
+            pid->pos_out = pid->pout;
+            abs_limit(&(pid->pos_out), pid->MaxOutput);
+  
+        pid->last_pos_out = pid->pos_out;   //update last time 
+    }
     
     pid->err[LLAST] = pid->err[LAST];
     pid->err[LAST] = pid->err[NOW];
