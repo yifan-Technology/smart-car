@@ -26,7 +26,7 @@ def init():
 
 def get_target(ziel):
     # 计算坐标位置
-    target = np.array([ziel.pose.position.y + 2.5, ziel.pose.position.x])
+    target = np.array([ziel.pose.position.x + 2.5, ziel.pose.position.z])
     return target
 
 
@@ -70,10 +70,10 @@ def main():
 
     # 构建相关节点
     init()
-    maps = node_test.YF_CostMap(nodeName["CostMap"], "CostMap")
+    maps = yf_node.YF_CostMap(nodeName["CostMap"], "CostMap")
     real = yf_node.YF_RealSpeed(nodeName["RealSpeed"], "RealSpeed")
     soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"], "SollSpeed")
-    ziel = node_test.YF_Goal(nodeName["Goal"], "Goal")
+    ziel = yf_node.YF_Goal(nodeName['Goal'], 'Goal')
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'], 'ObjectFlag')
     flag.publishMsg(101)
 
@@ -85,8 +85,8 @@ def main():
     old_target = np.array([-1., -1.])
     # init a time point for fps
     t = time.time()
-    FAKE_TARGET = True
-    fake_target = np.array([2.5, 5.])
+    # FAKE_TARGET = True
+    # fake_target = np.array([2., 4.])
     while True:
         # 中断守护
         if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -111,6 +111,7 @@ def main():
 
             # 捕获数据
             obMap = maps.subMsg
+            # print('map before',obMap)
             obMap = np.resize(obMap, (mapSize, mapSize))
             goal = ziel.subMsg
 
@@ -119,29 +120,38 @@ def main():
             t = time.time()
 
             # 等待捕获所有信息
-            if obMap is None:
-                print("Waiting for new obMap")
-                continue
-            else:
-                print('obMap',obMap)
-                print('obmap type', type(obMap[0,0]))
-                oblist = dwa.obmap2coordinaten(obMap, 5 / 100)
-                print('oblist',oblist)
-
             if goal is None:
                 print("Waiting for new target")
                 continue
             else:
-                target = get_target(goal)
-                if FAKE_TARGET:
-                    target = fake_target
-                    target, oblist = dwa.inverse_transforamtion(target, oblist)
-                    fake_target = target
-                    print('using fake target')
+                if obMap is None:
+                    print("Waiting for new obMap")
+                    continue
+                # print('current goal:', goal)
+                if not signal == 100:
+                    target = get_target(goal)
+                    if target is not None:
+                        print("target detected")
+                        old_target = target
+                        obMap = dwa.clear_human_shape(target, obMap, 5 / 100)
+                        oblist = dwa.obmap2coordinaten(obMap, 5 / 100)
+                    else:
+                        continue
+                    # if FAKE_TARGET:
+                    #     target = fake_target
+                    print('current target:', target)
                 else:
-                    # dwa.TRANSFORM_MAP = True
-                    target, oblist = dwa.inverse_transforamtion(target, oblist)
-                    print('no update obmap but transform frame')
+                    obMap = dwa.clear_human_shape(old_target, obMap, 5 / 100)
+                    oblist = dwa.obmap2coordinaten(obMap, 5 / 100)
+                    old_target, oblist = dwa.inverse_transforamtion(old_target, oblist)
+                    target = old_target
+
+                # fake_target = np.copy(target)
+                # print('using fake target')
+                # else:
+                #     # dwa.TRANSFORM_MAP = True
+                # print('no transform goal')
+                # print('no update obmap but transform frame')
 
             if real.subMsg is None:
                 print("Waiting for real_speed and publish soll value [0,0,0,0]")
@@ -161,30 +171,29 @@ def main():
         right_back = real_wheel[6]
         u_ist = np.array([(left_front + left_back) / 2, (right_front + right_back) / 2])
 
-        if target is not None:
-            print("target detected")
+
+        dwa.GOAL_ARRIVAED = False
+        dwa.RESET_STATE = True
+        t1 = time.time()
+        # print('oblist shape:',np.shape(oblist))
+        u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x, target, oblist)
+
+        if dwa.MEASURE_TIME:
+            t2 = time.time()
+            print("run time:", t2 - t1)
+
+        # speed infomation transforamtion
+        u_soll[0] = float(int(u_soll[0]))
+        u_soll[1] = float(int(u_soll[1]))
+        wheel_speed = [u_soll[0], u_soll[1], u_soll[0], u_soll[1]]
+        # # 使用Matplotlib展示地图
+        # matplotlib_show(trajectory_soll,dwa,obMap,target,all_trajectory)
+        if dwa.GOAL_ARRIVAED:
+            wheel_speed = [0.0, 0.0, 0.0, 0.0]
             dwa.GOAL_ARRIVAED = False
-            dwa.RESET_STATE = True
-            t1 = time.time()
-            print('oblist shape:',np.shape(oblist))
-            u_soll, trajectory_soll, all_trajectory = dwa.dwa_control(u_ist, dwa.x, target, oblist)
-
-            if dwa.MEASURE_TIME:
-                t2 = time.time()
-                print("run time:", t2 - t1)
-
-            # speed infomation transforamtion
-            u_soll[0] = float(int(u_soll[0]))
-            u_soll[1] = float(int(u_soll[1]))
-            wheel_speed = [u_soll[0], u_soll[1], u_soll[0], u_soll[1]]
-            # # 使用Matplotlib展示地图
-            # matplotlib_show(trajectory_soll,dwa,obMap,target,all_trajectory)
-            if dwa.GOAL_ARRIVAED:
-                wheel_speed = [0.0, 0.0, 0.0, 0.0]
-                dwa.GOAL_ARRIVAED = False
-            # print("wheel speed: ", wheel_speed)
-            soll.publishMsg(wheel_speed)
-            rclpy.spin_once(ziel.node, timeout_sec=0.01)
+        # print("wheel speed: ", wheel_speed)
+        soll.publishMsg(wheel_speed)
+        rclpy.spin_once(ziel.node, timeout_sec=0.01)
 
             # 杀死无用节点
     maps.node.destroy_node()
