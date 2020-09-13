@@ -3,7 +3,6 @@ import cv2
 import copy
 import rclpy
 import yf_node
-import node_test
 import dwa_module
 import matplotlib.pyplot as plt
 # import motorSerial
@@ -12,27 +11,27 @@ import yaml
 
 
 def init():
-    # 全局化节点名称
+    # ???????
     global nodeName
     global mapSize
-    # 读取yaml文件
+    # ??yaml??
     with open("/home/yf/yifan/config.yaml", "r") as f:
         config = yaml.load(f)
 
     mapSize = config["costMap"]["mapSize"]
-    # 读取节点名称参数
+    # ????????
     nodeName = config["RosTopic"]
 
 
 def get_target(ziel):
-    # 计算坐标位置
+    # ??????
     target = np.array([ziel.pose.position.x + 2.5, ziel.pose.position.z])
     return target
 
 
 def matplotlib_show(trajectory_soll, dwa, obmap, target, all_trajectory):
-    # 是否用Matplotlib 展示地图
-    # ！！！！！！！！！ 不可与cv2图片展示共存
+    # ???Matplotlib ????
+    # !!!!!!!!! ???cv2??????
     trajectory_ist = np.vstack((trajectory_soll, dwa.x))
 
     # for i in range(10000):
@@ -64,11 +63,28 @@ def matplotlib_show(trajectory_soll, dwa, obmap, target, all_trajectory):
         plt.ioff()
 
 
+def wheel_speed_caculator(v_l_rpm, v_r_rpm):
+    minimal = np.min(np.abs([v_l_rpm, v_r_rpm]))
+
+    if minimal == 0 and np.max(np.abs([v_l_rpm, v_r_rpm])) == 0:
+        wheel_speed = [v_l_rpm, v_r_rpm, v_l_rpm, v_r_rpm]
+        print("cal 00000")
+        return wheel_speed
+
+    if minimal < 300:
+        shift = 300 - minimal
+        v_l_rpm += np.sign(v_l_rpm) * shift
+        v_r_rpm += np.sign(v_r_rpm) * shift
+
+    wheel_speed = [v_l_rpm, v_r_rpm, v_l_rpm, v_r_rpm]
+    return wheel_speed
+
+
 def main():
-    # 初始化 ros2 python - rclpy & 外置参数引入
+    # ??? ros2 python - rclpy & ??????
     rclpy.init()
 
-    # 构建相关节点
+    # ??????
     init()
     maps = yf_node.YF_CostMap(nodeName["CostMap"], "CostMap")
     real = yf_node.YF_RealSpeed(nodeName["RealSpeed"], "RealSpeed")
@@ -77,18 +93,19 @@ def main():
     flag = yf_node.YF_ObjectFlag(nodeName['ObjectFlag'], 'ObjectFlag')
     flag.publishMsg(101)
 
-    # 广播节点的首次初始化
+    # ??????????
     rclpy.spin_once(soll.node, timeout_sec=0.05)  # original 0.001
 
-    # 构建DWA控制类
+    # ??DWA???
     dwa = dwa_module.DWA_Controller()
     old_target = np.array([-1., -1.])
+    SAVE_MAP = True
     # init a time point for fps
     t = time.time()
     # FAKE_TARGET = True
     # fake_target = np.array([2., 4.])
     while True:
-        # 中断守护
+        # ????
         if cv2.waitKey(25) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
             break
@@ -101,15 +118,15 @@ def main():
             print("Waiting for a Target")
             continue
         if signal.tolist() > 0:
-            # 刷新订阅的节点
+            # ???????
             rclpy.spin_once(ziel.node, timeout_sec=0.01)
             rclpy.spin_once(maps.node, timeout_sec=0.01)
             rclpy.spin_once(real.node, timeout_sec=0.01)
 
-            # 广播节点
+            # ????
             rclpy.spin_once(soll.node, timeout_sec=0.01)
 
-            # 捕获数据
+            # ????
             obMap = maps.subMsg
             # print('map before',obMap)
             obMap = np.resize(obMap, (mapSize, mapSize))
@@ -119,7 +136,7 @@ def main():
             print("fps: ", int(1 / (time.time() - t)))
             t = time.time()
 
-            # 等待捕获所有信息
+            # ????????
             if goal is None:
                 print("Waiting for new target")
                 continue
@@ -143,8 +160,16 @@ def main():
                 else:
                     obMap = dwa.clear_human_shape(old_target, obMap, 5 / 100)
                     oblist = dwa.obmap2coordinaten(obMap, 5 / 100)
+                    if SAVE_MAP:
+                        np.save("/home/yf/dev_ws/save_map.npy",oblist)
+                        SAVE_MAP = False
                     old_target, oblist = dwa.inverse_transforamtion(old_target, oblist)
                     target = old_target
+                    signal = 100
+                    print("static target, start transform map and goal")
+                    dwa.TRANSFORM_MAP = True
+                    if dwa.GOAL_ARRIVAED:
+                        signal = flag.subMsg.data
 
                 # fake_target = np.copy(target)
                 # print('using fake target')
@@ -160,7 +185,7 @@ def main():
         else:
             continue
 
-        # 捕获真实速度值
+        # ???????
         real_wheel = real.subMsg
         # target = np.array([2.5,4.])
         # real_wheel = [200.,0,200.,0,200.,0,200.]
@@ -170,7 +195,6 @@ def main():
         left_back = real_wheel[4]
         right_back = real_wheel[6]
         u_ist = np.array([(left_front + left_back) / 2, (right_front + right_back) / 2])
-
 
         dwa.GOAL_ARRIVAED = False
         dwa.RESET_STATE = True
@@ -185,8 +209,9 @@ def main():
         # speed infomation transforamtion
         u_soll[0] = float(int(u_soll[0]))
         u_soll[1] = float(int(u_soll[1]))
-        wheel_speed = [u_soll[0], u_soll[1], u_soll[0], u_soll[1]]
-        # # 使用Matplotlib展示地图
+        wheel_speed = [u_soll[0], u_soll[1], u_soll[0], u_soll[0]]
+        # wheel_speed = wheel_speed_caculator(u_soll[0],u_soll[1])
+        # # ??Matplotlib????
         # matplotlib_show(trajectory_soll,dwa,obMap,target,all_trajectory)
         if dwa.GOAL_ARRIVAED:
             wheel_speed = [0.0, 0.0, 0.0, 0.0]
@@ -195,7 +220,7 @@ def main():
         soll.publishMsg(wheel_speed)
         rclpy.spin_once(ziel.node, timeout_sec=0.01)
 
-            # 杀死无用节点
+        # ??????
     maps.node.destroy_node()
     soll.node.destroy_node()
     ziel.node.destroy_node()
