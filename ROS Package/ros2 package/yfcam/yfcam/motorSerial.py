@@ -74,21 +74,45 @@ class SerialThread:
     def read(self):
         while self.alive:
             try:
-                n = self.my_serial.inWaiting()                       # 返回接收缓存中的字节数
-                if n == 40:
-                    myByte = self.my_serial.read(40)
-                    if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[2] == 97:
-                        if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
-                            try:
-                                data = myByte[4:-4]
-                                new_values = struct.unpack('<ffffffff', data)
-                                self.read_data = new_values
-                                #print(self.read_data)
-                                break # 线程结束
+                 n = self.my_serial.inWaiting()  # 返回接收缓存中的字节数
+                if n > 0:
+                    print("waited {} bytes".format(n))
 
-                            except Exception as ex:
-                                print("struct:")
-                                print(ex)
+                    if n == 40:
+                        myByte = self.my_serial.read(40)
+                        if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[3] == 97:
+                            if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
+                                try:
+                                    data = myByte[4:-4]
+                                    new_values = struct.unpack('<ffffffff', data)
+                                    self.read_data = new_values
+                                    #print(self.read_data)
+                                    break  # 线程结束
+
+                                except Exception as ex:
+                                    print("struct:")
+                                    print(ex)
+
+                    elif n == 39:
+                        myByte = self.my_serial.read(39)
+                        if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 :
+                            if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
+                                try:
+                                    data = myByte[3:-4]
+                                    new_values = struct.unpack('<ffffffff', data)
+                                    self.read_data = new_values
+                                    print("n: ", n, "real data: ", self.read_data)
+                                    break  # 线程结束
+
+                                except Exception as ex:
+                                    print("struct:")
+                                    print(ex)
+
+                    else:
+                        myByte = self.my_serial.read(n)
+                        print("n: ", n, "my_Byte: ", myByte)
+                        break  # 线程结束
+
             except Exception as ex:
                 print("all:")
                 print(ex)
@@ -122,40 +146,63 @@ def main():
     soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"],"SollSpeed")
     rclpy.spin_once(soll.node,timeout_sec=0.05)    
     # key = ""
-    while 1:#:
-        # set data 
-        rclpy.spin_once(soll.node,timeout_sec=0.05)
-        Motor_serial.control_data = soll.subMsg
-        print("soll value: ",  Motor_serial.control_data)
-        # pub data
-        real.publishMsg(Motor_serial.read_data)
-        rclpy.spin_once(real.node,timeout_sec=0.05)
-        print("real value: ", Motor_serial.read_data[0], Motor_serial.read_data[2],  Motor_serial.read_data[4],  Motor_serial.read_data[6])
-        # give it to A
+    try:
+        while 1:#:
+            # set data 
+            rclpy.spin_once(soll.node,timeout_sec=0.05)
+            Motor_serial.control_data = soll.subMsg
+            print("soll value: ",  Motor_serial.control_data)
+            # pub data
+            real.publishMsg(Motor_serial.read_data)
+            rclpy.spin_once(real.node,timeout_sec=0.05)
+            print("real value: ", Motor_serial.read_data[0], Motor_serial.read_data[2],  Motor_serial.read_data[4],  Motor_serial.read_data[6])
+            # give it to A
+            if Motor_serial.start():
+                Motor_serial.wait()
+                Motor_serial.stop()
+            
+            key = cv2.waitKey(1)
+    finally:
+        Motor_serial.my_serial.close()
+        Motor_serial = SerialThread("/dev/ttyUSB0")
+        Motor_serial.control_data = [0.0,0.0,0.0,0.0]
         if Motor_serial.start():
-            Motor_serial.wait()
-            Motor_serial.stop()
-        
-        key = cv2.waitKey(1)
-    # del my_serial
+                Motor_serial.wait()
+                Motor_serial.stop()
 
-#if __name__ == "__main__":
+        if Motor_serial.alive == True:
+                Motor_serial.stop()
+        time.sleep(1)
+        Motor_serial.my_serial.close()
+
+
+if __name__ == "__main__":
     
-#    Motor_serial = SerialThread("/dev/ttyUSB0")
-#    
-#    
-#    real = yf_node.YF_RealSpeed(nodeName["RealSpeed"],"RealSpeed")
-#    soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"],"SollSpeed")
-#    while True:        
-#        # set data        
-#        rclpy.spin_once(soll.node,timeout_sec=0.05)
-#        Motor_serial.control_data = soll.subMsg
-#        # pub data
-#        real.publishMsg(Motor_serial.read_data)
-#        rclpy.spin_once(real.node,timeout_sec=0.05)
-#        # give it to A
-#        if Motor_serial.start():
-#            Motor_serial.wait()
-#            Motor_serial.stop()
-#    # del my_serial
+    try:
+        Motor_serial = SerialThread("/dev/ttyUSB0")
+
+        while True:        
+           
+           # give it to A
+            if Motor_serial.start():
+                Motor_serial.wait()
+                Motor_serial.stop()
+
+            if Motor_serial.alive == True:
+                Motor_serial.stop()
+
+            time.sleep(0.03)
+    finally:
+
+        Motor_serial.my_serial.close()
+        Motor_serial = SerialThread("/dev/ttyUSB0")
+        Motor_serial.control_data = [0.0,0.0,0.0,0.0]
+        if Motor_serial.start():
+                Motor_serial.wait()
+                Motor_serial.stop()
+
+        if Motor_serial.alive == True:
+                Motor_serial.stop()
+        time.sleep(1)
+        Motor_serial.my_serial.close()
 
