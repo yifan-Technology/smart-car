@@ -15,13 +15,13 @@ void updateRSRA(float *real_left_front_rs, float *real_left_front_ra, float *rea
   *real_left_front_ra = moto_chassis[0].last_angle;
 
   *real_right_front_rs = -moto_chassis[2].speed_rpm;
-  *real_right_front_ra = -moto_chassis[2].last_angle;
+  *real_right_front_ra = moto_chassis[2].last_angle;
   
   *real_left_back_rs = moto_chassis[1].speed_rpm;
   *real_left_back_ra = moto_chassis[1].last_angle;
 
   *real_right_back_rs = -moto_chassis[3].speed_rpm;
-  *real_right_back_ra = -moto_chassis[3].last_angle;
+  *real_right_back_ra = moto_chassis[3].last_angle;
 }
 
 void send(float *real_left_front_rs, float *real_left_front_ra, float *real_right_front_rs, float *real_right_front_ra, float *real_left_back_rs, float *real_left_back_ra, float *real_right_back_rs, float *real_right_back_ra)
