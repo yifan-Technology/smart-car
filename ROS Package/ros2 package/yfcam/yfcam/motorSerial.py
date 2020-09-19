@@ -74,7 +74,7 @@ class SerialThread:
     def read(self):
         while self.alive:
             try:
-                 n = self.my_serial.inWaiting()  # 返回接收缓存中的字节数
+                n = self.my_serial.inWaiting()  # 返回接收缓存中的字节数
                 if n > 0:
                     print("waited {} bytes".format(n))
 
@@ -101,7 +101,7 @@ class SerialThread:
                                     data = myByte[3:-4]
                                     new_values = struct.unpack('<ffffffff', data)
                                     self.read_data = new_values
-                                    print("n: ", n, "real data: ", self.read_data)
+                                    #print("n: ", n, "real data: ", self.read_data)
                                     break  # 线程结束
 
                                 except Exception as ex:
@@ -110,7 +110,7 @@ class SerialThread:
 
                     else:
                         myByte = self.my_serial.read(n)
-                        print("n: ", n, "my_Byte: ", myByte)
+                        #print("n: ", n, "my_Byte: ", myByte)
                         break  # 线程结束
 
             except Exception as ex:

@@ -120,10 +120,10 @@ float pid_calc(pid_t* pid, float get, float set){
         float condition = pid->err[NOW]*pid->pos_out;
         abs_limit(&(pid->pos_out), pid->MaxOutput);
 
-        if((pos_out_tmp != pid->pos_out)&&(condition >0)) 
+        if((pos_out_tmp != pid->pos_out)&&(condition >0)) {
             pid->pos_out = pid->pout;
             abs_limit(&(pid->pos_out), pid->MaxOutput);
-  
+				}
         pid->last_pos_out = pid->pos_out;   //update last time 
     }
     
