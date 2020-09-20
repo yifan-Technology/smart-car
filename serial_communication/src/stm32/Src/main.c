@@ -69,7 +69,7 @@ int main(void)
 	for(int i=0; i<4; i++)
 	{
 		PID_struct_init(&pid_spd[i], ANTIWINDUP_PID, 16384, 16384,
-									1.5f,	0.1f,	0.0f	);  //4 motos angular rate closeloop.
+									10.0f,	0.1f,	0.0f	);  //4 motos angular rate closeloop.
 	}
 	
 	float a = 0;
