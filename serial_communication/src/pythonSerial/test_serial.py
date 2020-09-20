@@ -36,10 +36,11 @@ class SerialThread:
 
         self.alive = False  # 当 alive 为 True，读写线程会进行
 
-        # self.control_data = [-300.0, -300.0, -300.0, -300.0]
-        self.control_data = [220.0, 220.0, 220.0, 220.0]
-        # self.control_data = [0.0, 0.0, 0.0, 0.0]
         # self.control_data = [800.0, 800.0, 800.0, 800.0]
+        # self.control_data = [-300.0, -300.0, -300.0, -300.0]
+        # self.control_data = [220.0, 220.0, 220.0, 220.0]
+        self.control_data = [0.0, 0.0, 0.0, 0.0]
+        
         self.read_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         self.my_serial_port.open()
@@ -63,7 +64,8 @@ class SerialThread:
         return bytes(result)
 
     def read(self):
-        t = time.time()
+        last_time = time.time()
+
         while self.alive:
             try:
                 with self.read_lock:
@@ -74,45 +76,21 @@ class SerialThread:
 
                     #print("waited {} bytes".format(n))
 
-                if n == 40:
-                    with self.read_lock:
-                        myByte = self.my_serial_port.read(40)
-                    if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[3] == 97:
-                        if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
-                            try:
-                                data = myByte[4:-4]
-                                new_values = struct.unpack('<ffffffff', data)
-                                self.read_data = new_values
-                                print("read bytes length:", n, " with real data: ", self.read_data)
+                myByte = self.tryRead(40)
+                if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[3] == 97 \
+                    and myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
+                        fps = 1 / (time.time() - last_time)
 
-                                fps = 1 / (time.time() - t)
-                                print("fps: ", fps)
-                                t = time.time()
+                        # comment print can increase fps
+                        print("fps: ", fps)
 
-                            except Exception as ex:
-                                print("struct:")
-                                print(ex)
+                        data = myByte[4:-4]
+                        self.read_data = struct.unpack('<ffffffff', data)
 
-                elif n == 39:
-                    with self.read_lock:
-                        myByte = self.my_serial_port.read(39)
-                    if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 :
-                        if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
-                            try:
-                                data = myByte[3:-4]
-                                new_values = struct.unpack('<ffffffff', data)
-                                self.read_data = new_values
-                                print("read bytes length:", n, "with real data: ", self.read_data)
+                        # comment print can increase fps
+                        print("Waited bytes length:", n, " But read 40 Bytes with real data: ", self.read_data)
 
-                            except Exception as ex:
-                                print("struct:")
-                                print(ex)
-
-                else:
-                    with self.read_lock:
-                        myByte = self.my_serial_port.read(n)
-                    print("read bytes length:", n, "with my_Byte: ", myByte)
-
+                        last_time = time.time()
 
             except Exception as ex:
                 print("all:")
@@ -129,7 +107,9 @@ class SerialThread:
                                    self.control_data[3], end)
                 with self.write_lock:
                     self.my_serial_port.write(data)
-                #print("control_data: ", self.control_data)
+                
+                # comment print can increase fps
+                print("control_data: ", self.control_data)
 
             except Exception as ex:
                 print(ex)
@@ -151,9 +131,9 @@ if __name__ == "__main__":
 
     finally:
         Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
-        time.sleep(.1)
+        time.sleep(.7)
         Motor_serial.stop()
-        time.sleep(.1)
+        time.sleep(.5)
         t_read.join()
         t_write.join()
         time.sleep(.1)
