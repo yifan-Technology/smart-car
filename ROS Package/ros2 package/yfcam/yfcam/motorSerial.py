@@ -6,139 +6,119 @@ import yf_node
 import rclpy
 import yaml
 import cv2
-
 import threading
 from queue import Queue
 
-def init():    
-    # ???????
-    global nodeName  
+
+def init():
+    # 全局化节点名称
+    global nodeName
     global mapSize
-    # ??yaml??
-    with open("/home/yf/yifan/config.yaml","r") as f:
-        config=yaml.load(f)  
-        
+    # 读取yaml文件
+    with open("/home/yf/yifan/config.yaml", "r") as f:
+        config = yaml.load(f)
+
     mapSize = config["costMap"]["mapSize"]
-    # ????????
+    # 读取节点名称参数
     nodeName = config["RosTopic"]
 
 
 class SerialThread:
     """
-    ??????,?????????
+    串口通信线程，包含读线程和写线程
     """
-    def __init__(self, port, baudrate=115200, parity=None, bytesize=8, stopbits=1, timeout=1):
-        self.my_serial = serial.Serial()
-        self.my_serial.port = port              # ???
-        self.my_serial.baudrate = baudrate      # ???
-        self.my_serial.bytesize = bytesize      # ???
-        self.my_serial.stopbits = stopbits      # ???
-        self.my_serial.timeout = timeout
 
-        self.alive = False                      # ? alive ? True,???????
-        self.wait_end = None                    # ???????
-        self.thread_read = None                 # ???
-        self.thread_write = None                # ???
-        self.control_data = [220.0, 220.0, 220.0, 220.0]
-        self.read_data = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-        self.my_serial.open()
+    def __init__(self, port="/dev/ttyUSB0", baudrate=115200, parity=None, bytesize=8, stopbits=1, timeout=1):
+        self.my_serial_port = serial.Serial()
+        self.my_serial_port.port = port  # 端口号
+        self.my_serial_port.baudrate = baudrate  # 波特率
+        self.my_serial_port.bytesize = bytesize  # 数据位
+        self.my_serial_port.stopbits = stopbits  # 停止位
+        self.my_serial_port.timeout = timeout
 
-    def start(self):
-        #self.my_serial.open()
-        if self.my_serial.isOpen():
-            self.alive = True
-            self.wait_end = threading.Event()
+        self.read_lock = threading.RLock()
+        self.write_lock = threading.RLock()
 
-            self.thread_read = threading.Thread(target=self.read)
-            self.thread_read.setDaemon(True)                        # ??????,???????????
+        self.alive = False  # 当 alive 为 True，读写线程会进行
 
-            self.thread_write = threading.Thread(target=self.write)
-            self.thread_write.setDaemon(True)                       # ??????,???????????
+        # self.control_data = [800.0, 800.0, 800.0, 800.0]
+        # self.control_data = [-300.0, -300.0, -300.0, -300.0]
+        # self.control_data = [220.0, 220.0, 220.0, 220.0]
+        self.control_data = [0.0, 0.0, 0.0, 0.0]
+        
+        self.read_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-            self.thread_read.start()
-            self.thread_write.start()
-
-            return True
-
-        else:
-            return False
-
-    def wait(self):
-        if not self.wait_end is None:
-            self.wait_end.wait()            # ?????
+        self.my_serial_port.open()
 
     def stop(self):
         self.alive = False
-        #if self.my_serial.isOpen():
-        #    self.my_serial.close()
+        if self.my_serial_port.isOpen():
+           self.my_serial_port.close()
 
+    def tryRead(self, length):
+        bytes_remaining = length
+        result = bytearray()
+
+        while bytes_remaining != 0:
+            with self.read_lock:
+                received = self.my_serial_port.read(bytes_remaining)
+            if len(received) != 0:
+                result.extend(received)
+                bytes_remaining -= len(received)
+
+        return bytes(result)
 
     def read(self):
+        last_time = time.time()
+
         while self.alive:
             try:
-                n = self.my_serial.inWaiting()  # ???????????
-                if n > 0:
-                    print("waited {} bytes".format(n))
+                with self.read_lock:
+                    n = self.my_serial_port.inWaiting()
+                    if n < 1:
+                        time.sleep(0.001)
+                        continue
 
-                    if n == 40:
-                        myByte = self.my_serial.read(40)
-                        if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[3] == 97:
-                            if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
-                                try:
-                                    data = myByte[4:-4]
-                                    new_values = struct.unpack('<ffffffff', data)
-                                    self.read_data = new_values
-                                    print("read  data: ", self.read_data)
-                                    break  # ????
+                    #print("waited {} bytes".format(n))
 
-                                except Exception as ex:
-                                    print("struct:")
-                                    print(ex)
+                myByte = self.tryRead(40)
+                if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[3] == 97 \
+                    and myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
+                        fps = 1 / (time.time() - last_time)
 
-                    elif n == 39:
-                        myByte = self.my_serial.read(39)
-                        if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 :
-                            if myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
-                                try:
-                                    data = myByte[3:-4]
-                                    new_values = struct.unpack('<ffffffff', data)
-                                    self.read_data = new_values
-                                   # print("n: ", n, "real data: ", self.read_data)
-                                    break  # ????
+                        # comment print can increase fps
+                        print("fps: ", fps)
 
-                                except Exception as ex:
-                                    print("struct:")
-                                    print(ex)
+                        data = myByte[4:-4]
+                        self.read_data = struct.unpack('<ffffffff', data)
 
-                    else:
-                        myByte = self.my_serial.read(n)
-                        print("n: ", n, "my_Byte: ", myByte)
-                        break  # ????
+                        # comment print can increase fps
+                        print("Real data: ", self.read_data)
+
+                        last_time = time.time()
 
             except Exception as ex:
                 print("all:")
                 print(ex)
 
-        self.wait_end.set()
-        self.alive = False
-
     def write(self):
         while self.alive:
+            time.sleep(0.025)
 
             try:
                 start = 99
                 end = 100
                 data = struct.pack("<B4fB", start, self.control_data[0], self.control_data[1], self.control_data[2],
                                    self.control_data[3], end)
-                self.my_serial.write(data)     # ??? gbk ?(????????)
-                print("write: ", self.control_data)
+                with self.write_lock:
+                    self.my_serial_port.write(data)
+                
+                # comment print can increase fps
+                print("\ncontrol_data: ", self.control_data)
+
             except Exception as ex:
                 print(ex)
 
-            time.sleep(1.0/20.0)
-
-        self.wait_end.set()
-        self.alive = False
 
 def pubSpin(q_node):
     node = q_node.get_nowait()
@@ -148,96 +128,75 @@ def pubSpin(q_node):
         time.sleep(0.02)
     print("i am back")
 
+
 def subSpin(q_node):
     node = q_node.get_nowait()
     print("i will suck")
     rclpy.spin(node.node)
     print("i am back")
 
+
 def main():
     init()
     rclpy.init()
-    Motor_serial = SerialThread("/dev/ttyUSB0")
     real = yf_node.YF_RealSpeed(nodeName["RealSpeed"],"RealSpeed","pub")
     soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"],"SollSpeed","sub")
     rclpy.spin_once(soll.node,timeout_sec=0.1)
-
     
     q_subNode = Queue(1)
     q_pubNode = Queue(1)
-
     q_subNode.put_nowait(soll)
     q_pubNode.put_nowait(real)
+
     t_sub = threading.Thread(target=subSpin,args=(q_subNode,))
     t_pub = threading.Thread(target=pubSpin,args=(q_pubNode,))
-    
     t_sub.start()
     t_pub.start()
+    Motor_serial = SerialThread("/dev/ttyUSB0")
+
+    t_read = threading.Thread(target=Motor_serial.read, daemon=False)
+    t_write = threading.Thread(target=Motor_serial.write, daemon=False)
+
+    Motor_serial.alive = True
+    t_read.start()
+    t_write.start()
+
     try:
-        while 1:#:
-            t = time.time()
-            # set data
-            # rclpy.spin_once(soll.node,timeout_sec=0.02)
+        while True:#:
             Motor_serial.control_data = soll.subMsg
-            #print("soll value: ",  Motor_serial.control_data)
-            # pub data
             real.publishMsg(Motor_serial.read_data)
-            # rclpy.spin_once(real.node,timeout_sec=0.02)
-            #print("real value: ", Motor_serial.read_data[0], Motor_serial.read_data[2],  Motor_serial.read_data[4],  Motor_serial.read_data[6])
-            # give it to A
-            if Motor_serial.start():
-                Motor_serial.wait()
-                Motor_serial.stop()
-
-            # if Motor_serial.alive == True:
-            #     Motor_serial.stop()
-
-            time.sleep(0.03)
-
-            fps = 1 / (time.time() - t)
-            print("fps: ", fps)
-
+            time.sleep(0.25)
             
-    finally:
-        Motor_serial.my_serial.close()
-        Motor_serial = SerialThread("/dev/ttyUSB0")
-        Motor_serial.control_data = [0.0,0.0,0.0,0.0]
-        if Motor_serial.start():
-                Motor_serial.wait()
-                Motor_serial.stop()
 
-        if Motor_serial.alive == True:
-                Motor_serial.stop()
-        time.sleep(1)
-        Motor_serial.my_serial.close()
+    finally:
+        Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
+        time.sleep(.7)
+        Motor_serial.stop()
+        time.sleep(.5)
+        t_read.join()
+        t_write.join()
+        time.sleep(.1)
 
 
 if __name__ == "__main__":
-    
     try:
         Motor_serial = SerialThread("/dev/ttyUSB0")
 
-        while True:        
-           
-           # give it to A
-            if Motor_serial.start():
-                Motor_serial.wait()
-                Motor_serial.stop()
+        t_read = threading.Thread(target=Motor_serial.read, daemon=False)
+        t_write = threading.Thread(target=Motor_serial.write, daemon=False)
 
-            if Motor_serial.alive == True:
-                Motor_serial.stop()
+        Motor_serial.alive = True
+        t_read.start()
+        t_write.start()
 
-            time.sleep(0.03)
+        while True:
+            pass
+
     finally:
-
-        Motor_serial.my_serial.close()
-        Motor_serial = SerialThread("/dev/ttyUSB0")
-        Motor_serial.control_data = [0.0,0.0,0.0,0.0]
-        if Motor_serial.start():
-                Motor_serial.wait()
-                Motor_serial.stop()
-
-        if Motor_serial.alive == True:
-                Motor_serial.stop()
-        time.sleep(1)
-        Motor_serial.my_serial.close()
+        Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
+        time.sleep(.7)
+        Motor_serial.stop()
+        time.sleep(.5)
+        t_read.join()
+        t_write.join()
+        time.sleep(.1)
