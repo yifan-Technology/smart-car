@@ -142,9 +142,12 @@ class YF_SollSpeed(YF_Node):
         super().__init__(nodeName,name, Float32MultiArray)
         self._subMsg = [0.0,0.0,0.0,0.0]
         self._pubMsg = Float32MultiArray()
+        self.write_queue = queue.Queue()
 
     def subscription(self, msg):
         self._subMsg = np.array(msg.data)
+        self.write_queue.put(self._subMsg)
+
     def publishMsg(self,income):
         self._pubMsg.data = income
         self.pub.publish(self._pubMsg)  

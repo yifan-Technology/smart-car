@@ -14,7 +14,7 @@ class SerialThread:
     串口通信线程，包含读线程和写线程
     """
 
-    def __init__(self, port="/dev/ttyUSB0", baudrate=115200, parity=None, bytesize=8, stopbits=1, timeout=1):
+    def __init__(self, soll_node, real_node, port="/dev/ttyUSB0", baudrate=115200, parity=None, bytesize=8, stopbits=1, timeout=1):
         self.my_serial_port = serial.Serial()
         self.my_serial_port.port = port  # 端口号
         self.my_serial_port.baudrate = baudrate  # 波特率
@@ -22,8 +22,10 @@ class SerialThread:
         self.my_serial_port.stopbits = stopbits  # 停止位
         self.my_serial_port.timeout = timeout
 
-        self.control_data_lock = threading.Lock()
-        self.read_data_lock = threading.Lock()
+        
+        self._soll = soll_node
+        self._real = real_node
+
         self.read_lock = threading.RLock()
         self.write_lock = threading.RLock()
 
@@ -83,6 +85,8 @@ class SerialThread:
                             self.read_data = struct.unpack('<ffffffff', data)
                             # comment print can increase fps
                             print("Real data: ", self.read_data)
+                      
+                        self._real.publishMsg(self.read_data)
 
                         last_time = time.time()
 
@@ -93,25 +97,30 @@ class SerialThread:
                     self.my_serial_port.reset_input_buffer()
 
     def write(self):
+        with self._soll.write_queue.mutex:
+            self._soll.write_queue.clear()
+
         while self.alive:
-            time.sleep(0.025)
+            if self._soll.write_queue.empty():
+                time.sleep(0.01)
+            else:
+                control_data = self._soll.write_queue.get()
 
-            try:
-                start = 99
-                end = 100
-                with self.control_data_lock:
-                    data = struct.pack("<B4fB", start, self.control_data[0], self.control_data[1], self.control_data[2],
-                                   self.control_data[3], end)
-                with self.write_lock:
-                    self.my_serial_port.write(data)
-                
-                # comment print can increase fps
-                print("\ncontrol_data: ", self.control_data)
+                try:
+                    start = 99
+                    end = 100
+                    data = struct.pack("<B4fB", start, control_data[0], control_data[1], control_data[2], control_data[3], end)
+                    
+                    with self.write_lock:
+                        self.my_serial_port.write(data)
+                    
+                    # comment print can increase fps
+                    print("\ncontrol_data: ", control_data)
 
-            except Exception as ex:
-                print(ex)
-                with self.write_lock:
-                    self.my_serial_port.reset_output_buffer()
+                except Exception as ex:
+                    print(ex)
+                    with self.write_lock:
+                        self.my_serial_port.reset_output_buffer()
 
 
 def init():
@@ -158,7 +167,8 @@ def main():
     t_pub = threading.Thread(target=pubSpin,args=(q_pubNode,))
     t_sub.start()
     t_pub.start()
-    Motor_serial = SerialThread("/dev/ttyUSB0")
+
+    Motor_serial = SerialThread(soll, real, "/dev/ttyUSB0")
 
     t_read = threading.Thread(target=Motor_serial.read, daemon=False)
     t_write = threading.Thread(target=Motor_serial.write, daemon=False)
@@ -168,12 +178,8 @@ def main():
     t_write.start()
 
     try:
-        while True:#:
-            with Motor_serial.control_data_lock:
-                Motor_serial.control_data = soll.subMsg
-            with self.read_data_lock:
-                real.publishMsg(Motor_serial.read_data)
-            time.sleep(0.25)
+        while True:
+            pass
             
     finally:
         Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
