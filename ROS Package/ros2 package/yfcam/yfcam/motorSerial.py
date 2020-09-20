@@ -22,6 +22,8 @@ class SerialThread:
         self.my_serial_port.stopbits = stopbits  # 停止位
         self.my_serial_port.timeout = timeout
 
+        self.control_data_lock = threading.Lock()
+        self.read_data_lock = threading.Lock()
         self.read_lock = threading.RLock()
         self.write_lock = threading.RLock()
 
@@ -76,16 +78,19 @@ class SerialThread:
                         print("fps: ", fps)
 
                         data = myByte[4:-4]
-                        self.read_data = struct.unpack('<ffffffff', data)
 
-                        # comment print can increase fps
-                        print("Real data: ", self.read_data)
+                        with self.read_data_lock:
+                            self.read_data = struct.unpack('<ffffffff', data)
+                            # comment print can increase fps
+                            print("Real data: ", self.read_data)
 
                         last_time = time.time()
 
             except Exception as ex:
                 print("all:")
                 print(ex)
+                with self.read_lock:
+                    self.my_serial_port.reset_input_buffer()
 
     def write(self):
         while self.alive:
@@ -94,7 +99,8 @@ class SerialThread:
             try:
                 start = 99
                 end = 100
-                data = struct.pack("<B4fB", start, self.control_data[0], self.control_data[1], self.control_data[2],
+                with self.control_data_lock:
+                    data = struct.pack("<B4fB", start, self.control_data[0], self.control_data[1], self.control_data[2],
                                    self.control_data[3], end)
                 with self.write_lock:
                     self.my_serial_port.write(data)
@@ -104,6 +110,8 @@ class SerialThread:
 
             except Exception as ex:
                 print(ex)
+                with self.write_lock:
+                    self.my_serial_port.reset_output_buffer()
 
 
 def init():
@@ -161,11 +169,12 @@ def main():
 
     try:
         while True:#:
-            Motor_serial.control_data = soll.subMsg
-            real.publishMsg(Motor_serial.read_data)
+            with Motor_serial.control_data_lock:
+                Motor_serial.control_data = soll.subMsg
+            with self.read_data_lock:
+                real.publishMsg(Motor_serial.read_data)
             time.sleep(0.25)
             
-
     finally:
         Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
         time.sleep(.7)
@@ -193,6 +202,10 @@ if __name__ == "__main__":
     finally:
         Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
         time.sleep(.7)
+        with self.read_lock:
+            self.my_serial_port.reset_input_buffer()
+        with self.write_lock:
+            self.my_serial_port.reset_output_buffer()
         Motor_serial.stop()
         time.sleep(.5)
         t_read.join()
