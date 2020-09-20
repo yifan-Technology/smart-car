@@ -5,22 +5,8 @@ import time
 import yf_node
 import rclpy
 import yaml
-import cv2
 import threading
 from queue import Queue
-
-
-def init():
-    # 全局化节点名称
-    global nodeName
-    global mapSize
-    # 读取yaml文件
-    with open("/home/yf/yifan/config.yaml", "r") as f:
-        config = yaml.load(f)
-
-    mapSize = config["costMap"]["mapSize"]
-    # 读取节点名称参数
-    nodeName = config["RosTopic"]
 
 
 class SerialThread:
@@ -119,6 +105,18 @@ class SerialThread:
             except Exception as ex:
                 print(ex)
 
+
+def init():
+    # 全局化节点名称
+    global nodeName
+    global mapSize
+    # 读取yaml文件
+    with open("/home/yf/yifan/config.yaml", "r") as f:
+        config = yaml.load(f)
+
+    mapSize = config["costMap"]["mapSize"]
+    # 读取节点名称参数
+    nodeName = config["RosTopic"]
 
 def pubSpin(q_node):
     node = q_node.get_nowait()
