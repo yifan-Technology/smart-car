@@ -156,9 +156,9 @@ int main(void)
 			send(&real_left_front_rs, &real_left_front_ra, &real_right_front_rs, &real_right_front_ra, &real_left_back_rs, &real_left_back_ra, &real_right_back_rs, &real_right_back_ra);
 		}
 		
-		if (++count % 3 == 0){
+		//if (++count % 3 == 0){
 
-			count = 0;
+			//count = 0;
 			//HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_5);
 			//vuser_send_string(&huart6, want_send);
 			
@@ -195,17 +195,15 @@ int main(void)
 				set_spd[1] = (*soll_left_back_rs);
 				set_spd[2] = (*soll_right_front_rs);
 				set_spd[3] = (*soll_right_back_rs);
-	 		}
-			
-			
-		}
+	 		} 
+		//}
 	}
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {	
 	/* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
+  UNUSED(huart);              
   
 	if(rData[0]==0x63 && rData[17]==0x64){  
 		

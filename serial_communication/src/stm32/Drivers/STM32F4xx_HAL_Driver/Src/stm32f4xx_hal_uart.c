@@ -1213,7 +1213,7 @@ void HAL_UART_IRQHandler(UART_HandleTypeDef *huart)
         /* Non Blocking error : transfer could go on. 
            Error is notified to user through user error callback */
         HAL_UART_ErrorCallback(huart);
-        huart->ErrorCode = HAL_UART_ERROR_NONE;
+        //huart->ErrorCode = HAL_UART_ERROR_NONE;
       }
     }
     return;
