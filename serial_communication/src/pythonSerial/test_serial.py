@@ -1,3 +1,4 @@
+import os
 import serial
 import threading
 import struct
@@ -5,23 +6,7 @@ import time
 from queue import Queue
 
 
-def init():
-    # 全局化节点名称
-    global nodeName
-    global mapSize
-    # 读取yaml文件
-    with open("/home/yf/yifan/config.yaml", "r") as f:
-        config = yaml.load(f)
-
-    mapSize = config["costMap"]["mapSize"]
-    # 读取节点名称参数
-    nodeName = config["RosTopic"]
-
-
 class SerialThread:
-    """
-    串口通信线程，包含读线程和写线程
-    """
 
     def __init__(self, port="/dev/ttyUSB0", baudrate=115200, parity=None, bytesize=8, stopbits=1, timeout=1):
         self.my_serial_port = serial.Serial()
@@ -75,21 +60,22 @@ class SerialThread:
                         continue
 
                     #print("waited {} bytes".format(n))
-
+              
                 myByte = self.tryRead(40)
+                #print(myByte)
                 if myByte[0] == 97 and myByte[1] == 97 and myByte[2] == 97 and myByte[3] == 97 \
                     and myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
-                        fps = 1 / (time.time() - last_time)
-
-                        # comment print can increase fps
-                        print("fps: ", fps)
-
+ 
                         data = myByte[4:-4]
                         self.read_data = struct.unpack('<ffffffff', data)
 
                         # comment print can increase fps
                         print("Waited bytes length:", n, " But read 40 Bytes with real data: ", self.read_data)
 
+                        fps = 1 / (time.time() - last_time)
+
+                        # comment print can increase fps
+                       # print("read fps: ", fps)
                         last_time = time.time()
 
             except Exception as ex:
@@ -97,6 +83,7 @@ class SerialThread:
                 print(ex)
 
     def write(self):
+        last_time = time.time()
         while self.alive:
             time.sleep(0.025)
 
@@ -108,16 +95,23 @@ class SerialThread:
                 with self.write_lock:
                     self.my_serial_port.write(data)
                 
-                # comment print can increase fps
+                # #comment print can increase fps
                 print("control_data: ", self.control_data)
+
+                # fps = 1 / (time.time() - last_time)
+
+                # # comment print can increase fps
+                # print("write fps: ", fps)
+                # last_time = time.time()
 
             except Exception as ex:
                 print(ex)
 
 
 if __name__ == "__main__":
+    os.system("sudo chmod 666 /dev/ttyUSB0")
     try:
-        Motor_serial = SerialThread("/dev/ttyUSB0")
+        Motor_serial = SerialThread("/dev/ttyUSB0", baudrate=460800)
 
         t_read = threading.Thread(target=Motor_serial.read, daemon=False)
         t_write = threading.Thread(target=Motor_serial.write, daemon=False)
