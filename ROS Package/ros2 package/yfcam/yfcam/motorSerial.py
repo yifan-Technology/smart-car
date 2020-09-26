@@ -80,11 +80,10 @@ class SerialThread:
                         print("fps: ", fps)
 
                         data = myByte[4:-4]
-
-                        with self.read_data_lock:
-                            self.read_data = struct.unpack('<ffffffff', data)
-                            # comment print can increase fps
-                            print("Real data: ", self.read_data)
+                       
+                        self.read_data = struct.unpack('<ffffffff', data)
+                        # comment print can increase fps
+                        print("Real data: ", self.read_data)
                       
                         self._real.publishMsg(self.read_data)
 
