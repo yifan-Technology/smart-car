@@ -3,7 +3,7 @@
 #include "can.h"
 #include "usart.h"
 #include "gpio.h"
-
+#include "dma.h"
 #include "pid.h"
 #include "bsp_can.h"
 #include "mytype.h"
@@ -16,9 +16,7 @@ void SystemClock_Config(void);
 void Error_Handler(void);
 void MX_FREERTOS_Init(void);
 
-int du_count[] = {0, 0, 0, 0};
-int huifu_count[] = {0, 0, 0, 0};
-float temp_soll_speed[] = {0, 0, 0, 0};
+int cnt = 0;
 int count = 0;
 unsigned char want_send[] = "\r\n hello world!";
 void vuser_send_string(UART_HandleTypeDef *handle, unsigned char *ubyte)
@@ -37,6 +35,7 @@ void init()
   SystemClock_Config();
 
   MX_GPIO_Init();
+	MX_DMA_Init();
   MX_USART6_UART_Init();
 	
 	MX_CAN1_Init();
@@ -48,7 +47,7 @@ void init()
   //osKernelStart();
 }
 
-int protection_count = 0;
+
 float set_spd[4];
 float soll_speed[4];
 float step_add[4];
@@ -64,7 +63,6 @@ float real_right_back_ra = 0.0;
 int main(void)
 {
 	init();
-	
 	
 	for(int i=0; i<4; i++)
 	{
@@ -95,18 +93,52 @@ int main(void)
 	
 	bool protection = false; 
   while (1)
-  {
-		send(&real_left_front_rs, &real_left_front_ra, &real_right_front_rs, &real_right_front_ra, &real_left_back_rs, &real_left_back_ra, &real_right_back_rs, &real_right_back_ra);
-		
-		for (int i = 0; i < 4; i++) {
+  {	
+		// update soll speed
+		if (rDataFlag==1) {
+			rDataFlag = 0;
 			
+			uint8_t a[4];
+			for (int i = 0; i < 4; i++) {
+				a[i] = rData[i+1];
+			}
+			soll_left_front_rs = (float *)a;
+			
+			uint8_t b[4];
+			for (int i = 0; i < 4; i++) {
+				 b[i] = rData[i+5];
+			}
+			soll_right_front_rs = (float *)b;
+
+			uint8_t c[4];
+			for (int i = 0; i < 4; i++) {
+				c[i] = rData[i+9];
+			}
+			soll_left_back_rs = (float *)c;
+			
+			uint8_t d[4];
+			for (int i = 0; i < 4; i++) {
+				 d[i] = rData[i+13];
+			}
+			soll_right_back_rs = (float *)d;
+			
+			set_spd[0] = (*soll_left_front_rs);
+			set_spd[1] = (*soll_left_back_rs);
+			set_spd[2] = (*soll_right_front_rs);
+			set_spd[3] = (*soll_right_back_rs);
+		}
+		
+		// judge if should protect
+		for (int i = 0; i < 4; i++) {
 			if ((moto_chassis[i].speed_rpm > 4000) || (moto_chassis[i].speed_rpm < -4000)) {
 				protection = true;
 				break;
 			} 
 		}
 		
+		// project or normal
 		if (protection) {
+			// protect and then restart
 			set_moto_current(&hcan1, 0, 0, 0, 0);
 			for (int i = 0; i < 4; i++) {
 				pid_calc(&pid_spd[i],0, 0);
@@ -125,6 +157,7 @@ int main(void)
 			}
 			
 		} else{
+			  // not protect
 				for (int i = 0; i < 4; i++) {
 					if (i < 2)
 					{
@@ -140,14 +173,21 @@ int main(void)
 										pid_spd[2].pos_out,
 										pid_spd[3].pos_out);
 		}
-		//HAL_Delay(10);
-		//vuser_send_string(&huart6, want_send);
 		
-			
     HAL_Delay(10);
-		if (++count % 100 == 0)
+		
+		// send real speed
+		if (++cnt % 2 == 0) {
+			cnt = 0;
+			send(&real_left_front_rs, &real_left_front_ra, &real_right_front_rs, &real_right_front_ra, &real_left_back_rs, &real_left_back_ra, &real_right_back_rs, &real_right_back_ra);
+		}
+		
+		if (++count % 50 == 0){
+			count = 0;
 			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_7);
-  }
+			//vuser_send_string(&huart6, want_send);
+		}
+	}
 }
 
 

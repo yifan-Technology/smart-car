@@ -10,6 +10,8 @@ static float * soll_left_back_rs;
 static float * soll_right_front_rs;
 static float * soll_right_back_rs;
 
+static uint8_t rDataCount = 0;  //  count Data bytes
+static uint8_t rData[18];  //  for saving RX Data
 
 static uint8_t rDataBuffer[1];  //  RX Data buffer
 static uint8_t rDataFlag = 0;  //  waitting complete RX date having been send 
