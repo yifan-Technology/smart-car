@@ -88,11 +88,13 @@ class SerialThread:
     def write(self):
         last_time = time.time()
         while self.alive:
-            time.sleep(0.025)
+            time.sleep(0.03)
 
             try:
                 start = 99
                 end = 100
+                for i in range(4):
+                    self.control_data[i] += 0.1
                 data = struct.pack("<B4fB", start, self.control_data[0], self.control_data[1], self.control_data[2],
                                    self.control_data[3], end)
                 with self.write_lock:
@@ -148,15 +150,15 @@ class Parser(Process):
 
 
 if __name__ == "__main__":
-    os.system("sudo chmod 666 /dev/ttyUSB0")
+    #os.system("sudo chmod 666 /dev/ttyUSB0")
 
     if PLOT:
         data_queue = Queue()
         parser_process = Parser(data_queue)
-        Motor_serial = SerialThread(parser_process, baudrate=460800)
+        Motor_serial = SerialThread(parser_process, baudrate=460800, port="COM20")
         parser_process.start()
     else:
-        Motor_serial = SerialThread(baudrate=460800)
+        Motor_serial = SerialThread(baudrate=460800, port="COM20")
 
     t_read = threading.Thread(target=Motor_serial.read, daemon=False)
     t_write = threading.Thread(target=Motor_serial.write, daemon=False)
