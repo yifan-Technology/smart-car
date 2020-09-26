@@ -9,7 +9,7 @@ import yf_node
 import rclpy
 import yaml
 import threading
-from queue import Queue
+import queue
 from sys import argv, exit
 from mainwindow import MainWindow
 from PyQt5.QtWidgets import QApplication
@@ -85,7 +85,7 @@ class SerialThread:
                     fps = 1 / (time.time() - last_time)
 
                     # comment print can increase fps
-                    print("read fps: ", fps)
+                    #print("read fps: ", fps)
 
                     data = myByte[4:-4]
 
@@ -106,22 +106,25 @@ class SerialThread:
                     self.my_serial_port.reset_input_buffer()
 
     def write(self):
-        #with self._soll.write_queue.mutex:
-        #    self._soll.write_queue.clear()
+        with self._soll.write_queue.mutex:
+           self._soll.write_queue.queue.clear()
 
         last_time = time.time()
 
         while self.alive:
             if self._soll.write_queue.empty():
-                time.sleep(0.01)
+                time.sleep(0.005)
+                #print("wait soll speed from ros topic......")
             else:
-                control_data = self._soll.write_queue.get()
-
+                self.control_data = self._soll.write_queue.get()
+                # self.control_data = self._soll.subMsg
+                # time.sleep(.02)
+                
                 try:
                     start = 99
                     end = 100
-                    data = struct.pack("<B4fB", start, control_data[0], control_data[1], control_data[2],
-                                       control_data[3], end)
+                    data = struct.pack("<B4fB", start, self.control_data[0], self.control_data[1], self.control_data[2],
+                                       self.control_data[3], end)
 
                     with self.write_lock:
                         self.my_serial_port.write(data)
@@ -153,8 +156,8 @@ class Parser(Process):
     def add_data(self, data):
         self._in_queue.put(data)
 
-    def _store_data(self, queue):
-        self._out_queue.put(queue)
+    def _store_data(self, data):
+        self._out_queue.put(data)
 
     def get_data(self):
         return self._out_queue.get()
@@ -209,13 +212,13 @@ def main():
     soll = yf_node.YF_SollSpeed(nodeName["SollSpeed"], "SollSpeed", "sub")
     rclpy.spin_once(soll.node, timeout_sec=0.1)
 
-    q_subNode = Queue(1)
-    q_pubNode = Queue(1)
+    q_subNode = queue.Queue(1)
+    q_pubNode = queue.Queue(1)
     q_subNode.put_nowait(soll)
     q_pubNode.put_nowait(real)
 
-    t_sub = threading.Thread(target=subSpin, args=(q_subNode,))
-    t_pub = threading.Thread(target=pubSpin, args=(q_pubNode,))
+    t_sub = threading.Thread(target=subSpin, args=(q_subNode,), daemon=True)
+    t_pub = threading.Thread(target=pubSpin, args=(q_pubNode,), daemon=True)
     t_sub.start()
     t_pub.start()
 

@@ -58,7 +58,6 @@ class YF_Image_PY(YF_Node):
         self._pubMsg = Image()
     def subscription(self, msg): 
         self._subMsg = self.bridge.imgmsg_to_cv2(msg, "bgra8") 
-        print("image call back")
           
     def publishMsg(self,income):
         self._pubMsg = self.bridge.cv2_to_imgmsg(income, "bgra8")
@@ -129,7 +128,6 @@ class YF_Goal(YF_Node):
         self.pub.publish(income)  
     def subscription(self, msg):
         self._subMsg = msg
-        print("goal call back")
         
 
 class YF_CostMap(YF_Node):
@@ -156,8 +154,8 @@ class YF_SollSpeed(YF_Node):
 
     def publishMsg(self,income):
         self._pubMsg.data = income
-        self.pub.publish(self._pubMsg)
-  
+        self.pub.publish(self._pubMsg)  
+
 class YF_RealSpeed(YF_Node):
     def __init__(self,nodeName, name,nodeType):
         super().__init__(nodeName,name, Float32MultiArray,nodeType)
@@ -182,4 +180,4 @@ class YF_ObjectFlag(YF_Node):
         self._subMsg = np.array(msg.data)
     def publishMsg(self,income):
         self._pubMsg.data = income
-        self.pub.publish(self._pubMsg)      
+        self.pub.publish(self._pubMsg)     
