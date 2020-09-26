@@ -184,34 +184,10 @@ def main():
     finally:
         Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
         time.sleep(.7)
-        Motor_serial.stop()
-        time.sleep(.5)
-        t_read.join()
-        t_write.join()
-        time.sleep(.1)
-
-
-if __name__ == "__main__":
-    try:
-        Motor_serial = SerialThread("/dev/ttyUSB0")
-
-        t_read = threading.Thread(target=Motor_serial.read, daemon=False)
-        t_write = threading.Thread(target=Motor_serial.write, daemon=False)
-
-        Motor_serial.alive = True
-        t_read.start()
-        t_write.start()
-
-        while True:
-            pass
-
-    finally:
-        Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
-        time.sleep(.7)
-        with self.read_lock:
-            self.my_serial_port.reset_input_buffer()
-        with self.write_lock:
-            self.my_serial_port.reset_output_buffer()
+        with Motor_serial.read_lock:
+            Motor_serial.my_serial_port.reset_input_buffer()
+        with Motor_serial.write_lock:
+            Motor_serial.my_serial_port.reset_output_buffer()
         Motor_serial.stop()
         time.sleep(.5)
         t_read.join()
