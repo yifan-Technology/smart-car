@@ -24,8 +24,8 @@ class SerialThread:
         self.alive = False  # 当 alive 为 True，读写线程会进行
 
         # self.control_data = [800.0, 800.0, 800.0, 800.0]
-        # self.control_data = [-300.0, -300.0, -300.0, -300.0]
-        self.control_data = [220.2, 220.2, 220.2, 220.2]
+        self.control_data = [-300.0, -300.0, -300.0, -300.0]
+        #self.control_data = [220.2, 220.2, 220.2, 220.2]
         # self.control_data = [0.0, 0.0, 0.0, 0.0]
 
         self.read_data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -150,15 +150,15 @@ class Parser(Process):
 
 
 if __name__ == "__main__":
-    #os.system("sudo chmod 666 /dev/ttyUSB0")
+    os.system("sudo chmod 666 /dev/ttyUSB0")
 
     if PLOT:
         data_queue = Queue()
         parser_process = Parser(data_queue)
-        Motor_serial = SerialThread(parser_process, baudrate=460800, port="COM20")
+        Motor_serial = SerialThread(parser_process, baudrate=460800)
         parser_process.start()
     else:
-        Motor_serial = SerialThread(baudrate=460800, port="COM20")
+        Motor_serial = SerialThread(baudrate=460800)
 
     t_read = threading.Thread(target=Motor_serial.read, daemon=False)
     t_write = threading.Thread(target=Motor_serial.write, daemon=False)
