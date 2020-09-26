@@ -16,6 +16,7 @@ void SystemClock_Config(void);
 void Error_Handler(void);
 void MX_FREERTOS_Init(void);
 
+bool Flag;
 int cnt = 0;
 int count = 0;
 unsigned char want_send[] = "\r\n hello world!";
@@ -87,46 +88,49 @@ int main(void)
 	
 	my_can_filter_init_recv_all(&hcan1);
 	HAL_CAN_Receive_IT(&hcan1, CAN_FIFO0);
-	while(HAL_UART_Receive_IT(&huart6, rDataBuffer, 1) != HAL_OK);
+	//while(HAL_UART_Receive_IT(&huart6, rDataBuffer, 1) != HAL_OK);
+	while(HAL_UART_Receive_IT(&huart6, rData, 18) != HAL_OK);
 	
 	HAL_Delay(100);
 	
 	bool protection = false; 
+	
   while (1)
   {	
 		// update soll speed
-		if (rDataFlag==1) {
-			rDataFlag = 0;
+//		if (rDataFlag==1) {
+//			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_5);
+//			rDataFlag = 0;
 			
-			uint8_t a[4];
-			for (int i = 0; i < 4; i++) {
-				a[i] = rData[i+1];
-			}
-			soll_left_front_rs = (float *)a;
-			
-			uint8_t b[4];
-			for (int i = 0; i < 4; i++) {
-				 b[i] = rData[i+5];
-			}
-			soll_right_front_rs = (float *)b;
+//			uint8_t a[4];
+//			for (int i = 0; i < 4; i++) {
+//				a[i] = rData[i+1];
+//			}
+//			soll_left_front_rs = (float *)a;
+//			
+//			uint8_t b[4];
+//			for (int i = 0; i < 4; i++) {
+//				 b[i] = rData[i+5];
+//			}
+//			soll_right_front_rs = (float *)b;
 
-			uint8_t c[4];
-			for (int i = 0; i < 4; i++) {
-				c[i] = rData[i+9];
-			}
-			soll_left_back_rs = (float *)c;
-			
-			uint8_t d[4];
-			for (int i = 0; i < 4; i++) {
-				 d[i] = rData[i+13];
-			}
-			soll_right_back_rs = (float *)d;
-			
-			set_spd[0] = (*soll_left_front_rs);
-			set_spd[1] = (*soll_left_back_rs);
-			set_spd[2] = (*soll_right_front_rs);
-			set_spd[3] = (*soll_right_back_rs);
-		}
+//			uint8_t c[4];
+//			for (int i = 0; i < 4; i++) {
+//				c[i] = rData[i+9];
+//			}
+//			soll_left_back_rs = (float *)c;
+//			
+//			uint8_t d[4];
+//			for (int i = 0; i < 4; i++) {
+//				 d[i] = rData[i+13];
+//			}
+//			soll_right_back_rs = (float *)d;
+//			
+//			set_spd[0] = (*soll_left_front_rs);
+//			set_spd[1] = (*soll_left_back_rs);
+//			set_spd[2] = (*soll_right_front_rs);
+//			set_spd[3] = (*soll_right_back_rs);
+//		}
 		
 		// judge if should protect
 		for (int i = 0; i < 4; i++) {
@@ -182,15 +186,65 @@ int main(void)
 			send(&real_left_front_rs, &real_left_front_ra, &real_right_front_rs, &real_right_front_ra, &real_left_back_rs, &real_left_back_ra, &real_right_back_rs, &real_right_back_ra);
 		}
 		
-		if (++count % 50 == 0){
+		if (++count % 3 == 0){
+
 			count = 0;
-			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_7);
+			//HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_5);
 			//vuser_send_string(&huart6, want_send);
+			
+			if (Flag == true) {
+			  //HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_5);
+ 			  Flag = false;
+				
+				uint8_t a[4];
+				for (int i = 0; i < 4; i++) {
+					a[i] = rData[i+1];
+				}
+				soll_left_front_rs = (float *)a;
+				
+				uint8_t b[4];
+				for (int i = 0; i < 4; i++) {
+					 b[i] = rData[i+5];
+				}
+				soll_right_front_rs = (float *)b;
+
+				uint8_t c[4];
+				for (int i = 0; i < 4; i++) {
+					c[i] = rData[i+9];
+				}
+				soll_left_back_rs = (float *)c;
+				
+				uint8_t d[4];
+				for (int i = 0; i < 4; i++) {
+					 d[i] = rData[i+13];
+				}
+				soll_right_back_rs = (float *)d;
+				
+				set_spd[0] = (*soll_left_front_rs);
+				set_spd[1] = (*soll_left_back_rs);
+				set_spd[2] = (*soll_right_front_rs);
+				set_spd[3] = (*soll_right_back_rs);
+	 		}
+			
+			
 		}
 	}
 }
 
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{	
+	/* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
+  
+	if(rData[0]==0x63 && rData[17]==0x64){  
+		
+//		if (!Flag)
+//			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_7);
+		Flag = true;
+	}
+  
+  while(HAL_UART_Receive_IT(&huart6, rData, 18) != HAL_OK); // Wait completly receive 1 byte data, and put data in rDataBuffer
+}
 
 /** System Clock Configuration
 */

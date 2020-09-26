@@ -10,16 +10,20 @@ void updateRSRA(float *real_left_front_rs, float *real_left_front_ra, float *rea
 {	
   // get current rotate spped and rotate angle
   
-	*real_left_front_rs = moto_chassis[0].speed_rpm;
+	*real_left_front_rs = set_spd[0];
+	//*real_left_front_rs = moto_chassis[0].speed_rpm;
 	*real_left_front_ra = moto_chassis[0].last_angle;
-
-	*real_right_front_rs = -moto_chassis[2].speed_rpm;
+	
+	*real_right_front_rs = set_spd[1];
+	//*real_right_front_rs = -moto_chassis[2].speed_rpm;
 	*real_right_front_ra = moto_chassis[2].last_angle;
 	
-	*real_left_back_rs = moto_chassis[1].speed_rpm;
+	*real_left_back_rs = set_spd[2];
+	//*real_left_back_rs = moto_chassis[1].speed_rpm;
 	*real_left_back_ra = moto_chassis[1].last_angle;
-
-	*real_right_back_rs = -moto_chassis[3].speed_rpm;
+	
+	*real_right_back_rs = set_spd[3];
+	//*real_right_back_rs = -moto_chassis[3].speed_rpm;
 	*real_right_back_ra = moto_chassis[3].last_angle;
 }
 
@@ -41,19 +45,21 @@ void send(float *real_left_front_rs, float *real_left_front_ra, float *real_righ
 	HAL_UART_Transmit_DMA(&huart6, send_info, sizeof(send_info));
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{	
-	/* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-	
-	if (rDataBuffer[0] == 0x63)		rDataCount = 0;
-  rData[rDataCount]=rDataBuffer[0];
-	rDataCount++;
-  
-	if(rDataBuffer[0]==0x64 && rData[0]==0x63 && rDataCount==18){  
-		rDataCount = 0;
-		rDataFlag = 1;
-	}
-  
-  while(HAL_UART_Receive_IT(&huart6, rDataBuffer, 1) != HAL_OK); // Wait completly receive 1 byte data, and put data in rDataBuffer
-}
+
+
+//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+//{	
+//	/* Prevent unused argument(s) compilation warning */
+//  UNUSED(huart);
+//	
+//	if (rDataBuffer[0] == 0x63)		rDataCount = 0;
+//  rData[rDataCount]=rDataBuffer[0];
+//	rDataCount++;
+//  
+//	if(rDataBuffer[0]==0x64 && rData[0]==0x63 && rDataCount==18){  
+//		rDataCount = 0;
+//		rDataFlag = 1;
+//	}
+//  
+//  while(HAL_UART_Receive_IT(&huart6, rDataBuffer, 1) != HAL_OK); // Wait completly receive 1 byte data, and put data in rDataBuffer
+//}
