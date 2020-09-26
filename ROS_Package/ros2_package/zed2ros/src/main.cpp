@@ -239,36 +239,13 @@ int main(int argc, char **argv) {
         cv::Mat cvImage = cv::Mat((int) image.getHeight(), (int) image.getWidth(), CV_8UC4, image.getPtr<sl::uchar1>(sl::MEM::CPU));
         cv::Mat cvPointCloud = cv::Mat((int) pointCloud.getHeight(), (int) pointCloud.getWidth(), CV_32FC4, pointCloud.getPtr<sl::uchar1>(sl::MEM::CPU));
         
-        if (flag == 101){
-            if (objects.is_new) {
-                int objects_Num = objects.object_list.size();
-                if (!objects.object_list.empty()) {
-                    // func 1
-                    for(int i = 0; i < objects_Num; ++i){
-                        auto object = objects.object_list[i];
-
-                        cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
-                                object.bounding_box_2d[0][1],// y
-                                object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
-                                object.bounding_box_2d[2][1]-object.bounding_box_2d[0][1]); // h
-                        center.x = (int) (object.bounding_box_2d[2][0]+object.bounding_box_2d[0][0])>>1;
-                        center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
-                        cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
-                        cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
-
-                    }        
-                }
-            }
-        } else if( flag == 0 && !frozenFrame){
+        if (objects.is_new) {
             int objects_Num = objects.object_list.size();
-            if (objects_Num == 0){
-                signal.pubMsg(101);
-                rclcpp::spin_some(signal.node);
-            }
             if (!objects.object_list.empty()) {
                 // func 1
                 for(int i = 0; i < objects_Num; ++i){
                     auto object = objects.object_list[i];
+
                     cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
                             object.bounding_box_2d[0][1],// y
                             object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
@@ -277,101 +254,164 @@ int main(int argc, char **argv) {
                     center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
                     cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
                     cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
-                }
-                
-                signal.pubMsg(-1*objects_Num);
-                rclcpp::spin_some(signal.node);
-                frozenFrame = true;
-                trackTarget = false;
-            }
 
-        } else if( (flag<0) && (flag>=100) && (!trackTarget) ){
-            frozenFrame = false;            
-            trackTarget = true;
-            int objIdx = flag - 1;
-            if (objects.is_new) {
-                int objects_Num = objects.object_list.size();
-                if (!objects.object_list.empty()) {
-                    target = objects.object_list.front();
-                    // func 1
-                    for(int i = 0; i < objects_Num; ++i){
-                        auto object = objects.object_list[i];
-                        if (i == objIdx){                            
-                            target = object;
-                        }
-                        cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
-                                object.bounding_box_2d[0][1],// y
-                                object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
-                                object.bounding_box_2d[2][1]-object.bounding_box_2d[0][1]); // h
-                        center.x = (int) (object.bounding_box_2d[2][0]+object.bounding_box_2d[0][0])>>1;
-                        center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
-                        cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
-                        cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
-                        
-                        // if (detection_parameters.enable_tracking)
-                        //     cout << object.tracking_state ;
-                    }
-                    cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
-                                target.bounding_box_2d[0][1],// y
-                                target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
-                                target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
-                    cv::Point center;
-                    center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
-                    center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
-                    cv::rectangle(cvImage,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
-                    cv::circle(cvImage,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
-                    goal.pubMsg(target.position.x,target.position.y,target.position.z); 
-                }
+                }        
             }
-        } else if((flag<0) && (flag>=100) && (trackTarget)){
-            if (objects.is_new) {
-                int objects_Num = objects.object_list.size();
-                if (!objects.object_list.empty()) {
-                    target = objects.object_list.front();
-                    bool findTarget = false;
-                    // func 1
-                    for(int i = 0; i < objects_Num; ++i){
-                        auto object = objects.object_list[i];
-                        if (target.id == object.id){                            
-                            target = object;
-                            findTarget = true;
-                        }
-                        cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
-                                object.bounding_box_2d[0][1],// y
-                                object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
-                                object.bounding_box_2d[2][1]-object.bounding_box_2d[0][1]); // h
-                        center.x = (int) (object.bounding_box_2d[2][0]+object.bounding_box_2d[0][0])>>1;
-                        center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
-                        cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
-                        cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
+            cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
+                        target.bounding_box_2d[0][1],// y
+                        target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
+                        target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
+            cv::Point center;
+            center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
+            center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
+            cv::rectangle(cvImage,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
+            cv::circle(cvImage,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
+            goal.pubMsg(target.position.x,target.position.y,target.position.z); 
+        }
+        cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
+                    target.bounding_box_2d[0][1],// y
+                    target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
+                    target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
+        cv::Point center;
+        center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
+        center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
+        cv::rectangle(cvImage,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
+        cv::circle(cvImage,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
+        goal.pubMsg(target.position.x,target.position.y,target.position.z); 
+
+        // if (flag == 101){
+        //     if (objects.is_new) {
+        //         int objects_Num = objects.object_list.size();
+        //         if (!objects.object_list.empty()) {
+        //             // func 1
+        //             for(int i = 0; i < objects_Num; ++i){
+        //                 auto object = objects.object_list[i];
+
+        //                 cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
+        //                         object.bounding_box_2d[0][1],// y
+        //                         object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
+        //                         object.bounding_box_2d[2][1]-object.bounding_box_2d[0][1]); // h
+        //                 center.x = (int) (object.bounding_box_2d[2][0]+object.bounding_box_2d[0][0])>>1;
+        //                 center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
+        //                 cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
+        //                 cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
+
+        //             }        
+        //         }
+        //     }
+        // } else if( flag == 0 && !frozenFrame){
+        //     int objects_Num = objects.object_list.size();
+        //     if (objects_Num == 0){
+        //         signal.pubMsg(101);
+        //         rclcpp::spin_some(signal.node);
+        //     }
+        //     if (!objects.object_list.empty()) {
+        //         // func 1
+        //         for(int i = 0; i < objects_Num; ++i){
+        //             auto object = objects.object_list[i];
+        //             cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
+        //                     object.bounding_box_2d[0][1],// y
+        //                     object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
+        //                     object.bounding_box_2d[2][1]-object.bounding_box_2d[0][1]); // h
+        //             center.x = (int) (object.bounding_box_2d[2][0]+object.bounding_box_2d[0][0])>>1;
+        //             center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
+        //             cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
+        //             cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
+        //         }
+                
+        //         signal.pubMsg(-1*objects_Num);
+        //         rclcpp::spin_some(signal.node);
+        //         frozenFrame = true;
+        //         trackTarget = false;
+        //     }
+
+        // } else if( (flag<0) && (flag>=100) && (!trackTarget) ){
+        //     frozenFrame = false;            
+        //     trackTarget = true;
+        //     int objIdx = flag - 1;
+        //     if (objects.is_new) {
+        //         int objects_Num = objects.object_list.size();
+        //         if (!objects.object_list.empty()) {
+        //             target = objects.object_list.front();
+        //             // func 1
+        //             for(int i = 0; i < objects_Num; ++i){
+        //                 auto object = objects.object_list[i];
+        //                 if (i == objIdx){                            
+        //                     target = object;
+        //                 }
+        //                 cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
+        //                         object.bounding_box_2d[0][1],// y
+        //                         object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
+        //                         object.bounding_box_2d[2][1]-object.bounding_box_2d[0][1]); // h
+        //                 center.x = (int) (object.bounding_box_2d[2][0]+object.bounding_box_2d[0][0])>>1;
+        //                 center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
+        //                 cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
+        //                 cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
                         
-                        // if (detection_parameters.enable_tracking)
-                        //     cout << object.tracking_state ;
-                    }
-                    if (!findTarget){
-                        float dist = 10000.0;
-                        for(int i = 0; i < objects_Num; ++i){
-                            auto object = objects.object_list[i];
-                            float curr_dist =     object.position.x*object.position.x 
-                                     + object.position.y*object.position.y
-                                     + object.position.z*object.position.z;
-                            if (dist>curr_dist){
-                                target = object;
-                            }                                
-                        }
-                    }
-                    cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
-                                target.bounding_box_2d[0][1],// y
-                                target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
-                                target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
-                    cv::Point center;
-                    center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
-                    center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
-                    cv::rectangle(cvImage,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
-                    cv::circle(cvImage,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
-                    goal.pubMsg(target.position.x,target.position.y,target.position.z); 
-                }
-            }
+        //                 // if (detection_parameters.enable_tracking)
+        //                 //     cout << object.tracking_state ;
+        //             }
+        //             cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
+        //                         target.bounding_box_2d[0][1],// y
+        //                         target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
+        //                         target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
+        //             cv::Point center;
+        //             center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
+        //             center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
+        //             cv::rectangle(cvImage,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
+        //             cv::circle(cvImage,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
+        //             goal.pubMsg(target.position.x,target.position.y,target.position.z); 
+        //         }
+        //     }
+        // } else if((flag<0) && (flag>=100) && (trackTarget)){
+        //     if (objects.is_new) {
+        //         int objects_Num = objects.object_list.size();
+        //         if (!objects.object_list.empty()) {
+        //             target = objects.object_list.front();
+        //             bool findTarget = false;
+        //             // func 1
+        //             for(int i = 0; i < objects_Num; ++i){
+        //                 auto object = objects.object_list[i];
+        //                 if (target.id == object.id){                            
+        //                     target = object;
+        //                     findTarget = true;
+        //                 }
+        //                 cv::Rect bbox_iter = cv::Rect(object.bounding_box_2d[0][0], // x
+        //                         object.bounding_box_2d[0][1],// y
+        //                         object.bounding_box_2d[2][0]-object.bounding_box_2d[0][0], // w
+        //                         object.bounding_box_2d[2][1]-object.bounding_box_2d[0][1]); // h
+        //                 center.x = (int) (object.bounding_box_2d[2][0]+object.bounding_box_2d[0][0])>>1;
+        //                 center.y = (int) (object.bounding_box_2d[2][1]+object.bounding_box_2d[0][1])>>1;
+        //                 cv::rectangle(cvImage,bbox_iter, cv::Scalar(255, 0, 255), 3, 3,0);
+        //                 cv::putText(cvImage,  to_string(i+1) , center, cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(255, 0, 255), 2, 8, 0);
+                        
+        //                 // if (detection_parameters.enable_tracking)
+        //                 //     cout << object.tracking_state ;
+        //             }
+        //             if (!findTarget){
+        //                 float dist = 10000.0;
+        //                 for(int i = 0; i < objects_Num; ++i){
+        //                     auto object = objects.object_list[i];
+        //                     float curr_dist =     object.position.x*object.position.x 
+        //                              + object.position.y*object.position.y
+        //                              + object.position.z*object.position.z;
+        //                     if (dist>curr_dist){
+        //                         target = object;
+        //                     }                                
+        //                 }
+        //             }
+        //             cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
+        //                         target.bounding_box_2d[0][1],// y
+        //                         target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
+        //                         target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
+        //             cv::Point center;
+        //             center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
+        //             center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
+        //             cv::rectangle(cvImage,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
+        //             cv::circle(cvImage,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
+        //             goal.pubMsg(target.position.x,target.position.y,target.position.z); 
+        //         }
+        //     }
 
 
 
@@ -416,6 +456,8 @@ int main(int argc, char **argv) {
 
         //Display the image
         cv::imshow(win_name, cvMap);
+        // cv::imshow("LiveVideo", cvImage);
+        // cv::imshow("SendMap", cvCostMap);
         key = cv::waitKey(1);
 
         // cout << "FPS : " <<(double) CLOCKS_PER_SEC/(clock() - startTime)  << " " << endl;        
