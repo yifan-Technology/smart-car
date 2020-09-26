@@ -5,10 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import yaml
+import potential_field_planning
 
 
 def dwa_init():
-    with open("/home/taungdrier/Desktop/dwa_config.yaml", "r") as f:
+    path = 'dwa_config.yaml'
+    # path = '/home/yf/yifan/dwa_config.yaml'
+    # path = "/home/taungdrier/Desktop/dwa_config.yaml"
+    with open(path, "r") as f:
         config = yaml.load(f)
         print("load successful")
 
@@ -29,9 +33,14 @@ class DWA_Controller():
         self.yaw_rate_resolution = car_state['yaw_rate_resolution'] * np.pi / 180  # 15. * np.pi / 180.0  # [rad/s]
         self.dt = car_state['dt']  # 0.2  # [s] Time tick for motion prediction
         self.predict_time = car_state['predict_time']  # 0.8  # [s]  less and more flexible
+
         self.to_goal_cost_gain = car_state['to_goal_cost_gain']  # 0.16
-        self.speed_cost_gain = car_state['speed_cost_gain']  # 0.394
+        # self.speed_cost_gain = car_state['speed_cost_gain'] # 0.394
         self.obstacle_cost_gain = car_state['obstacle_cost_gain']  # 0.6
+        self.speed_adjust_param = car_state['speed_adjust_param']
+        self.speed_cost_gain_max = car_state['speed_cost_gain_max']
+        self.speed_cost_gain_min = car_state['speed_cost_gain_min']
+
         self.dist_to_goal = car_state['dist_to_goal']  # 1e10
         self.dead_count = car_state['dead_count']  # 0
 
@@ -41,7 +50,7 @@ class DWA_Controller():
         self.HUMAN_SHAPE = flag_state['HUMAN_SHAPE']  # False
         self.MAP_TO_OBCOORD = flag_state['MAP_TO_OBCOORD']  # True
         self.MEASURE_TIME = flag_state['MEASURE_TIME']  # False
-        self.TRANSFORM_MAP = flag_state['TRANSFORM_MAP']  # False
+        self.TEMPORARY_GOAL_ARRIVED = False
 
         self.m = 5
         self.g = 9.80665
@@ -68,28 +77,35 @@ class DWA_Controller():
         self.goal_range_1 = 10.
         self.goal_range_2 = 2.
 
+    def dynamic_speed_cost(self, dmin):
+        ds = self.speed_adjust_param * self.max_speed/self.max_accel
+        if dmin <= ds:
+            return self.speed_cost_gain_min + (self.speed_cost_gain_max - self.speed_cost_gain_min) * (dmin/ds)**1.8
+        else:
+            return self.speed_cost_gain_max
+
     def obmap2coordinaten(self, obmap, res):
         return np.argwhere(obmap == 1) * res
 
-    def inverse_transforamtion(self, goal, ob_cood):
+    def inverse_transforamtion(self, goal, ob_cood, tr_map=True, tr_goal_chain=False):
         theta = self.x[2] - np.pi / 2
         Rot_i2b = np.array([[np.cos(theta), np.sin(theta)],
                             [-np.sin(theta), np.cos(theta)]])
-
-        goal_i = goal - self.x[:2]
-        goal_b = Rot_i2b.dot(goal_i) + np.array([2.5, 0.])
-        # print("goal:", goal_b)
-
-        if self.TRANSFORM_MAP:
-            ob_b = np.zeros((np.shape(ob_cood)))
-            ob_i = ob_cood[:, :2] - self.x[:2]
-            for i in range(len(ob_b)):
-                rotob = Rot_i2b.dot(ob_i[i, :2])
-                ob_b[i, :2] = rotob + np.array([2.5, 0.])
-            return goal_b, ob_b
+        if tr_goal_chain:
+            goal_i = goal - self.x[:2]
+            goal_b = (Rot_i2b.dot(goal_i.T) + np.array([[2.5], [0.]])).T
 
         else:
-            return goal_b, ob_cood
+            goal_i = goal - self.x[:2]
+            goal_b = Rot_i2b.dot(goal_i) + np.array([2.5, 0.])
+            # print("goal:", goal_b)
+
+        if tr_map:
+            ob_i = ob_cood[:, :2] - self.x[:2]
+            ob_b = (Rot_i2b.dot(ob_i.T) + np.array([[2.5], [0.]])).T
+            return goal_b, ob_b
+        else:
+            return goal_b
 
     def clear_human_shape(self, goal, obstacle, res):
         goal_inmap = np.array((goal / res), dtype=int)
@@ -124,7 +140,7 @@ class DWA_Controller():
         elif mode == 'PC_TO_MOTOR':
             return u_in * speed_gain
 
-    def dwa_control(self, motor_ist, x_pre, goal, obstacle):
+    def dwa_control(self, motor_ist, x_pre, zw_goal, ob_list):
         """
         Dynamic Window Approach control
         """
@@ -140,19 +156,17 @@ class DWA_Controller():
 
         dw = self.calc_dynamic_window(state)
 
-        ob_list = obstacle
-
         if self.HUMAN_SHAPE:
             ob_list = np.vstack((ob_list, human_obmap(target)))
 
-        u_cal, traj_soll, all_traj = self.calc_control_and_trajectory(state, dw, goal, ob_list)
+        u_cal, traj_soll, all_traj = self.calc_control_and_trajectory(state, dw, zw_goal, ob_list)
         vtrans = np.array([[1, -self.c], [1, self.c]]) / self.r
         u_soll = np.dot(vtrans, u_cal)
         motor_soll = self.speed_change(u_soll, 'PC_TO_MOTOR')
 
         # check reaching goal
         dist_head = self.a * np.array([np.cos(state[2]), np.sin(state[2])])
-        self.dist_to_goal = np.linalg.norm(dist_head + state[:2] - goal)  # generate u = wheel_speed_soll
+        self.dist_to_goal = np.linalg.norm(dist_head + state[:2] - zw_goal)  # generate u = wheel_speed_soll
 
         # if self.dist_to_goal >= self.goal_range_1:
         #     self.to_goal_cost_gain = 0.3
@@ -163,17 +177,16 @@ class DWA_Controller():
         #     self.to_goal_cost_gain = 0.6
 
         # print('cost param', self.to_goal_cost_gain)
-        if np.linalg.norm(motor_soll) < 400.0 and self.dist_to_goal >= self.robot_radius:
-            motor_soll = np.array([600., -600.])
-            self.dead_count += 1
-            if self.dead_count % 10 == 0:
-                np.random.shuffle(motor_soll)
-
-            print('deadzone checked')
+        # if np.linalg.norm(motor_soll) < 300.0 and self.dist_to_goal >= self.robot_radius:
+        #     motor_soll = np.array([500., -500.])
+        #     self.dead_count += 1
+        #     if self.dead_count % 10 == 0:
+        #         np.random.shuffle(motor_soll)
+        #     print('deadzone checked')
 
         if self.dist_to_goal <= self.robot_radius:
-            print("Goal!!")
-            self.GOAL_ARRIVAED = True
+            self.TEMPORARY_GOAL_ARRIVED = True
+            # self.GOAL_ARRIVED = True
 
         self.x = self.motion(state, u_ist, self.dt)
 
@@ -250,9 +263,13 @@ class DWA_Controller():
                 all_traj.append(traj)
                 # calc cost
                 to_goal_cost = self.to_goal_cost_gain * self.calc_to_goal_cost(traj, goal)
-                speed_cost = self.speed_cost_gain * (self.max_speed - traj[-1, 3])
-                ob_cost = self.obstacle_cost_gain * self.calc_obstacle_cost(traj, obstacle)
-
+                dist_square, dmin = self.calc_obstacle_cost(traj, obstacle)
+                if dist_square != float("inf"):
+                    ob_cost = self.obstacle_cost_gain * dist_square
+                else:
+                    ob_cost = float("inf")
+                speed_cost = self.dynamic_speed_cost(dmin) * (self.max_speed - traj[-1, 3])
+                # print('speed cost:', speed_cost)
                 final_cost = to_goal_cost + speed_cost + ob_cost
 
                 # search minimum trajectory
@@ -291,12 +308,12 @@ class DWA_Controller():
         left_check = local_ob[:, 1] >= -self.robot_width / 2
         if (np.logical_and(np.logical_and(upper_check, right_check),
                            np.logical_and(bottom_check, left_check))).any():
-            return float("Inf")
+            return float("Inf"), 0
         # elif self.robot_type == RobotType.circle:
         #    if np.array(rho <= self.robot_radius).any():
         #        return float("Inf")
         min_r = np.min(rho)
-        return 1.0 / min_r ** 2  # OK
+        return 1.0 / min_r ** 2 , min_r # OK
 
     def calc_to_goal_cost(self, trajectory, goal):
         """
@@ -314,14 +331,36 @@ class DWA_Controller():
 def human_obmap(goal):
     cx = int(goal[0])
     cy = int(goal[1])
-    human_length = 0.35
-    human_width = 0.2
-    i = np.linspace(0, 2 * np.pi, 10)
+    human_length = 0.1
+    human_width = 0.35
+    i = np.linspace(0, 2 * np.pi, 20)
     x = (cx + human_length - human_length * np.cos(i))
     y = (cy + human_width - human_width * np.sin(i))
     human_shape = np.vstack((x, y)).T
     return human_shape
 
+def sevenpoint_map(man):
+    manx = man[0]
+    many = man[1]
+    point_map = np.array(
+            [[manx - 0.4, many],
+                [manx - 0.35, many],
+              [manx - 0.3, many],
+              [manx - 0.25, many],
+                [manx - 0.2, many],
+              [manx - 0.15, many],
+            [manx - 0.1, many],
+              [manx - 0.05, many],
+              [manx , many],
+              [manx + 0.05, many],
+            [manx + 0.1, many],
+              [manx + 0.15, many],
+             [manx + 0.2, many],
+              [manx + 0.25, many],
+            [manx + 0.3, many],
+              [manx + 0.35, many],
+             [manx + 0.4, many]])
+    return point_map
 
 def plot_arrow(dwa, length=0.6, width=0.3):
     dist_head = dwa.a * np.array([np.cos(dwa.x[2]), np.sin(dwa.x[2])])  # pragma: no cover
@@ -366,32 +405,53 @@ def ob_to_obmap(obkood, res):
     map0[index[:, 0], index[:, 1]] = 1
     return map0
 
-
 if __name__ == '__main__':
 
     car_zustand, flag_zustand = dwa_init()
     test_dwa = DWA_Controller(car_zustand, flag_zustand)
-
+    planner_state = potential_field_planning.pf_planner_init()
+    pf_planner = potential_field_planning.Potential_Field_Planner(planner_state)
     trajectory_ist = test_dwa.x
     print(" start!!")
-    target = np.array([2.2, 4.0])
-    map_range = 15.
+    target = np.array([2.5, 3.])
+    map_range = 5.
     map_pixel = 100
     resolution = map_range / map_pixel
+    test_map = False
+    test_2m2m_map = True
+    USE_SAVED_MAP = True
 
-    USE_SAVED_MAP = False
-    test_dwa.RESET_STATE = True
     test_dwa.TRANSFORM_MAP = True
-    # test_dwa.SHOW_ANIMATION = False
-    # test_dwa.MEASURE_TIME =True
-
+    draw_initialframe_traj = False
+    test_dwa.SHOW_ANIMATION = True
+    test_dwa.MEASURE_TIME = True
+    test_dwa.RESET_STATE = False
+    # maplist = human_obmap(np.array([2.5, 2.]))
+    maplist = sevenpoint_map(np.array([2.5, 2.]))
+    np.save("test_2m2m_map.npy", maplist)
+    # plt.plot(maplist[:, 0], maplist[:, 1], "sk")
+    # plt.show()
     if USE_SAVED_MAP:
-        obmap = np.load('test_map/obmap_square.npy')
+        # PATH ='test_map/obmap_square.npy'
+        if test_2m2m_map:
+            oblist = np.load('test_2m2m_map.npy')
+
+
         # obmap = np.load('test_map/obstacle_loc.npy')
-        obmap = test_dwa.clear_human_shape(target, obmap, resolution)
-        obmap[obmap >= 0.9] = 1
-        obmap[obmap < 0.9] = 0
-        oblist = test_dwa.obmap2coordinaten(obmap, resolution)
+        # obmap = test_dwa.clear_human_shape(target, obmap, resolution)
+        # obmap[obmap >= 0.9] = 1
+        # obmap[obmap < 0.9] = 0
+        # oblist = test_dwa.obmap2coordinaten(obmap, resolution)
+        # obmap = np.load('C:/Users/53276/OneDrive/Desktop/obmap.npy')[7]
+        # obmap[obmap>50] = 1
+        # obmap[obmap<=125] = 0
+        # oblist = obmap
+        # oblist = test_dwa.obmap2coordinaten(obmap, 5/30)
+        # plt.scatter(oblist[:,0],oblist[:,1])
+        # plt.show()
+        elif test_map:
+            obmap = np.load('C:/Users/53276/OneDrive/Desktop/test_map.npy')
+            oblist = test_dwa.obmap2coordinaten(obmap, 5 / 100)
 
     else:
         ob = np.array([[-1, -1],
@@ -418,17 +478,61 @@ if __name__ == '__main__':
         oblist = ob
 
     wheelspeed_ist = np.array([0., 0.])
+    ws_soll = np.array([0., 0.])
     goal_traj = np.copy(target)
+    traj_ist = np.array([2.5, 0.])
     # plt.plot(oblist[:, 0], oblist[:, 1], "sk")
     # plt.show()
+    target_traj = pf_planner.potential_field_planning(target, oblist)
+    i_ = 0
+    # target_traj = np.array([[2.5,0.2],
+    #                         [5.,2.],
+    #                         [2.5,4.]])
+
+    goal_to_reach = target_traj[0]
+    if draw_initialframe_traj:
+        test_dwa.RESET_STATE = False
+        while not test_dwa.GOAL_ARRIVAED:
+            ws_soll, traj_soll, all_traj = test_dwa.dwa_control(ws_soll, test_dwa.x, target, oblist)
+            traj_ist = np.vstack((traj_ist, test_dwa.x[:2]))
+            if np.linalg.norm(target - test_dwa.x[:2]) < 0.8:
+                break
+            print('state',test_dwa.x)
+        print("generate soll traj")
+        test_dwa.x = np.array([2.5, 0., np.pi / 2, 0, 0])
+        wheelspeed_ist = np.array([0., 0.])
+        test_dwa.GOAL_ARRIVAED = False
+        test_dwa.RESET_STATE = True
+
+
+
     while True:
         start = time.time()
-        wheelspeed_soll, trajectory_soll, all_trajectory = test_dwa.dwa_control(wheelspeed_ist, test_dwa.x, target,
+        wheelspeed_soll, trajectory_soll, all_trajectory = test_dwa.dwa_control(wheelspeed_ist, test_dwa.x,
+                                                                                goal_to_reach,
                                                                                 oblist)
-        # print('current state:', test_dwa.x)
+        if i_ >= len(target_traj):
+            goal_to_reach = target
+        else:
+            goal_to_reach = target_traj[i_]
+
+        if test_dwa.TEMPORARY_GOAL_ARRIVED:
+            i_ += 1
+            test_dwa.TEMPORARY_GOAL_ARRIVED = False
+
+        # print('distance:', np.linalg.norm(target - test_dwa.x[:2]))
+
         if test_dwa.RESET_STATE:
-            target, oblist = test_dwa.inverse_transforamtion(target, oblist)
+            # target_traj, oblist = test_dwa.inverse_transforamtion(target_traj, oblist, tr_goal_chain=True)
+            goal_to_reach, oblist = test_dwa.inverse_transforamtion(goal_to_reach, oblist, tr_map=True)
+            target_traj = test_dwa.inverse_transforamtion(target_traj, oblist, tr_map=False, tr_goal_chain=True)
+            target = test_dwa.inverse_transforamtion(target, oblist, tr_map=False)
             goal_traj = np.vstack((goal_traj, target))
+
+
+        if np.linalg.norm(target - test_dwa.x[:2]) < 1.:
+            test_dwa.GOAL_ARRIVAED = True
+
 
         # print('current wheel speed soll ', wheelspeed_soll)
         wheelspeed_ist = wheelspeed_soll
@@ -437,13 +541,12 @@ if __name__ == '__main__':
         if test_dwa.HUMAN_SHAPE:
             oblist = np.vstack((oblist, human_obmap(target)))
 
-        if test_dwa.MEASURE_TIME:
-            print('elasped time:', time.time() - start)
+
 
         if test_dwa.SHOW_ANIMATION:
             plt.cla()
-            figManager = plt.get_current_fig_manager()
-            figManager.window.showMaximized()
+            # figManager = plt.get_current_fig_manager()
+            # figManager.window.showMaximized()
             # for stopping simulation with the esc key.
             plt.gcf().canvas.mpl_connect(
                 'key_release_event',
@@ -461,8 +564,10 @@ if __name__ == '__main__':
 
             if test_dwa.RESET_STATE:
                 plt.plot(goal_traj[:, 0], goal_traj[:, 1], color='purple')
-                # plt.plot(goal_ori_traj[:, 0], goal_ori_traj[:, 1], color='orange')
+                # plt.plot(traj_ist[:, 0], traj_ist[:, 1], color='orange')
+                plt.plot(target_traj[:, 0], target_traj[:, 1], color='orange')
             else:
+                plt.plot(target_traj[:, 0], target_traj[:, 1], color='orange')
                 plt.plot(trajectory_ist[:, 0], trajectory_ist[:, 1], "-r")
 
             plt.plot(target[0], target[1], "^r")
@@ -470,6 +575,8 @@ if __name__ == '__main__':
             plt.grid(True)
             plt.pause(0.1)
 
+        if test_dwa.MEASURE_TIME:
+            print('fps:', 1/(time.time() - start))
         if test_dwa.GOAL_ARRIVAED:
             break
 
