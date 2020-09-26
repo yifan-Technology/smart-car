@@ -9,9 +9,12 @@ from PyQt5.QtWidgets import QApplication
 from multiprocessing import freeze_support, Event, Queue, Process
 
 
+PLOT = True
+
+
 class SerialThread:
 
-    def __init__(self, parser_process, port="/dev/ttyUSB0", baudrate=115200, bytesize=8, stopbits=1, timeout=1):
+    def __init__(self, parser_process=None, port="/dev/ttyUSB0", baudrate=115200, bytesize=8, stopbits=1, timeout=1):
         self.my_serial_port = serial.Serial(port=port, baudrate=baudrate, bytesize=bytesize, stopbits=stopbits, timeout=timeout)
         self._parser = parser_process
 
@@ -67,7 +70,8 @@ class SerialThread:
                         and myByte[-1] == 98 and myByte[-2] == 98 and myByte[-3] == 98 and myByte[-4] == 98:
                     data = myByte[4:-4]
                     self.read_data = struct.unpack('<ffffffff', data)
-                    self._parser.add_data(["real_data", self.read_data])
+                    if PLOT:
+                        self._parser.add_data(["real_data", self.read_data])
                     # comment print can increase fps
                     print("Waited bytes length:", n, " But read 40 Bytes with real data: ", self.read_data)
 
@@ -93,9 +97,11 @@ class SerialThread:
                                    self.control_data[3], end)
                 with self.write_lock:
                     self.my_serial_port.write(data)
-                self._parser.add_data(["soll_data", self.control_data])
+
+                if PLOT:
+                    self._parser.add_data(["soll_data", self.control_data])
                 # #comment print can increase fps
-                # print("control_data: ", self.control_data)
+                print("control_data: ", self.control_data)
 
                 # fps = 1 / (time.time() - last_time)
 
@@ -143,48 +149,49 @@ class Parser(Process):
 
 if __name__ == "__main__":
     os.system("sudo chmod 666 /dev/ttyUSB0")
-    try:
+
+    if PLOT:
         data_queue = Queue()
         parser_process = Parser(data_queue)
         Motor_serial = SerialThread(parser_process, baudrate=460800)
-
-        t_read = threading.Thread(target=Motor_serial.read, daemon=False)
-        t_write = threading.Thread(target=Motor_serial.write, daemon=False)
-
         parser_process.start()
-        Motor_serial.alive = True
-        t_read.start()
-        t_write.start()
+    else:
+        Motor_serial = SerialThread(baudrate=460800)
 
+    t_read = threading.Thread(target=Motor_serial.read, daemon=False)
+    t_write = threading.Thread(target=Motor_serial.write, daemon=False)
+
+    Motor_serial.alive = True
+    t_read.start()
+    t_write.start()
+
+    if PLOT:
         freeze_support()
         app = QApplication(argv)
 
         main_window = MainWindow(parser_process)
         main_window.show()
 
-        app.exec_()
+    try:
 
-        for process in [parser_process]:
-            if process is not None and process.is_alive():
-                process.stop()
-                process.terminate()
+        if PLOT:
+            app.exec_()
+        else:
+            while True:
+                pass
 
     except Exception as error:
         print(error)
 
-        for process in [parser_process]:
-            if process is not None and process.is_alive():
-                process.stop()
-                process.terminate()
+        if PLOT:
+            for process in [parser_process]:
+                if process is not None and process.is_alive():
+                    process.stop()
+                    process.terminate()
 
-        exit()
+            exit()
 
     finally:
-        for process in [parser_process]:
-            if process is not None and process.is_alive():
-                process.stop()
-                process.terminate()
-
         Motor_serial.control_data = [0.0, 0.0, 0.0, 0.0]
         time.sleep(.7)
         Motor_serial.stop()
@@ -193,7 +200,12 @@ if __name__ == "__main__":
         t_write.join()
         time.sleep(.1)
 
-        exit()
+        if PLOT:
+            for process in [parser_process]:
+                if process is not None and process.is_alive():
+                    process.stop()
+                    process.terminate()
+            exit()
 
 
 
