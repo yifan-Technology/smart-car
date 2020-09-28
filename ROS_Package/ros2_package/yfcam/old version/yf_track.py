@@ -29,9 +29,9 @@ def controlalgorithm(goal_x, goal_y):
 
     robot_homePosition_x = 0
     robot_homePosition_y = 0
-    r_d = 0.8     #safe distance
-    v_max = 0.5
-    w_max = 3.14/8
+    r_d = 1     #safe distance
+    v_max = 0.6
+    w_max = 3.14/1
 
     r_speedCut = 0.3 # design parameter for distanz speed cut
 
@@ -51,7 +51,7 @@ def controlalgorithm(goal_x, goal_y):
     k_max = np.abs(w_max) - 0.5 * v_max / r_d #k_max for debug
     # print("k max: ",k_max,phi/3.14*180)
 
-    k = 0.5 * k_max       #  k > 0 and k < k_max
+    k = 0.8 * k_max       #  k > 0 and k < k_max
 
     l = 0.45      # Wheel spacing
 
@@ -68,13 +68,17 @@ def controlalgorithm(goal_x, goal_y):
 
     omega = (-k * phi + v / (r_expect+r_d) + math.sin(phi)) / 2
     
-    if r_expect < 0:
+    if r_expect <=  0:
+        print("wo dao le")
         v = 0
         omega = 0
         
     global target_x
     global target_y
     global patient
+    #if goal_x == target_x and target_y == goal_y:
+    #    v = 0
+    #    omega = 0
     
     target_x = goal_x
     target_y = goal_y
@@ -93,14 +97,16 @@ def wheel_speed_caculator(v_l,v_r):
     v_r_rpm = float(int((v_r * 19 * 60) / (2 * 3.14 * 0.1)))
 
     minimal = np.min(np.abs([v_l_rpm,v_r_rpm]))
+
     if minimal == 0 and np.max(np.abs([v_l_rpm,v_r_rpm])) == 0:
         wheel_speed = [v_l_rpm,v_r_rpm,v_l_rpm,v_r_rpm]
+        print("cal 00000")
         return wheel_speed
 
-    shift = 300 - minimal
-    v_l_rpm += np.sign(v_l_rpm) * shift
-    v_r_rpm += np.sign(v_r_rpm) * shift
-
+    if minimal < 300:
+        shift = 300 - minimal
+        v_l_rpm += np.sign(v_l_rpm) * shift
+        v_r_rpm += np.sign(v_r_rpm) * shift
 
     wheel_speed = [v_l_rpm,v_r_rpm,v_l_rpm,v_r_rpm]
     return wheel_speed
@@ -108,7 +114,7 @@ def wheel_speed_caculator(v_l,v_r):
 
 def get_target(ziel):
     # 计算坐标位置
-    target = np.array([ziel.pose.position.x,ziel.pose.position.z])
+    target = np.array([ziel.pose.position.x, ziel.pose.position.z])
     return target
 
 
@@ -154,13 +160,14 @@ def main(args=None):  # main Funktion
         
             time.sleep(0.05)
         elif signal.tolist() == 100:
-            # TODO: target lost            
+            # TODO: target lost
+            wheel_speed = [0.,0.,0.,0.]         
             print("speed: ", wheel_speed)
-            soll.publishMsg([0.,0.,0.,0.])
+            soll.publishMsg(wheel_speed)
             print("Target lost, wait for new target")  
-            time.sleep(0.1)  
+            time.sleep(0.1) 
         else:
-            print("Waiting User select target")
+            print("Waiting User select target")            
             continue
 
     goal.destroy_node()  # eben vom Oben

@@ -25,7 +25,7 @@ class Template_Matching:
         # 计算长宽比
         self.asp = (objs[0][1]-objs[1][1])/(objs[0][0]-objs[1][0])
         # 保存模板为合适的尺寸
-        tem = cv2.resize(tem, (self.tSize,int(self.tSize*1.5)))
+        tem = cv2.resize(tem, (self.tSize,int(self.tSize*2.5)))
         return tem
     
     def set_tem(self):

@@ -139,6 +139,7 @@ def runTargetSet(obj,videoCache,goal):
     rclpy.spin_once(goal.node,timeout_sec=0.01)
 
 def runTrack(liveImage,objectArray,goal,flag): 
+    global patient
     # 声明 & 获取： 目标、图像、物体信息
     target = None
     image_np = liveImage

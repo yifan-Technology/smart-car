@@ -76,8 +76,8 @@ def main():
     start = time.time()
     u_soll = np.array([0., 0., 0., 0.])
     car_traj = []
-    obmap_list = np.zeros((1,30,30))
-    i_= 0
+    # obmap_list = np.zeros((1, 30, 30))
+    i_ = 0
     if test_own_map:
         target = np.array([2.5, 4.])
         oblist = np.load("/home/yf/dev_ws/test_2m2m_map.npy")
@@ -95,7 +95,7 @@ def main():
             rclpy.spin_once(real.node, timeout_sec=0.001)
             rclpy.spin_once(maps.node, timeout_sec=0.001)  # original 0.001
             rclpy.spin_once(ziel.node, timeout_sec=0.001)
-            #print('spin time :',time.time()-t)
+            # print('spin time :',time.time()-t)
             # print fps
             # print("fps: ", int(1 / (time.time() - t)))
 
@@ -128,24 +128,26 @@ def main():
 
                 # maps transformation
                 obmap = maps.subMsg[:, :, 0]
-                #potential_map = cv2.resize(maps.subMsg, (20, 20), interpolation=cv2.INTER_CUBIC)
+                obmap[49,49] = 51
+                # potential_map = cv2.resize(maps.subMsg, (20, 20), interpolation=cv2.INTER_CUBIC)
                 obmap = np.swapaxes(obmap, 0, 1)
                 obmap = np.flip(obmap, axis=1)
-                obmap = cv2.resize(obmap, (30, 30), interpolation=cv2.INTER_CUBIC)
-                if i_ <10:
-                    obmap_list = np.concatenate((obmap_list, obmap[None,:]),axis=0)
-                    np.save('/home/yf/dev_ws/obmap.npy', obmap_list)
-                    i_ += 1
+                # obmap = cv2.resize(obmap, (50, 50), interpolation=cv2.INTER_CUBIC)
+                # if i_ < 500:
+                #     obmap_list = np.concatenate((obmap_list, obmap[None, :]), axis=0)
+                #     np.save('/home/yf/dev_ws/obmap.npy', obmap_list)
+                #     i_ += 1
 
-                obmap[obmap > 125] = 1
-                oblist = dwa.obmap2coordinaten(obmap, 5. / 30.) + np.array([-0.06, 0.])
+                obmap[obmap > 50] = 1
+                oblist = dwa.obmap2coordinaten(obmap, 5. / 50.) + np.array([-0.06, 0.])
 
-                #potential_map[potential_map > 0] = 1
-                #ob_loc = pf_planner.obmap2coordinaten(potential_map, 5 / 20)
-                #target_traj = pf_planner.potential_field_planning(target, ob_loc)  ########################################################change
-                #goal_to_reach = target_traj[1]
+                # potential_map[potential_map > 0] = 1
+                # ob_loc = pf_planner.obmap2coordinaten(potential_map, 5 / 20)
+                # target_traj = pf_planner.potential_field_planning(target, ob_loc)  ########################################################change
+                # goal_to_reach = target_traj[1]
 
                 u_soll, traj_soll, all_traj = dwa.dwa_control(u_ist, dwa.x, target, oblist)
+
                 # car_traj.append(dwa.x[:2])
 
                 # if i_ >= len(target_traj):
@@ -169,7 +171,7 @@ def main():
                         'key_release_event',
                         lambda event: [exit(0) if event.key == 'escape' else None])
 
-                    plt.plot(dwa.x[0], dwa.x[1], "xr")
+                    # plt.plot(dwa.x[0], dwa.x[1], "xr")
                     plt.plot(oblist[:, 0], oblist[:, 1], "sk")
 
                     for i in range(len(all_traj)):
@@ -179,16 +181,17 @@ def main():
                     dwa_module.plot_robot(dwa.x[0], dwa.x[1], dwa.x[2], dwa)
                     dwa_module.plot_arrow(dwa)
 
-                    if dwa.RESET_STATE:
+                    # if dwa.RESET_STATE:
                         # plt.plot(goal_traj[:, 0], goal_traj[:, 1], color='purple')
                         # plt.plot(traj_ist[:, 0], traj_ist[:, 1], color='orange')
-                        plt.plot(target_traj[:, 0], target_traj[:, 1], color='orange')
-                        plt.plot(target[0], target[1], 'r')
+                        # plt.plot(target_traj[:, 0], target_traj[:, 1], color='orange')
+                        # plt.plot(target[0], target[1], 'r')
                     # else:
                     #     plt.plot(traj_ist[:, 0], traj_ist[:, 1], "-r")
 
                     plt.plot(target[0], target[1], "^r")
                     plt.axis("equal")
+                    plt.xlim(0,5)
                     plt.grid(True)
                     plt.pause(0.1)
 

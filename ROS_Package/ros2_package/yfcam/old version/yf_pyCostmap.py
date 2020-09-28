@@ -117,7 +117,7 @@ def get_obMap(pcl,poc,target,CostMap,showImg):
     
     maps = cv2.resize(obMap,(500,500))
     maps[maps>0] = 255
-    sendMap = np.zeros([500,500,3])
+    sendMap = np.zeros([500,500,4])
     sendMap[:,:,0] = maps
     sendMap[:,:,1] = maps
     sendMap[:,:,2] = maps

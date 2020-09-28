@@ -28,7 +28,7 @@ class Feature_Space:
 
     def get_mean(self):
         # 计算方差与均值
-        var = np.abs(np.max(self.fs,axis=0) - np.min(self.fs,axis=0))
+        var = np.abs(np.abs(np.max(self.fs,axis=1)) - np.abs(np.min(self.fs,axis=1)))
         mean = np.mean(self.fs, axis=0)
         return var,mean
 
@@ -40,11 +40,16 @@ class Feature_Space:
         # 获得方差均值
         var,mean = self.get_mean()
         # print("fs: ",self.fs)
-#        print("var,mean:",self.get_mean())
-#        print("inpu: ",data)
-#        print("in fs:",(data-mean))
-#        print("acc",np.sum((np.abs(data-mean))**2))
-        return np.sum((np.abs(data-mean))**2)
+        # print("diff: ",np.diff(self.fs,axis=0) )
+        # print("var,mean:",self.get_mean())
+        
+        # mean = np.mean(np.diff(self.fs,axis=0), axis=0)
+
+        # print("inpu: ",data)
+        # print("in fs:",np.abs(data-mean))
+        # print("var",var)
+        # print("acc",np.sum((np.abs(data-mean)/(var*2))**2))
+        return np.sum((np.abs(data-mean)/(var*2))**2)
         
 
         
