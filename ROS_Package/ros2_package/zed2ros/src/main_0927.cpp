@@ -39,7 +39,7 @@
 #include <sensor_msgs/msg/compressed_image.hpp>
 #include <std_msgs/msg/int32.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include <std_msgs/msg/int8_multi_array.hpp>
+// #include <std_msgs/msg/int8_multi_array.hpp>
 
 // Using std and sl namespaces
 using namespace std;
@@ -60,7 +60,7 @@ sl::Pose camera_path;
 sl::POSITIONAL_TRACKING_STATE tracking_state;
 sl::SensorsData sensors_data;
 
-cv::Mat cvImg = cv::Mat::zeros(600,600,3);
+cv::Mat cvImg;
 sl::Mat image;
 sl::Mat pointCloud;
 char key = ' ';
@@ -142,7 +142,6 @@ private:
             tracking_state = zed.getPosition(camera_path, REFERENCE_FRAME::WORLD);
             zed.retrieveImage(image, VIEW::LEFT);                 
             zed.retrieveMeasure(pointCloud, MEASURE::XYZ,MEM::CPU);
-            zed.retrieveObjects(objects, detection_parameters_rt);
             // cout << "zed FPS : " <<(double) CLOCKS_PER_SEC/(clock() - startTime)  << " " << endl;        
             // startTime = clock();
         }
@@ -210,7 +209,6 @@ public:
     }    
     
     bool init = false;
-    bool findTarget = false;
     clock_t startTime = clock();
     sl::ObjectData target;
 
@@ -220,73 +218,60 @@ private:
     {
         
         if (zed.grab() == ERROR_CODE::SUCCESS){  
-            // zed.retrieveObjects(objects, detection_parameters_rt);
-            cvImg = cv::Mat((int) image.getHeight(), (int) image.getWidth(), CV_8UC4, image.getPtr<sl::uchar1>(sl::MEM::CPU)); 
-            
-            
-            auto message2 = geometry_msgs::msg::PoseStamped();
-            if (objects.is_new) {
-                int objects_Num = objects.object_list.size();
-                if (!objects.object_list.empty()) {
-                    if (init){
-                        target = objects.object_list.front();
-                        cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
-                                    target.bounding_box_2d[0][1],// y
-                                    target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
-                                    target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
-                        cv::Point center;
-                        center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
-                        center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
-                        cv::rectangle(cvImg,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
-                        cv::circle(cvImg,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
-                        message2.pose.position.x = target.position.x;
-                        message2.pose.position.y = target.position.y;
-                        message2.pose.position.z = target.position.z;
-                        publisherGoal_->publish(message2);  
-                        init = false;
-                    }else{
-                        findTarget = false;
-                        for(int i = 0; i < objects_Num; ++i){
-                        
-                            auto object = objects.object_list[i];
-                            if (target.id == object.id){
-                                target = object;
-                                findTarget = true;
-                            }
-                        }
-                        if (!findTarget){
-                            float dist = 0.5;                     
-                            auto object_cache = objects.object_list.front();
-                            for(int i = 0; i < objects_Num; ++i){
-                                auto object = objects.object_list[i];
-                                float curr_dist = pow(pow(object.position.x-target.position.x,2 )
-                                                    + pow(object.position.y-target.position.y,2)
-                                                    + pow(object.position.z-target.position.z,2),0.5);
-                                if (dist>curr_dist){
-                                    dist = curr_dist;
-                                    object_cache = object;
-                                }         
-                            }
-                            target = object_cache;
-                        }
-                        
-                        cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
-                                    target.bounding_box_2d[0][1],// y
-                                    target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
-                                    target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
-                        cv::Point center;
-                        center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
-                        center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
-                        cv::rectangle(cvImg,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
-                        cv::circle(cvImg,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
-                        message2.pose.position.x = target.position.x;
-                        message2.pose.position.y = target.position.y;
-                        message2.pose.position.z = target.position.z;
-                        publisherGoal_->publish(message2);  
-
+        zed.retrieveObjects(objects, detection_parameters_rt);
+        cvImg = cv::Mat((int) image.getHeight(), (int) image.getWidth(), CV_8UC4, image.getPtr<sl::uchar1>(sl::MEM::CPU)); 
+        
+        
+        auto message2 = geometry_msgs::msg::PoseStamped();
+        if (objects.is_new) {
+            int objects_Num = objects.object_list.size();
+            if (!objects.object_list.empty()) {
+                if (init){
+                    target = objects.object_list.front();
+                    cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
+                                target.bounding_box_2d[0][1],// y
+                                target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
+                                target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
+                    cv::Point center;
+                    center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
+                    center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
+                    cv::rectangle(cvImg,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
+                    cv::circle(cvImg,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
+                    message2.pose.position.x = target.position.x;
+                    message2.pose.position.y = target.position.y;
+                    message2.pose.position.z = target.position.z;
+                    publisherGoal_->publish(message2);  
+                    init = false;
+                }else{
+                    float dist = 0.5;                     
+                    auto object_cache = objects.object_list.front();
+                    for(int i = 0; i < objects_Num; ++i){
+                        auto object = objects.object_list[i];
+                        float curr_dist =     pow(pow(object.position.x-target.position.x,2 )
+                                    + pow(object.position.y-target.position.y,2)
+                                    + pow(object.position.z-target.position.z,2),0.5);
+                        if (dist>curr_dist){
+                            object_cache = object;
+                        }         
                     }
+                    target = object_cache;
+                    cv::Rect bbox_target = cv::Rect(target.bounding_box_2d[0][0], // x
+                                target.bounding_box_2d[0][1],// y
+                                target.bounding_box_2d[2][0]-target.bounding_box_2d[0][0], // w
+                                target.bounding_box_2d[2][1]-target.bounding_box_2d[0][1]); // h
+                    cv::Point center;
+                    center.x = (int) (target.bounding_box_2d[2][0]+target.bounding_box_2d[0][0])>>1;
+                    center.y = (int) (target.bounding_box_2d[2][1]+target.bounding_box_2d[0][1])>>1;
+                    cv::rectangle(cvImg,bbox_target, cv::Scalar(0, 0, 255), 3, 3,0);
+                    cv::circle(cvImg,  center , 2, cv::Scalar(0, 0, 255), 3, 8, 0);
+                    message2.pose.position.x = target.position.x;
+                    message2.pose.position.y = target.position.y;
+                    message2.pose.position.z = target.position.z;
+                    publisherGoal_->publish(message2);  
+
                 }
             }
+        }
         // // if (zed.grab() == ERROR_CODE::SUCCESS){
         //     auto message2 = geometry_msgs::msg::PoseStamped();
         //     // zed.retrieveImage(image, VIEW::LEFT);     
@@ -558,8 +543,6 @@ private:
 
             // }
 
-            cv::Mat cvShowMap;
-            cv::resize(cvImg, cvShowMap, cv::Size(192, 144), 0, 0, cv::INTER_AREA);
             auto message = sensor_msgs::msg::CompressedImage ();
             std_msgs::msg::Header header; // empty header
             img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGRA8, cvImg);
@@ -584,7 +567,6 @@ public:
     {
         publisherCost_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("/yf_camera/costmap", 1);
         publisherOb_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("/yf_camera/obmap", 1);
-        publisherArray_ = this->create_publisher<std_msgs::msg::Int8MultiArray>("/yf_camera/obmap2", 1);
         timer_ = this->create_wall_timer(
         15ms, std::bind(&MapPublisher::timer_callback, this));
           
@@ -597,17 +579,13 @@ private:
     void timer_callback()
     {        
         // if (zed.grab() == ERROR_CODE::SUCCESS){
-            auto oblist = std_msgs::msg::Int8MultiArray();
+            
             // zed.retrieveMeasure(pointCloud, MEASURE::XYZ,MEM::CPU);
             cv::Mat cvPointCloud = cv::Mat((int) pointCloud.getHeight(), (int) pointCloud.getWidth(), CV_32FC4, pointCloud.getPtr<sl::uchar1>(sl::MEM::CPU));
             
             sl::float4 point3D;
             // Get the 3D point cloud values for pixel (i,j)
             cvMap = cv::Mat::zeros(cv::Size(500,500),CV_8UC4);
-
-            
-            vector<signed char> arrayX;
-            vector<signed char> arrayZ;
             for(int m = 0; m<(int) pointCloud.getHeight(); ++m){
                 for(int n = 0; n<(int) pointCloud.getWidth(); ++n){                
                     sl::float4 point3D;
@@ -627,16 +605,12 @@ private:
                                 int x = (int) point3D.x;
                                 int z = (int) point3D.z;                           
                                 cvMap.at<cv::Vec4b>(500-z,x) = { 255,  255 , 255 } ;
-                                arrayX.push_back(x);
-                                arrayZ.push_back(500-z);
                             }
 
                         }
                     }
                 }
             }
-            oblist.data = arrayX;
-            publisherArray_->publish(oblist);
             
             cv::Mat cvCostMap;
             cv::resize(cvMap, cvCostMap, cv::Size(50, 50), 0, 0, cv::INTER_AREA);
@@ -662,7 +636,6 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr publisherCost_;
     rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr publisherOb_;
-    rclcpp::Publisher<std_msgs::msg::Int8MultiArray>::SharedPtr publisherArray_;
     size_t count_;
 };
 
@@ -674,7 +647,7 @@ int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     // Create a ZED camera object
     init_parameters.camera_resolution = RESOLUTION::VGA;
-    init_parameters.camera_fps = 100;
+    init_parameters.camera_fps = 60;
     init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.sdk_verbose = true;
@@ -704,7 +677,7 @@ int main(int argc, char **argv) {
     // run detection for every Camera grab
     detection_parameters.image_sync = true;
     // track detects object accross time and space
-    detection_parameters.enable_tracking = true;    
+    detection_parameters.enable_tracking = false;    
     // compute a binary mask for each object aligned on the left image
     detection_parameters.enable_mask_output = false;
     
