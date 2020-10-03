@@ -48,6 +48,10 @@ include_directories(
 link_directories(
   ${OpenCV_LIBRARY_DIRS}
 )
+add_library(${PROJECT_NAME}_lib
+"src/DWA_Planner.cpp"
+
+)
 
 set(DEPENDENCIES        
     rclcpp
@@ -72,11 +76,11 @@ add_executable(talker src/publisher_member_function.cpp)
 ament_target_dependencies(talker ${DEPENDENCIES})
 
 add_executable(dwa src/dynamic_window_approach.cpp)
-target_link_libraries(dwa ${OpenCV_LIBRARY_DIRS})
+target_link_libraries(dwa ${OpenCV_LIBRARY_DIRS} ${PROJECT_NAME}_lib)
 ament_target_dependencies(dwa ${DEPENDENCIES})
 
 add_executable(dwachen src/dwachen.cpp)
-target_link_libraries(dwachen ${OpenCV_LIBRARY_DIRS})
+target_link_libraries(dwachen ${OpenCV_LIBRARY_DIRS} ${PROJECT_NAME}_lib)
 ament_target_dependencies(dwachen ${DEPENDENCIES})
 
 install(TARGETS
