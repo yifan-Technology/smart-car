@@ -17,9 +17,14 @@
 #include <memory>
 #include <string>
 
+
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
+//yaml
+#include "yaml-cpp/yaml.h"
+//------------------------------
+#include "DWA_Planner.h"
 
 
 using namespace std::chrono_literals;
@@ -51,10 +56,28 @@ private:
   size_t count_;
 };
 
+
+
 int main(int argc, char * argv[])
 {
-  rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<MinimalPublisher>());
-  rclcpp::shutdown();
-  return 0;
+  // rclcpp::init(argc, argv);
+  // rclcpp::spin(std::make_shared<MinimalPublisher>());
+  // rclcpp::shutdown();
+
+  YAML::Node config = YAML::LoadFile("./dev_ws/src/dwa/src/config.yaml");
+  YAML::Node dwaNode = config["dwa"]; 
+  for (unsigned int i = 0; i < dwaNode.size(); i++) {
+            const YAML::Node& cNode = dwaNode[i];
+            std::cout << cNode << "\n";
+            std::cout << "===================" << std::endl; 
+ 
+            DWA_CONFIG dwaS;
+            dwaS.max_speed = cNode["max_speed"].as<double>();
+	    dwaS.min_speed = cNode["min_speed"].as<double>();
+	    std::cout << "max_speed"<< dwaS.max_speed << std::endl; 
+	    std::cout << "min_speed"<< dwaS.min_speed << std::endl;  
+        }
+
+   std::cout << "finish YAML:\n";
+   return 0;
 }

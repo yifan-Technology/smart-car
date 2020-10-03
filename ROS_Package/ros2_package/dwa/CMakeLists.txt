@@ -35,6 +35,7 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 ###############################################################################
 # INCLUDES and LIBS
@@ -42,11 +43,13 @@ find_package(image_transport REQUIRED)
 include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
+    ${YAML_CPP_INCLUDE_DIR}
     ./include  
 )
 
 link_directories(
   ${OpenCV_LIBRARY_DIRS}
+  ${YAML_CPP_LIBRARIES}
 )
 add_library(${PROJECT_NAME}_lib
 "src/DWA_Planner.cpp"
@@ -67,26 +70,30 @@ set(DEPENDENCIES
     stereo_msgs
     OpenCV
     cv_bridge
+    yaml-cpp
+)
+
+set(MY_TARGET_LINK_LIBRARIES        
+    ${OpenCV_LIBRARY_DIRS} 
+    ${YAML_CPP_LIBRARIES}  
+    ${PROJECT_NAME}_lib
 )
 
 ###############################################################################
 # executable
 
-add_executable(talker src/publisher_member_function.cpp)
-ament_target_dependencies(talker ${DEPENDENCIES})
+add_executable(hallo src/publisher_member_function.cpp)
+target_link_libraries(hallo ${MY_TARGET_LINK_LIBRARIES})
+ament_target_dependencies(hallo ${DEPENDENCIES})
 
 add_executable(dwa src/dynamic_window_approach.cpp)
-target_link_libraries(dwa ${OpenCV_LIBRARY_DIRS} ${PROJECT_NAME}_lib)
+target_link_libraries(dwa ${MY_TARGET_LINK_LIBRARIES})
 ament_target_dependencies(dwa ${DEPENDENCIES})
 
-add_executable(dwachen src/dwachen.cpp)
-target_link_libraries(dwachen ${OpenCV_LIBRARY_DIRS} ${PROJECT_NAME}_lib)
-ament_target_dependencies(dwachen ${DEPENDENCIES})
 
 install(TARGETS
-  talker
+  hallo
   dwa
-  dwachen
   DESTINATION lib/${PROJECT_NAME})
 
 

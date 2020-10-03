@@ -12,6 +12,44 @@ using All_Traj = std::vector<MatrixXd>;
 //using All_Traj = Matrix<MatrixXd,1, 1>;
 struct DWA_result { Control u; MatrixXd traj; All_Traj all_traj; };
 #define PI 3.141592653
+typedef struct dwaConfig {
+    		double max_speed;
+		double min_speed;
+		double max_yaw_rate;
+		double max_accel;
+		double max_delta_yaw_rate;
+		double v_resolution;
+		double yaw_rate_resolution;
+		double min_wheel_speed;
+		double dt;
+		double predict_time;
+
+		double to_goal_cost_gain;
+		double obstacle_cost_gain;
+		double speed_adjust_param;
+		double speed_cost_gain_max;
+		double speed_cost_gain_min;
+		double dist_to_goal;
+
+		bool SHOW_ANIMATION;
+		bool GOAL_ARRIVAED;
+		bool RESET_STATE;
+		bool HUMAN_SHAPE;
+		bool MAP_TO_OBCOORD;
+		bool MEASURE_TIME;
+		bool TEMPORARY_GOAL_ARRIVED;
+		double m;
+		double g;
+		double mu;
+		double x0;
+		double wheel_len_dist;
+		double wheel_quer_dist;
+		double car_h;
+		double wheel_radius;
+		double robot_radius;
+		double robot_length;
+		double robot_width;
+}DWA_CONFIG;
 
 namespace dwa_planner {
 	using namespace std;
