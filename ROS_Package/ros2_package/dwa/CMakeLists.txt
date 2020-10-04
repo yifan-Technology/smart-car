@@ -49,7 +49,7 @@ include_directories(
 
 link_directories(
   ${OpenCV_LIBRARY_DIRS}
-  ${YAML_CPP_LIBRARIES}
+  yaml-cpp
 )
 add_library(${PROJECT_NAME}_lib
 "src/DWA_Planner.cpp"
@@ -75,19 +75,18 @@ set(DEPENDENCIES
 
 set(MY_TARGET_LINK_LIBRARIES        
     ${OpenCV_LIBRARY_DIRS} 
-    ${YAML_CPP_LIBRARIES}  
-    ${PROJECT_NAME}_lib
+    yaml-cpp
 )
 
 ###############################################################################
 # executable
 
 add_executable(hallo src/publisher_member_function.cpp)
-target_link_libraries(hallo ${MY_TARGET_LINK_LIBRARIES})
+target_link_libraries(hallo ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
 ament_target_dependencies(hallo ${DEPENDENCIES})
 
 add_executable(dwa src/dynamic_window_approach.cpp)
-target_link_libraries(dwa ${MY_TARGET_LINK_LIBRARIES})
+target_link_libraries(dwa ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
 ament_target_dependencies(dwa ${DEPENDENCIES})
 
 
