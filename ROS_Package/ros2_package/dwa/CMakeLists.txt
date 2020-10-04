@@ -11,10 +11,27 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+#if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#  add_compile_options(-Wall -Wextra -Wpedantic)
+#endif()
+# if CMAKE_BUILD_TYPE is not specified, take 'Release' as default
+IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE Release)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
+if(CMAKE_BUILD_TYPE MATCHES Release )
+    #message(" * Release Mode")
+    add_compile_options(-Wno-deprecated-declarations)
 endif()
 
+if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo )
+    #message(" * Release with Debug Info Mode")
+    add_compile_options(-Wno-deprecated-declarations)
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Debug )
+    message(" * Debug Mode")
+endif()
 #############################
 #Dependencies
 #############################
@@ -35,7 +52,8 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
-find_package(yaml-cpp REQUIRED)
+#find_package(yaml-cpp REQUIRED)
+find_package(jsoncpp REQUIRED)
 
 ###############################################################################
 # INCLUDES and LIBS
@@ -43,13 +61,13 @@ find_package(yaml-cpp REQUIRED)
 include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
-    ${YAML_CPP_INCLUDE_DIR}
+    ${jsoncpp_INCLUDE_DIRS}
     ./include  
 )
 
 link_directories(
   ${OpenCV_LIBRARY_DIRS}
-  yaml-cpp
+  jsoncpp
 )
 add_library(${PROJECT_NAME}_lib
 "src/DWA_Planner.cpp"
@@ -70,12 +88,12 @@ set(DEPENDENCIES
     stereo_msgs
     OpenCV
     cv_bridge
-    yaml-cpp
+    jsoncpp
 )
 
 set(MY_TARGET_LINK_LIBRARIES        
     ${OpenCV_LIBRARY_DIRS} 
-    yaml-cpp
+    jsoncpp
 )
 
 ###############################################################################

@@ -21,8 +21,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
-//yaml
-#include "yaml-cpp/yaml.h"
+//json
+#include <jsoncpp/json/json.h>
+#include <fstream>
 //------------------------------
 #include "DWA_Planner.h"
 
@@ -64,20 +65,24 @@ int main(int argc, char * argv[])
   // rclcpp::spin(std::make_shared<MinimalPublisher>());
   // rclcpp::shutdown();
 
-  YAML::Node config = YAML::LoadFile("./dev_ws/src/dwa/src/config.yaml");
-  YAML::Node dwaNode = config["dwa"]; 
-  for (unsigned int i = 0; i < dwaNode.size(); i++) {
-            const YAML::Node& cNode = dwaNode[i];
-            std::cout << cNode << "\n";
-            std::cout << "===================" << std::endl; 
- 
-            DWA_CONFIG dwaS;
-            dwaS.max_speed = cNode["max_speed"].as<double>();
-	    dwaS.min_speed = cNode["min_speed"].as<double>();
-	    std::cout << "max_speed"<< dwaS.max_speed << std::endl; 
-	    std::cout << "min_speed"<< dwaS.min_speed << std::endl;  
-        }
+  Json::Value root;
+  Json::Reader reader;
+ //std::ifstream fin("/home/gong/dev_ws/src/dwa/src/config.json"); //open file config.json
+std::ifstream fin("/home/yf/dev_ws/src/dwa/src/config.json");
+  DWA_CONFIG my_dwa_config;
 
-   std::cout << "finish YAML:\n";
+if(!reader.parse(fin, root)){
+   // fail to parse
+std::cout << "json file not find\n";
+}
+else{
+   // success
+   std::cout<<root["dwa"]["min_speed"].asInt()<<std::endl;
+   std::cout<<root["daw"]["max_speed"].asInt()<<std::endl;
+   my_dwa_config.min_speed = root["dwa"]["min_speed"].asInt();
+   my_dwa_config.max_speed = root["dwa"]["max_speed"].asInt();
+}
+
+   std::cout << "json finish:\n";
    return 0;
 }
