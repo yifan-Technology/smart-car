@@ -1,5 +1,6 @@
 #ifndef DWA_PLANNER_H
 #define DWA_PLANNER_H
+
 #include <iostream>
 #include<Eigen/Dense>
 
@@ -13,7 +14,7 @@ using All_Traj = std::vector<MatrixXd>;
 struct DWA_result { Control u; MatrixXd traj; All_Traj all_traj; };
 #define PI 3.141592653
 typedef struct dwaConfig {
-    		double max_speed;
+    	double max_speed;
 		double min_speed;
 		double max_yaw_rate;
 		double max_accel;
@@ -76,7 +77,7 @@ namespace dwa_planner {
 		double speed_cost_gain_min = 0.1;
 		double dist_to_goal = 1e10; // 1e10
 
-		bool SHOW_ANIMATION = true; // true
+		bool SHOW_ANIMATION = false; // true
 		bool GOAL_ARRIVAED = false; // false
 		bool RESET_STATE = false; // false
 		bool HUMAN_SHAPE = false; // false
@@ -121,6 +122,6 @@ namespace dwa_planner {
 
 		DWA_result dwa_control(Control motor_ist, State x_pre, Goal zw_goal, MatrixXd ob_list);
 	};
-}; // namespace dwa_planner
+} // namespace dwa_planner
 
 #endif// DWA_PLANNER_H
