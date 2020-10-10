@@ -1,4 +1,4 @@
-#include<iostream>
+
 #include<vector>
 #include<cmath>
 #include<ctime>
@@ -6,50 +6,64 @@
 #include<opencv2/opencv.hpp>
 #include<opencv2/core/core.hpp>
 #include<opencv2/highgui/highgui.hpp>
+#include <jsoncpp/json/json.h>
 
-//#include "include/yaml-cpp/yaml.h"
 #include "DWA_Planner.h"
+
+
 #define PI 3.141592653
-
-
 using namespace std;
 using namespace Eigen;
-//using State = Matrix<double, 5, 1 >;
-//using Control = Matrix<double, 2, 1>;
-//using Goal = Matrix<double, 2, 1>;
-//using Window = Matrix<double, 4, 1>;
-//using All_Traj = Array<MatrixXd, 1, 1>;
-//struct DWA_result { Control u; MatrixXd traj; All_Traj all_traj; };
 
 namespace dwa_planner {
+	
+	void DWA::readJsonFromFile(){
+		
+		std::ifstream ifs;
+		ifs.open("/home/taungdrier/dev_ws/src/dwa/src/dwa_config.json");
+		std::stringstream buffer;
+		buffer << ifs.rdbuf();
+		ifs.close();
 
+		auto str = buffer.str();
+		Json::Reader reader;
+		Json::Value value;
+		if (reader.parse(str, value)) {
+			//èŠ‚ç‚¹åˆ¤æ–­
+		//   auto all_member = value.getMemberNames();
+		//   for (auto member : all_member) {
+		//         std::cout << member << std::endl;}
+		test_goal << value["Car_State"]["test_goalx"].asFloat(),value["Car_State"]["test_goaly"].asFloat();
+		max_speed = value["Car_State"]["max_speed"].asFloat(); // 0.8   [m / s] 
+		//std::cout << "max_speed:" << max_speed << std::endl;
+		//std::cout << "max speed's type:" << value["Car_State"]["max_speed"].type() << std::endl;
+		min_speed = value["Car_State"]["min_speed"].asFloat(); //  - 0.8  [m / s]
+		max_yaw_rate = value["Car_State"]["max_yaw_rate"].asFloat() * PI / 180;  // 180.0 * PI / 180.0   [rad / s]
+		max_accel = value["Car_State"]["max_accel"].asFloat(); // 4.0   [m / ss]
+		max_delta_yaw_rate = value["Car_State"]["max_delta_yaw_rate"].asFloat() * PI / 180;  // 360.0 * PI / 180.0   [rad / ss]
+		v_resolution = value["Car_State"]["v_resolution"].asFloat(); // 0.2   [m / s]
+		yaw_rate_resolution = value["Car_State"]["yaw_rate_resolution"].asFloat() * PI / 180;  // 15. * PI / 180.0   [rad / s]
+		min_wheel_speed = value["Car_State"]["min_wheel_speed"].asFloat(); //100 [rpm]
+		dt = value["Car_State"]["dt"].asFloat(); // 0.2  [s] Time tick for motion prediction
+		predict_time = value["Car_State"]["predict_time"].asFloat(); // 0.8   [s]  less and more flexible
+		to_goal_cost_gain = value["Car_State"]["to_goal_cost_gain"].asFloat(); // 0.16
+		obstacle_cost_gain = value["Car_State"]["obstacle_cost_gain"].asFloat();//  0.6
+		speed_adjust_param = value["Car_State"]["speed_adjust_param"].asFloat();
+		speed_cost_gain_max = value["Car_State"]["speed_cost_gain_max"].asFloat();
+		speed_cost_gain_min = value["Car_State"]["speed_cost_gain_min"].asFloat();
+		dist_to_goal = value["Car_State"]["dist_to_goal"].asFloat(); // 1e10
+		SHOW_ANIMATION = value["Flag_State"]["SHOW_ANIMATION"].asBool(); // true
+		GOAL_ARRIVAED = value["Flag_State"]["GOAL_ARRIVAED"].asBool(); // false
+		RESET_STATE = value["Flag_State"]["RESET_STATE"].asBool(); // false
+		HUMAN_SHAPE = value["Flag_State"]["HUMAN_SHAPE"].asBool(); // false
+		MAP_TO_OBCOORD = value["Flag_State"]["MAP_TO_OBCOORD"].asBool(); // true
+		MEASURE_TIME = value["Flag_State"]["MEASURE_TIME"].asBool(); // false
+		TEMPORARY_GOAL_ARRIVED = value["Flag_State"]["TEMPORARY_GOAL_ARRIVED"].asBool();
 
-	//YAML::Node car_state = YAML::LoadFile("../dwa_config.yaml");
-	//double max_speed = car_state['max_speed'].as<double>; // 0.8   [m / s] 
-	//double min_speed = car_state['min_speed'].as<double>; //  - 0.8  [m / s]
-	//double max_yaw_rate = car_state['max_yaw_rate'] * PI / 180;  // 180.0 * PI / 180.0   [rad / s]
-	//double max_accel = car_state['max_accel'].as<double>; // 4.0   [m / ss]
-	//double max_delta_yaw_rate = car_state['max_delta_yaw_rate'] * PI / 180;  // 360.0 * PI / 180.0   [rad / ss]
-	//double v_resolution = car_state['v_resolution'].as<double>; // 0.2   [m / s]
-	//double yaw_rate_resolution = car_state['yaw_rate_resolution'] * PI / 180;  // 15. * PI / 180.0   [rad / s]
-	//double min_wheel_speed = car_state['min_wheel_speed'].as<double>; //100 [rpm]
-	//double dt = car_state['dt'].as<double>; // 0.2  [s] Time tick for motion prediction
-	//double predict_time = car_state['predict_time'].as<double>; // 0.8   [s]  less and more flexible
-	//double to_goal_cost_gain = car_state['to_goal_cost_gain'].as<double>; // 0.16
-	//double obstacle_cost_gain = car_state['obstacle_cost_gain'].as<double>;//  0.6
-	//double speed_adjust_param = car_state['speed_adjust_param'];
-	//double speed_cost_gain_max = car_state['speed_cost_gain_max'];
-	//double speed_cost_gain_min = car_state['speed_cost_gain_min'];
-	//double dist_to_goal = car_state['dist_to_goal'].as<double>; // 1e10
-	//bool SHOW_ANIMATION = flag_state['SHOW_ANIMATION'].as<bool>; // true
-	//bool GOAL_ARRIVAED = flag_state['GOAL_ARRIVAED'].as<bool>; // false
-	//bool RESET_STATE = flag_state['RESET_STATE'].as<bool>; // false
-	//bool HUMAN_SHAPE = flag_state['HUMAN_SHAPE'].as<bool>; // false
-	//bool MAP_TO_OBCOORD = flag_state['MAP_TO_OBCOORD'].as<bool>; // true
-	//bool MEASURE_TIME = flag_state['MEASURE_TIME'].as<bool>; // false
-	//bool TEMPORARY_GOAL_ARRIVED = false;
-
-
+		value.clear(); 
+		}
+	}
+	
 	State DWA::koordinaten_transfomation(Control wheel_speed, double theta) {
 		double omega_l = wheel_speed[0];
 		double omega_r = wheel_speed[1];
@@ -75,7 +89,7 @@ namespace dwa_planner {
 		x(3) = x_tr(3);
 		x(4) = x_tr(4);
 		return x;
-	};
+	}
 
 	Control  DWA::speed_change(Control u_in, string mode) {
 		double speed_gain = 60 / (2 * PI) * (3591 / 187);
@@ -84,6 +98,9 @@ namespace dwa_planner {
 		}
 		else if (mode == "PC_TO_MOTOR") {
 			return u_in * speed_gain;
+		}
+		else{
+			return u_in;
 		}
 	}
 
@@ -203,7 +220,7 @@ namespace dwa_planner {
 		MatrixXd tr_x = trajectory.row(0).transpose().replicate(1, obstacle.cols());
 		MatrixXd tr_y = trajectory.row(1).transpose().replicate(1, obstacle.cols());
 
-		// ÒòÎªÕÏ°­ÎïºÍ¹ì¼£µãÊýÁ¿²»µÈ, ËùÒÔÔö¼ÓÒ»ÁÐÀ´±íÊ¾
+		// ï¿½ï¿½Îªï¿½Ï°ï¿½ï¿½ï¿½Í¹ì¼£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 		MatrixXd rho_square = (tr_x - ox).array().square() + (tr_y - oy).array().square();
 		/*cout<<"rho"<<rho_square<<endl;*/
 		if (rho_square.minCoeff() <= robot_radius * robot_radius) {
@@ -238,8 +255,7 @@ namespace dwa_planner {
 				//calc cost;
 				double to_goal_cost = to_goal_cost_gain * calc_to_goal_cost(predict_traj, goal);
 				double dist_square = calc_obstacle_cost(predict_traj, obstacle);
-				/*cout<<"to_goal_cost"<<to_goal_cost<<endl;*/
-				//cout<<"dist square "<<dist_square<<endl;
+
 				if (dist_square != INFINITY) {
 					ob_cost = obstacle_cost_gain * dist_square;
 					dmin = 1 / sqrt(dist_square);
@@ -247,7 +263,6 @@ namespace dwa_planner {
 					cout<<"dmin "<<dmin<<endl;*/
 				}
 				else {
-					//cout<<"nan appear"<<INFINITY<<endl;
 					ob_cost = INFINITY;
 					dmin = 0;
 				}
@@ -317,7 +332,7 @@ namespace dwa_planner {
 
 		return  dwa_result;
 	}
-};
+}
 
 
 

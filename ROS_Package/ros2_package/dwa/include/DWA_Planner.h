@@ -1,7 +1,12 @@
 #ifndef DWA_PLANNER_H
 #define DWA_PLANNER_H
+
 #include <iostream>
 #include<Eigen/Dense>
+#include<iostream>
+#include<fstream>
+#include <jsoncpp/json/json.h>
+
 
 using namespace Eigen;
 using State = Matrix<double, 5, 1 >;
@@ -12,77 +17,40 @@ using All_Traj = std::vector<MatrixXd>;
 //using All_Traj = Matrix<MatrixXd,1, 1>;
 struct DWA_result { Control u; MatrixXd traj; All_Traj all_traj; };
 #define PI 3.141592653
-typedef struct dwaConfig {
-    		double max_speed;
-		double min_speed;
-		double max_yaw_rate;
-		double max_accel;
-		double max_delta_yaw_rate;
-		double v_resolution;
-		double yaw_rate_resolution;
-		double min_wheel_speed;
-		double dt;
-		double predict_time;
-
-		double to_goal_cost_gain;
-		double obstacle_cost_gain;
-		double speed_adjust_param;
-		double speed_cost_gain_max;
-		double speed_cost_gain_min;
-		double dist_to_goal;
-
-		bool SHOW_ANIMATION;
-		bool GOAL_ARRIVAED;
-		bool RESET_STATE;
-		bool HUMAN_SHAPE;
-		bool MAP_TO_OBCOORD;
-		bool MEASURE_TIME;
-		bool TEMPORARY_GOAL_ARRIVED;
-		double m;
-		double g;
-		double mu;
-		double x0;
-		double wheel_len_dist;
-		double wheel_quer_dist;
-		double car_h;
-		double wheel_radius;
-		double robot_radius;
-		double robot_length;
-		double robot_width;
-}DWA_CONFIG;
 
 namespace dwa_planner {
 	using namespace std;
+
 	class DWA {
 
 	public:
 		//! Constructor
+		Goal test_goal;
+		double max_speed;
+		double min_speed;//  - 0.8  [m / s]
+		double max_yaw_rate; // 180.0 * PI / 180.0   [rad / s]
+		double max_accel; // 4.0   [m / ss]
+		double max_delta_yaw_rate;  // 360.0 * PI / 180.0   [rad / ss]
+		double v_resolution;// 0.2   [m / s]
+		double yaw_rate_resolution;// 15. * PI / 180.0   [rad / s]
+		double min_wheel_speed;//100 [rpm]
+		double dt;// 0.2  [s] Time tick for motion prediction
+		double predict_time; // 0.8   [s]  less and more flexible
 
-		double max_speed = 1.8; // 0.8   [m / s] 
-		double min_speed = -1.8; //  - 0.8  [m / s]
-		double max_yaw_rate = 720 * PI / 180;  // 180.0 * PI / 180.0   [rad / s]
-		double max_accel = 1.5; // 4.0   [m / ss]
-		double max_delta_yaw_rate = 360 * PI / 180;  // 360.0 * PI / 180.0   [rad / ss]
-		double v_resolution = 0.1; // 0.2   [m / s]
-		double yaw_rate_resolution = 10 * PI / 180;  // 15. * PI / 180.0   [rad / s]
-		double min_wheel_speed = 100; //100 [rpm]
-		double dt = 0.1; // 0.2  [s] Time tick for motion prediction
-		double predict_time = 2.; // 0.8   [s]  less and more flexible
+		double to_goal_cost_gain;// 0.16
+		double obstacle_cost_gain;//  0.6
+		double speed_adjust_param;
+		double speed_cost_gain_max;
+		double speed_cost_gain_min;
+		
+		bool SHOW_ANIMATION; // true
+		bool GOAL_ARRIVAED; // false
+		bool RESET_STATE; // false
+		bool HUMAN_SHAPE; // false
+		bool MAP_TO_OBCOORD; // true
+		bool MEASURE_TIME; // false
+		bool TEMPORARY_GOAL_ARRIVED;
 
-		double to_goal_cost_gain = 0.8; // 0.16
-		double obstacle_cost_gain = 0.3;//  0.6
-		double speed_adjust_param = 0.9;
-		double speed_cost_gain_max = 5;
-		double speed_cost_gain_min = 0.1;
-		double dist_to_goal = 1e10; // 1e10
-
-		bool SHOW_ANIMATION = true; // true
-		bool GOAL_ARRIVAED = false; // false
-		bool RESET_STATE = false; // false
-		bool HUMAN_SHAPE = false; // false
-		bool MAP_TO_OBCOORD = true; // true
-		bool MEASURE_TIME = true; // false
-		bool TEMPORARY_GOAL_ARRIVED = false;
 		double m = 5;
 		double g = 9.80665;
 		double mu = 0.01;
@@ -94,12 +62,15 @@ namespace dwa_planner {
 		double robot_radius = 0.5;  // [m] for collision check
 		double robot_length = 0.661 + 0.1;  // [m] for collision check
 		double robot_width = 0.504 + 0.1;  // [m] for collision check
+		double dist_to_goal = 1e10; // 1e10
+
+		void readJsonFromFile();
 
 		State koordinaten_transfomation(Control wheel_speed, double theta);
 
 		State motion(State x, Control u, double dt);
 
-		Control  speed_change(Control u_in, string mode);
+		Control speed_change(Control u_in, string mode);
 
 		MatrixXd obmap2coordinaten(MatrixXd obmap, double res);
 
@@ -121,6 +92,6 @@ namespace dwa_planner {
 
 		DWA_result dwa_control(Control motor_ist, State x_pre, Goal zw_goal, MatrixXd ob_list);
 	};
-}; // namespace dwa_planner
+} // namespace dwa_planner
 
-#endif#// DWA_PLANNER_H
+#endif// DWA_PLANNER_H
