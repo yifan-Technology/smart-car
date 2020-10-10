@@ -3,6 +3,19 @@ import ROSLIB from 'roslib';
 import { ROSContext, ROSProvider } from './ROSContext';
 import PropTypes from 'prop-types';
 
+// let ros = new ROSLIB.ros();
+
+// ros.on('connection', function() {
+//   console.log('bridge connected');
+// });
+// ros.on('error', function(data) {
+//   console.log('error');
+// });
+// ros.on('closed', function() {
+//   console.log('bridge closed');
+// });
+
+
 // ROS Hook that lets others use ROS websocket connection
 // returns some useful functions & values
 function useROS() {
@@ -32,24 +45,37 @@ function useROS() {
     const topicsPromise = new Promise((resolve, reject) => {
         ros.ROS.getTopics((topics) => {
           const topicList = topics.topics.map((topicName, i) => {
-          return {
-            path: topicName,
-            msgType: topics.types[i],
-            type: "topic",
-          };
+            return {
+              path: topicName,
+              msgType: topics.types[i],
+              type: "topic",
+              };
+          });
+          resolve({
+            topics: topicList
+          });
+          reject({
+            topics: []
+	        });
+        }, (message) => {
+          console.error("Failed to get topic", message);
         });
-        resolve({
-          topics: topicList
-        });
-	reject({
-          topics: []
-	});
-      }, (message) => {
-        console.error("Failed to get topic", message);
-      });
     });
     topicsPromise.then( (topics) => setROS(ros => ({ ...ros, topics: topics.topics })));
+    console.log(ros.topics);
     return ros.topics;
+  }
+
+  function subscriber(topic,msg_type){
+    var newSubscriber = new ROSLIB.Topic({
+      ros : ros.ROS,
+      name : topic,
+      messageType : msg_type,
+    });
+    newSubscriber.subscribe(function(message) {
+      console.log(message.data); 
+    });
+    console.log('subscriber created');
   }
 
   function createListener(topic, msg_type, to_queue, compression_type) {
@@ -73,10 +99,12 @@ function useROS() {
   }
   
   const handleConnect = () => {
+    // console.log('into handleConnect');
     try {
       ros.ROS = new ROSLIB.Ros({
         url : ros.url,
       });
+      // console.log('into try of handleConnect');
 
       if (ros.ROS) ros.ROS.on('connection', (error) => {
         setROS(ros => ({ ...ros, isConnected: true }));
@@ -89,6 +117,7 @@ function useROS() {
     } catch (e) {
       console.log(e);
     }
+    // console.log('handleConnect end');
   };
 
   const handleDisconnect = () => {
@@ -105,6 +134,7 @@ function useROS() {
     changeUrl,
     getTopics,
     createListener,
+    subscriber,
     ros: ros.ROS,
     isConnected: ros.isConnected,
     url: ros.url,

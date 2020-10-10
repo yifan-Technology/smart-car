@@ -3,14 +3,14 @@ import PropTypes from "prop-types";
  // eslint-disable-next-line
 
 import ReactNipple from "react-nipple";
-import DebugView from "react-nipple/lib/DebugView";
+// import DebugView from "react-nipple/lib/DebugView";
 import "react-nipple/lib/styles.css";
 import ROSLIB from 'roslib';
 
 
 const rosObj = {
     ROS: null,
-    url: "ws://localhost:9090",
+    url: "ws://192.168.8.100:9090",
     isConnected: false,
     autoconnect: false,
     topics: [],
@@ -36,6 +36,7 @@ try {
 }
 }; 
 
+// eslint-disable-next-line
 const handleDisconnect = () => {
     try {
         myros.ROS.close();
@@ -45,16 +46,40 @@ const handleDisconnect = () => {
     }
 };
 
-const Listener = () => {
-    var newListener = new ROSLIB.Topic({
-      ros : myros.ROS,
-      name : '/int8',
-      messageType : 'std_msgs/Int8',
+
+function pubSollSpeed(speed) {
+    var carpub = new ROSLIB.Topic({
+        ros : myros.ROS,
+        name : 'soll_speed',
+        messageType : 'std_msgs/msg/Float32MultiArray',
     });
-    newListener.subscribe(function(message) {
-        console.log(message.data); 
-      });
-};
+
+    var vel = {
+        layout: {
+            dim: [
+                {
+                  label: 'height',
+                  size: 2,
+                  stride: 2 * 3 * 3,
+                },
+                {
+                  label: 'weight',
+                  size: 3,
+                  stride: 3 * 3,
+                },
+                {
+                  label: 'channel',
+                  size: 3,
+                  stride: 3,
+                },
+            ],
+              data_offset: 0,
+            },
+            data: speed,
+    };
+
+    carpub.publish(vel);
+  };
 
 
 export default class ReactNippleExample extends Component {
@@ -62,7 +87,8 @@ export default class ReactNippleExample extends Component {
         title: PropTypes.string,
         width: PropTypes.number,
         height: PropTypes.number,
-        options: PropTypes.object
+        options: PropTypes.object,
+        size: PropTypes.number,
     };
     state = {
         data: undefined
@@ -77,7 +103,8 @@ export default class ReactNippleExample extends Component {
                     style={{
                         outline: `1px dashed ${this.props.options.color}`,
                         width: this.props.width,
-                        height: this.props.height
+                        height: this.props.height,
+                        size:this.props.size,
                     }}
                     onStart={this.handleJoystickStart}
                     onEnd={this.handleJoystickEnd}
@@ -88,7 +115,7 @@ export default class ReactNippleExample extends Component {
                     onHidden={this.handleJoystickHidden}
                     onPressure={this.handleJoystickPressure}
                 />
-                <DebugView data={this.state.data} />
+                {/* <DebugView data={this.state.data} /> */}
             </div>
         );
     }
@@ -96,16 +123,26 @@ export default class ReactNippleExample extends Component {
     handleJoystickStart = (evt, data) => {
         this.setState({ data });
         handleConnect();
-        Listener();
     };
     handleJoystickEnd = (evt, data) => {
         this.setState({ data });
-        handleDisconnect();
+        pubSollSpeed([0,0,0,0,]);
+        //handleDisconnect();
     };
     handleJoystickMove = (evt, data) => {
-        this.setState({ data });
-        Listener();
-        
+        this.setState({ data }); 
+        var speed = data.distance*7.5;
+        console.log(speed);
+        var vx = speed*Math.sin(data.angle.radian);
+        var w = -speed*Math.cos(data.angle.radian)*4;
+        if(data.angle.degree>180){
+            w = -w;
+        } 
+        console.log(vx,w);
+        var vl= vx-0.46*w;
+        var vr= vx+0.46*w;
+        console.log(vl, vr);
+        pubSollSpeed([vl, vr, vl, vr,]);      
     };
     handleJoystickDir = (evt, data) => {
         this.setState({ data });

@@ -32,8 +32,13 @@ export function EchoTopic() {
 
     unsubscribe();
     listener = null;
+    console.log('before topic input');
+    var i = null;
+    console.log(topics);
 
-    for (var i in topics) {
+    for (i in topics) {
+      console.log('topic input begin');
+
       if (topics[i].path === topicInput) {
         listener = createListener( topics[i].path,
                                    topics[i].msgType,
@@ -41,6 +46,7 @@ export function EchoTopic() {
                                    compression);
         break;
       }
+      console.log('topic input end');
     }
 
     if (listener) {
