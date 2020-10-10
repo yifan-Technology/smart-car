@@ -9,9 +9,9 @@
 
 //#include "include/yaml-cpp/yaml.h"
 #include "DWA_Planner.h"
+
+
 #define PI 3.141592653
-
-
 using namespace std;
 using namespace Eigen;
 //using State = Matrix<double, 5, 1 >;
@@ -75,7 +75,7 @@ namespace dwa_planner {
 		x(3) = x_tr(3);
 		x(4) = x_tr(4);
 		return x;
-	};
+	}
 
 	Control  DWA::speed_change(Control u_in, string mode) {
 		double speed_gain = 60 / (2 * PI) * (3591 / 187);
@@ -84,6 +84,9 @@ namespace dwa_planner {
 		}
 		else if (mode == "PC_TO_MOTOR") {
 			return u_in * speed_gain;
+		}
+		else{
+			return u_in;
 		}
 	}
 
@@ -203,7 +206,7 @@ namespace dwa_planner {
 		MatrixXd tr_x = trajectory.row(0).transpose().replicate(1, obstacle.cols());
 		MatrixXd tr_y = trajectory.row(1).transpose().replicate(1, obstacle.cols());
 
-		// ÒòÎªÕÏ°­ÎïºÍ¹ì¼£µãÊýÁ¿²»µÈ, ËùÒÔÔö¼ÓÒ»ÁÐÀ´±íÊ¾
+		// ï¿½ï¿½Îªï¿½Ï°ï¿½ï¿½ï¿½Í¹ì¼£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 		MatrixXd rho_square = (tr_x - ox).array().square() + (tr_y - oy).array().square();
 		/*cout<<"rho"<<rho_square<<endl;*/
 		if (rho_square.minCoeff() <= robot_radius * robot_radius) {
@@ -317,7 +320,7 @@ namespace dwa_planner {
 
 		return  dwa_result;
 	}
-};
+}
 
 
 

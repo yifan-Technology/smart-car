@@ -11,15 +11,31 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+#if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#  add_compile_options(-Wall -Wextra -Wpedantic)
+#endif()
+# if CMAKE_BUILD_TYPE is not specified, take 'Release' as default
+IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE Release)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
+if(CMAKE_BUILD_TYPE MATCHES Release )
+    #message(" * Release Mode")
+    add_compile_options(-Wno-deprecated-declarations)
 endif()
 
+if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo )
+    #message(" * Release with Debug Info Mode")
+    add_compile_options(-Wno-deprecated-declarations)
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Debug )
+    message(" * Debug Mode")
+endif()
 #############################
 #Dependencies
 #############################
 find_package(ament_cmake REQUIRED)
-
 
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -35,7 +51,8 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
-find_package(yaml-cpp REQUIRED)
+#find_package(yaml-cpp REQUIRED)
+find_package(jsoncpp REQUIRED)
 
 ###############################################################################
 # INCLUDES and LIBS
@@ -43,17 +60,16 @@ find_package(yaml-cpp REQUIRED)
 include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
-    ${YAML_CPP_INCLUDE_DIR}
+    ${jsoncpp_INCLUDE_DIRS}
     ./include  
 )
 
 link_directories(
   ${OpenCV_LIBRARY_DIRS}
-  yaml-cpp
+  jsoncpp
 )
 add_library(${PROJECT_NAME}_lib
 "src/DWA_Planner.cpp"
-
 )
 
 set(DEPENDENCIES        
@@ -70,29 +86,44 @@ set(DEPENDENCIES
     stereo_msgs
     OpenCV
     cv_bridge
-    yaml-cpp
+    jsoncpp
 )
 
 set(MY_TARGET_LINK_LIBRARIES        
     ${OpenCV_LIBRARY_DIRS} 
-    yaml-cpp
+    jsoncpp
 )
 
 ###############################################################################
 # executable
 
-add_executable(hallo src/publisher_member_function.cpp)
-target_link_libraries(hallo ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
-ament_target_dependencies(hallo ${DEPENDENCIES})
+#add_executable(hallo src/publisher_member_function.cpp)
+#target_link_libraries(hallo ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
+#ament_target_dependencies(hallo ${DEPENDENCIES})
 
-add_executable(dwa src/dynamic_window_approach.cpp)
-target_link_libraries(dwa ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
-ament_target_dependencies(dwa ${DEPENDENCIES})
+#add_executable(dwa src/dynamic_window_approach.cpp)
+#target_link_libraries(dwa ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
+#ament_target_dependencies(dwa ${DEPENDENCIES})
 
+#add_executable(talker src/dwa_publisher.cpp)
+#ament_target_dependencies(talker rclcpp std_msgs)
+
+add_executable(listener src/dwa_subscriber.cpp)
+ament_target_dependencies(listener rclcpp std_msgs)
+
+add_executable(planner src/yf_dwa.cpp
+			src/DWA_Planner.cpp
+			include/DWA_Planner.h)
+ament_target_dependencies(planner Eigen3 OpenCV rclcpp std_msgs)
+
+target_include_directories(planner
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
 
 install(TARGETS
-  hallo
-  dwa
+   listener
+  planner
   DESTINATION lib/${PROJECT_NAME})
 
 
