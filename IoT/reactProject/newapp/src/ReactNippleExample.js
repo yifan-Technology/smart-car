@@ -43,17 +43,20 @@ const handleDisconnect = () => {
     } catch (e) {
       console.log(e);
     }
-  };
-  const Listener = () => {
+};
+
+const Listener = () => {
     var newListener = new ROSLIB.Topic({
       ros : myros.ROS,
-      name : '/topic',
+      name : '/int8',
       messageType : 'std_msgs/Int8',
     });
-    newListener(function(message){
-        console.log(message.data);
-    });
-  };
+    newListener.subscribe(function(message) {
+        console.log(message.data); 
+      });
+};
+
+
 export default class ReactNippleExample extends Component {
     static propTypes = {
         title: PropTypes.string,
@@ -93,6 +96,7 @@ export default class ReactNippleExample extends Component {
     handleJoystickStart = (evt, data) => {
         this.setState({ data });
         handleConnect();
+        Listener();
     };
     handleJoystickEnd = (evt, data) => {
         this.setState({ data });
