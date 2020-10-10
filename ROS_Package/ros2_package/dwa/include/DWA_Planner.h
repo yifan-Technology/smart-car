@@ -17,6 +17,47 @@ using All_Traj = std::vector<MatrixXd>;
 //using All_Traj = Matrix<MatrixXd,1, 1>;
 struct DWA_result { Control u; MatrixXd traj; All_Traj all_traj; };
 #define PI 3.141592653
+<<<<<<< HEAD
+=======
+typedef struct dwaConfig {
+    	double max_speed;
+		double min_speed;
+		double max_yaw_rate;
+		double max_accel;
+		double max_delta_yaw_rate;
+		double v_resolution;
+		double yaw_rate_resolution;
+		double min_wheel_speed;
+		double dt;
+		double predict_time;
+
+		double to_goal_cost_gain;
+		double obstacle_cost_gain;
+		double speed_adjust_param;
+		double speed_cost_gain_max;
+		double speed_cost_gain_min;
+		double dist_to_goal;
+
+		bool SHOW_ANIMATION;
+		bool GOAL_ARRIVAED;
+		bool RESET_STATE;
+		bool HUMAN_SHAPE;
+		bool MAP_TO_OBCOORD;
+		bool MEASURE_TIME;
+		bool TEMPORARY_GOAL_ARRIVED;
+		double m;
+		double g;
+		double mu;
+		double x0;
+		double wheel_len_dist;
+		double wheel_quer_dist;
+		double car_h;
+		double wheel_radius;
+		double robot_radius;
+		double robot_length;
+		double robot_width;
+}DWA_CONFIG;
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
 
 namespace dwa_planner {
 	using namespace std;
@@ -51,6 +92,34 @@ namespace dwa_planner {
 		bool MEASURE_TIME; // false
 		bool TEMPORARY_GOAL_ARRIVED;
 
+<<<<<<< HEAD
+=======
+		double max_speed = 1.8; // 0.8   [m / s] 
+		double min_speed = -1.8; //  - 0.8  [m / s]
+		double max_yaw_rate = 720 * PI / 180;  // 180.0 * PI / 180.0   [rad / s]
+		double max_accel = 1.5; // 4.0   [m / ss]
+		double max_delta_yaw_rate = 360 * PI / 180;  // 360.0 * PI / 180.0   [rad / ss]
+		double v_resolution = 0.1; // 0.2   [m / s]
+		double yaw_rate_resolution = 10 * PI / 180;  // 15. * PI / 180.0   [rad / s]
+		double min_wheel_speed = 100; //100 [rpm]
+		double dt = 0.1; // 0.2  [s] Time tick for motion prediction
+		double predict_time = 2.; // 0.8   [s]  less and more flexible
+
+		double to_goal_cost_gain = 0.8; // 0.16
+		double obstacle_cost_gain = 0.3;//  0.6
+		double speed_adjust_param = 0.9;
+		double speed_cost_gain_max = 5;
+		double speed_cost_gain_min = 0.1;
+		double dist_to_goal = 1e10; // 1e10
+
+		bool SHOW_ANIMATION = false; // true
+		bool GOAL_ARRIVAED = false; // false
+		bool RESET_STATE = false; // false
+		bool HUMAN_SHAPE = false; // false
+		bool MAP_TO_OBCOORD = true; // true
+		bool MEASURE_TIME = true; // false
+		bool TEMPORARY_GOAL_ARRIVED = false;
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
 		double m = 5;
 		double g = 9.80665;
 		double mu = 0.01;

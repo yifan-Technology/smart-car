@@ -1,0 +1,55 @@
+terminal 1:
+cd dev_ws
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+source ~/dev_ws/install/setup.bash
+colcon build --symlink-install --packages-select yfcam
+
+
+# 2-----------------------------------------------------------------------------------------------2 #
+source /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+cd ~/smart-car/serial_communication/src/motor_serial
+python3 motorSerial.py
+
+# ----------------------------------------------------------------------------------------------- #
+
+
+# 3-----------------------------------------------------------------------------------------------3 #
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+source ~/dev_ws/install/setup.bash
+ros2 run zed2ros liveVideo 
+# ----------------------------------------------------------------------------------------------- #
+
+
+# 4-----------------------------------------------------------------------------------------------4 #
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+source ~/dev_ws/install/setup.bash
+ros2 run yfcam dwaControll
+# ----------------------------------------------------------------------------------------------- #
+
+
+# ----------------------------------------------------- #
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+source ~/dev_ws/install/setup.bash
+ros2 run yfcam ros2Camera
+# ----------------------------------------------------- #
+
+
+# ----------------------------------------------------- #
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+source ~/dev_ws/install/setup.bash
+ros2 run yfcam gui
+# ----------------------------------------------------- #
+
+
+# ----------------------------------------------------- #
+source  /opt/ros/dashing/setup.bash
+source ~/ros2_dashing/install/local_setup.bash
+source ~/dev_ws/install/setup.bash
+ros2 run yfcam trackTarget
+# ----------------------------------------------------- #

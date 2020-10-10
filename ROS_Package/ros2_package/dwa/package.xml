@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
@@ -7,10 +8,14 @@
   <maintainer email="532765732@qq.com">taungdrier</maintainer>
   <license>Apache License 2.0</license>
 
+=======
+  <description>TODO: Package description</description>
+  <maintainer email="gong@todo.todo">gong</maintainer>
+  <license>TODO: License declaration</license>
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
   <buildtool_depend>ament_cmake</buildtool_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
-
   <export>
     <build_type>ament_cmake</build_type>
     <depend>rclcpp</depend>
@@ -26,7 +31,14 @@
     <depend>yaml-cpp</depend>
     <depend>jsoncpp</depend>
     <depend>DWA_Planner</depend>
+<<<<<<< HEAD
 
   </export>
 </package> 
 
+=======
+
+
+  </export>
+</package>
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d

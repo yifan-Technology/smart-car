@@ -13,7 +13,7 @@
 #include "DWA_Planner.h"
  //#include "include/yaml-cpp/yaml.h"
 
-// ²úÉúÒ»¸ödoubleÀàĞÍµÄNAN
+// ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½doubleï¿½ï¿½ï¿½Íµï¿½NAN
 
 using namespace dwa_planner;
 using namespace std;
@@ -31,7 +31,7 @@ cv::Point2i cv_offset(
 	output.x = int(x * 50) + image_width / 5;
 	output.y = image_height - int(y * 50) - image_height / 5;
 	return output;
-};
+}
 
 //class DWA {
 //
@@ -254,7 +254,7 @@ cv::Point2i cv_offset(
 //		MatrixXd tr_x = trajectory.row(0).transpose().replicate(1, obstacle.cols());
 //		MatrixXd tr_y = trajectory.row(1).transpose().replicate(1, obstacle.cols());
 //
-//		// ÒòÎªÕÏ°­ÎïºÍ¹ì¼£µãÊıÁ¿²»µÈ, ËùÒÔÔö¼ÓÒ»ÁĞÀ´±íÊ¾
+//		// ï¿½ï¿½Îªï¿½Ï°ï¿½ï¿½ï¿½Í¹ì¼£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 //		MatrixXd rho_square = (tr_x - ox).array().square() + (tr_y - oy).array().square();
 //		/*cout<<"rho"<<rho_square<<endl;*/
 //		if (rho_square.minCoeff() <= robot_radius * robot_radius) {
@@ -406,7 +406,6 @@ int main() {
 	motor_ist << 0, 0;
 	MatrixXd traj_(5, 1);
 	DWA_result plan;
-	bool terminal = false;
 	float figure_size = 1000;
 	float scale_up = 50;
 
@@ -474,7 +473,7 @@ int main() {
 				cv::Scalar(255, 0, 255),
 				int(figure_size / 300));
 			if ((x.head(2) - goal).norm() <= planner.robot_radius) {
-				terminal = true;
+
 				for (unsigned int j = 0; j < traj_.cols(); j++) {
 					cv::circle(bg, cv_offset(traj_(0, j), traj_(1, j), bg.cols, bg.rows),
 						int(figure_size / 200), cv::Scalar(0, 0, 255), -1);
@@ -494,7 +493,7 @@ int main() {
 		}
 
 		if (planner.TEMPORARY_GOAL_ARRIVED) {
-			terminal = true;
+
 			std::cout << "goal arrived!" << endl;
 			planner.TEMPORARY_GOAL_ARRIVED=false;
 			break;

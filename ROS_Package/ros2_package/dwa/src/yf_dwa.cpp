@@ -18,9 +18,7 @@
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include <std_msgs/msg/int8_multi_array.hpp>
 
-
 #include "DWA_Planner.h"
- //#include "include/yaml-cpp/yaml.h"
 
 // ����һ��double���͵�NAN
 using std::placeholders::_1;

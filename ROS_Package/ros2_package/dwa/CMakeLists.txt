@@ -35,6 +35,7 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 if(CMAKE_BUILD_TYPE MATCHES Release )
     #message(" * Release Mode")
     add_compile_options(-Wno-deprecated-declarations)
+<<<<<<< HEAD
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo )
@@ -47,12 +48,28 @@ if(CMAKE_BUILD_TYPE MATCHES Debug )
 endif()
 
 ###############################################################################
+=======
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo )
+    #message(" * Release with Debug Info Mode")
+    add_compile_options(-Wno-deprecated-declarations)
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Debug )
+    message(" * Debug Mode")
+endif()
+#############################
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
 #Dependencies
 ###############################################################################
 
+<<<<<<< HEAD
 find_package(ament_cmake REQUIRED)
 
 find_package(std_msgs REQUIRED)
+=======
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
 find_package(Eigen3 REQUIRED)
 #set(OpenCV_DIR /usr/local/lib/cmake/opencv4)
 find_package(OpenCV REQUIRED)
@@ -70,6 +87,11 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
+<<<<<<< HEAD
+=======
+#find_package(yaml-cpp REQUIRED)
+find_package(jsoncpp REQUIRED)
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
 
 ###############################################################################
 # INCLUDES and LIBS
@@ -85,6 +107,29 @@ include_directories(
 link_directories(
   ${OpenCV_LIBRARY_DIRS}
   jsoncpp
+<<<<<<< HEAD
+=======
+)
+add_library(${PROJECT_NAME}_lib
+"src/DWA_Planner.cpp"
+)
+
+set(DEPENDENCIES        
+    rclcpp
+    rclcpp_components
+    image_transport
+    std_msgs
+    tf2
+    tf2_ros
+    tf2_geometry_msgs
+    geometry_msgs
+    nav_msgs
+    sensor_msgs
+    stereo_msgs
+    OpenCV
+    cv_bridge
+    jsoncpp
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
 )
 set(MY_TARGET_LINK_LIBRARIES        
     ${OpenCV_LIBRARY_DIRS} 
@@ -103,6 +148,7 @@ include_directories("${JSONCPP_INCLUDE_DIRS}")
 add_executable(listener src/dwa_subscriber.cpp)
 ament_target_dependencies(listener rclcpp std_msgs)
 
+<<<<<<< HEAD
 add_executable(planner src/yf_dwa.cpp
 			src/DWA_Planner.cpp
 			include/DWA_Planner.h)
@@ -119,6 +165,34 @@ ament_export_dependencies(Eigen3)
 
 install(TARGETS
   listener
+=======
+#add_executable(hallo src/publisher_member_function.cpp)
+#target_link_libraries(hallo ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
+#ament_target_dependencies(hallo ${DEPENDENCIES})
+
+#add_executable(dwa src/dynamic_window_approach.cpp)
+#target_link_libraries(dwa ${MY_TARGET_LINK_LIBRARIES} ${PROJECT_NAME}_lib)
+#ament_target_dependencies(dwa ${DEPENDENCIES})
+
+#add_executable(talker src/dwa_publisher.cpp)
+#ament_target_dependencies(talker rclcpp std_msgs)
+
+add_executable(listener src/dwa_subscriber.cpp)
+ament_target_dependencies(listener rclcpp std_msgs)
+
+add_executable(planner src/yf_dwa.cpp
+			src/DWA_Planner.cpp
+			include/DWA_Planner.h)
+ament_target_dependencies(planner Eigen3 OpenCV rclcpp std_msgs)
+
+target_include_directories(planner
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+
+install(TARGETS
+   listener
+>>>>>>> a765d30693f1ac0d6474ea0cb26efa056a2d0e0d
   planner
   DESTINATION lib/${PROJECT_NAME})
 
