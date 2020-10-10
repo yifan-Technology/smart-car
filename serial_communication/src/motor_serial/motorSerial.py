@@ -4,7 +4,6 @@ import threading
 import struct
 import time
 import sys
-sys.path.append("/home/yf/dev_ws/src/yfcam/yfcam")
 import yf_node
 import rclpy
 import yaml
