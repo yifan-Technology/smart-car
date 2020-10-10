@@ -11,14 +11,14 @@ Version of [librealsense-ros](https://github.com/IntelRealSense/realsense-ros/tr
 Install ROS
 
 ```bash
-$ cd installROS
+$ cd install_ROS
 $ ./installROS.sh -p ros-melodic-desktop-full -p ros-melodic-rgbd-launch
 ```
 
 Install librealsense
 
 ```bash
-$ cd installLibrealsen
+$ cd install_Librealsen
 $ ./installLibrealsense.sh
 $ ./buildLibrealsense.sh
 ```
@@ -26,7 +26,7 @@ $ ./buildLibrealsense.sh
 Install librealsense-ros
 
 ```bash
-$ cd installRealSenseROS
+$ cd install_RealSenseROS
 $ ./installRealSenseROS.sh <catkin_ws_name>
 ```
 
