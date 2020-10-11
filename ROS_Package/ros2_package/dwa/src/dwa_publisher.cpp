@@ -20,44 +20,51 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float32_multi_array.hpp"
+#include <geometry_msgs/msg/pose_stamped.hpp>
 
 using namespace std::chrono_literals;
 
 /* This example creates a subclass of Node and uses std::bind() to register a
  * member function as a callback from the timer. */
 
-class DWAPublisher : public rclcpp::Node
+class DWA_Publisher : public rclcpp::Node
 {
 public:
-  DWAPublisher()
-  : Node("DWA_publisher"), count_(0)
+  DWA_Publisher()
+      : Node("DWA_Publisher"), count_(0)
   {
-    publisher_ = this->create_publisher<std_msgs::msg::Float32MultiArray>("speed", 10);
+    //publisher_ = this->create_publisher<std_msgs::msg::Float32MultiArray>("/yf_camera/goal", 1);
+    publisherGoal_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/yf_camera/goal", 1);
     timer_ = this->create_wall_timer(
-      500ms, std::bind(&DWAPublisher::timer_callback, this));
+        50ms, std::bind(&DWA_Publisher::timer_callback, this));
   }
 
 private:
   void timer_callback()
   {
-    auto message = std_msgs::msg::Float32MultiArray();
-
-    std::vector<float> realspeed;
-    realspeed.push_back(22);
-    realspeed.push_back(33);
-    message.data = realspeed;
-    // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-    publisher_->publish(message);
+    auto message = geometry_msgs::msg::PoseStamped();
+    // std::vector<float> realgoal;
+    // realgoal.push_back(10);
+    // realgoal.push_back(10);
+    // message.data = realgoal;
+    message.pose.orientation.x = 0;
+    message.pose.orientation.y = 0;
+    message.pose.orientation.z = 0;
+    message.pose.position.x = 10;
+    message.pose.position.y = 10;
+    message.pose.position.z = 0;
+    publisherGoal_->publish(message);
+    std::cout << "current goal: " << message.pose.position.x << "," << message.pose.position.y << std::endl;
   }
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr publisher_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisherGoal_;
   size_t count_;
 };
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<DWAPublisher>());
+  rclcpp::spin(std::make_shared<DWA_Publisher>());
   rclcpp::shutdown();
   return 0;
 }

@@ -327,7 +327,7 @@ namespace dwa_planner {
 			TEMPORARY_GOAL_ARRIVED = true;
 		}
 
-		//State x_next = motion(x_pre, u_ist, dt);
+		//car_x = motion(x_pre, u_ist, dt);
 		dwa_result.u = motor_soll;
 
 		return  dwa_result;

@@ -32,7 +32,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 // OpenCV include (for display)
-#include <opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>map
+
 
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/msg/image.hpp>
