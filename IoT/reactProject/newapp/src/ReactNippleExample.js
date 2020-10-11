@@ -1,5 +1,5 @@
  // eslint-disable-next-line
-import React, { useContext, useEffect, useState } from "react";
+import React, { Component, useContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
  // eslint-disable-next-line
 

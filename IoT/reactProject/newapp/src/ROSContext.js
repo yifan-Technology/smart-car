@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 const rosObj = {
   ROS: null,
-  url: "ws://192.168.8.112:9090",
+  url: "ws://192.168.8.100:9090",
   isConnected: false,
   autoconnect: false,
   topics: [],

@@ -5,6 +5,7 @@ import "./App.css";
 import ReactNippleExample from "./ReactNippleExample";
 // import { EchoTopic } from './EchoTopic';
 import { ToggleConnect } from './ToggleConnect';
+import { VideoWindowExsample } from './VideoWindowExsample';
 import { ROS } from './ROS';
 
 class App extends Component {
@@ -23,6 +24,12 @@ class App extends Component {
               position: { top: "50%", left: "50%" },
               size: 200 
             }}
+            />
+            <VideoWindowExsample
+            
+            // videoURL = 'http://192.168.8.100:8080/stream_viewer?topic=/yf_camera/LiveVideo'
+            // width={400}
+            // height={400}
             />
           </ROS>
           {/* <ROS> 
