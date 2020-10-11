@@ -1,137 +1,32 @@
-import React, { Component } from "react";
+ // eslint-disable-next-line
+import React, { useContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
  // eslint-disable-next-line
 
 import ReactNipple from "react-nipple";
 // import DebugView from "react-nipple/lib/DebugView";
 import "react-nipple/lib/styles.css";
-import ROSLIB from 'roslib';
+import { useROS } from './ROS';
 
+export function ReactNippleExample(props) {
 
-const rosObj = {
-    ROS: null,
-    url: "ws://192.168.8.100:9090",
-    isConnected: false,
-    autoconnect: false,
-    topics: [],
-    listeners: [],
-  };
-let myros = rosObj;
+    const {pubSollSpeed,isConnected} = useROS();
 
-const handleConnect = () => {
-try {
-    myros.ROS = new ROSLIB.Ros({
-    url : myros.url,
-    });
+     // eslint-disable-next-line
+    const [mydata, setdata] = useState(undefined);
 
-    if (myros.ROS) myros.ROS.on('connection', (error) => {
-        console.log('connected!!!');
-    });
-
-    if (myros.ROS) myros.ROS.on('error', (error) => {
-    console.log(error);
-    });
-} catch (e) {
-    console.log(e);
-}
-}; 
-
-// eslint-disable-next-line
-const handleDisconnect = () => {
-    try {
-        myros.ROS.close();
-        console.log('disconnected!!!');
-    } catch (e) {
-      console.log(e);
-    }
-};
-
-
-function pubSollSpeed(speed) {
-    var carpub = new ROSLIB.Topic({
-        ros : myros.ROS,
-        name : 'soll_speed',
-        messageType : 'std_msgs/msg/Float32MultiArray',
-    });
-
-    var vel = {
-        layout: {
-            dim: [
-                {
-                  label: 'height',
-                  size: 2,
-                  stride: 2 * 3 * 3,
-                },
-                {
-                  label: 'weight',
-                  size: 3,
-                  stride: 3 * 3,
-                },
-                {
-                  label: 'channel',
-                  size: 3,
-                  stride: 3,
-                },
-            ],
-              data_offset: 0,
-            },
-            data: speed,
+    const handleJoystickStart = (evt, data) => {
+        setdata(data);
     };
-
-    carpub.publish(vel);
-  };
-
-
-export default class ReactNippleExample extends Component {
-    static propTypes = {
-        title: PropTypes.string,
-        width: PropTypes.number,
-        height: PropTypes.number,
-        options: PropTypes.object,
-        size: PropTypes.number,
-    };
-    state = {
-        data: undefined
-    };
-    render() {
-        return (
-            <div className="NippleExample">
-                <h2>{this.props.title}</h2>
-                <ReactNipple
-                    className="joystick"
-                    options={this.props.options}
-                    style={{
-                        outline: `1px dashed ${this.props.options.color}`,
-                        width: this.props.width,
-                        height: this.props.height,
-                        size:this.props.size,
-                    }}
-                    onStart={this.handleJoystickStart}
-                    onEnd={this.handleJoystickEnd}
-                    onMove={this.handleJoystickMove}
-                    onDir={this.handleJoystickDir}
-                    onPlain={this.handleJoystickPlain}
-                    onShown={this.handleJoystickShown}
-                    onHidden={this.handleJoystickHidden}
-                    onPressure={this.handleJoystickPressure}
-                />
-                {/* <DebugView data={this.state.data} /> */}
-            </div>
-        );
-    }
-
-    handleJoystickStart = (evt, data) => {
-        this.setState({ data });
-        handleConnect();
-    };
-    handleJoystickEnd = (evt, data) => {
-        this.setState({ data });
-        pubSollSpeed([0,0,0,0,]);
+    const handleJoystickEnd = (evt, data) => {
+        setdata(data);
+        if(isConnected){
+        pubSollSpeed([0,0,0,0,]);}
         //handleDisconnect();
     };
-    handleJoystickMove = (evt, data) => {
-        this.setState({ data }); 
-        var speed = data.distance*7.5;
+    const handleJoystickMove = (evt, data) => {
+        setdata(data);
+        var speed = data.distance*15;
         console.log(speed);
         var vx = speed*Math.sin(data.angle.radian);
         var w = -speed*Math.cos(data.angle.radian)*4;
@@ -139,24 +34,58 @@ export default class ReactNippleExample extends Component {
             w = -w;
         } 
         console.log(vx,w);
-        var vl= vx-0.46*w;
-        var vr= vx+0.46*w;
+        var vl= vx - 0.46*w;
+        var vr= vx + 0.46*w;
         console.log(vl, vr);
-        pubSollSpeed([vl, vr, vl, vr,]);      
+        if(isConnected){
+        pubSollSpeed([vl, vr, vl, vr,]);}      
     };
-    handleJoystickDir = (evt, data) => {
-        this.setState({ data });
+    const handleJoystickDir = (evt, data) => {
+        setdata(data);
     };
-    handleJoystickPlain = (evt, data) => {
-        this.setState({ data });
+    const handleJoystickPlain = (evt, data) => {
+        setdata(data);
     };
-    handleJoystickShown = (evt, data) => {
-        this.setState({ data });
+    const handleJoystickShown = (evt, data) => {
+        setdata(data);
     };
-    handleJoystickHidden = (evt, data) => {
-        this.setState({ data });
+    const handleJoystickHidden = (evt, data) => {
+        setdata(data);
     };
-    handleJoystickPressure = (evt, data) => {
-        this.setState({ data });
+    const handleJoystickPressure = (evt, data) => {
+        setdata(data);
     };
+        return (
+            <div className="NippleExample">
+                <h2>{props.title}</h2>
+                <ReactNipple
+                    className="joystick"
+                    options={props.options}
+                    style={{
+                        outline: `1px dashed ${props.options.color}`,
+                        width: props.width,
+                        height: props.height,
+                        size:props.size,
+                    }}
+                    onStart={handleJoystickStart}
+                    onEnd={handleJoystickEnd}
+                    onMove={handleJoystickMove}
+                    onDir={handleJoystickDir}
+                    onPlain={handleJoystickPlain}
+                    onShown={handleJoystickShown}
+                    onHidden={handleJoystickHidden}
+                    onPressure={handleJoystickPressure}
+                />
+                {/* <DebugView data={this.state.data} /> */}
+            </div>
+        );    
 }
+ReactNippleExample.propTypes = {
+    title: PropTypes.string,
+    width: PropTypes.number,
+    height: PropTypes.number,
+    options: PropTypes.object,
+    size: PropTypes.number,
+  };
+
+export default ReactNippleExample;

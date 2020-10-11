@@ -37,6 +37,40 @@ function useROS() {
     }
   }
 
+  function pubSollSpeed(speed) {
+    var carpub = new ROSLIB.Topic({
+        ros : ros.ROS,
+        name : 'soll_speed',
+        messageType : 'std_msgs/msg/Float32MultiArray',
+    });
+
+    var vel = {
+        layout: {
+            dim: [
+                {
+                  label: 'height',
+                  size: 2,
+                  stride: 2 * 3 * 3,
+                },
+                {
+                  label: 'weight',
+                  size: 3,
+                  stride: 3 * 3,
+                },
+                {
+                  label: 'channel',
+                  size: 3,
+                  stride: 3,
+                },
+            ],
+              data_offset: 0,
+            },
+            data: speed,
+    };
+
+    carpub.publish(vel);
+  }
+
   function changeUrl(new_url) {
     setROS(ros => ({ ...ros, url: new_url }));
   }
@@ -135,6 +169,7 @@ function useROS() {
     getTopics,
     createListener,
     subscriber,
+    pubSollSpeed,
     ros: ros.ROS,
     isConnected: ros.isConnected,
     url: ros.url,
