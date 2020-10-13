@@ -26,9 +26,9 @@ export function ReactNippleExample(props) {
     };
     const handleJoystickMove = (evt, data) => {
         setdata(data);
-        var speed = data.distance*15;
+        var speed = data.distance*7.5;
         console.log(speed);
-        var vx = speed*Math.sin(data.angle.radian);
+        var vx = speed*Math.sin(data.angle.radian)*2;
         var w = -speed*Math.cos(data.angle.radian)*4;
         if(data.angle.degree>180){
             w = -w;

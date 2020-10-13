@@ -6,25 +6,18 @@ import PropTypes from "prop-types";
 import { useROS } from './ROS';
 
 export function VideoWindowExsample(props) {
-  // const [ visible, setVisible ] = React.useState(false);
+  //const [url] = useROS();
  
   return (
     <div>
-      {/* <button onClick={() => { setVisible(true); } }>show</button>
-      <Viewer
-      visible={visible}
-      onClose={() => { setVisible(false); } }
-      images={[{
-        src: props.videoURL, 
-        alt: props.videoURL,
-      }]} */}
-      {/* // defaultSize={[{
-      //   width: props.width, 
-      //   height: props.height,
-      // }]}
-      /> */}
-      <img src="http://192.168.8.100:8080/stream?topic=/yf_camera/LiveVideo"
+      {/* <img src="http://192.168.8.100:8080/stream?topic=/yf_camera/LiveVideo"
        alt = 'LIVE'
+       /> */}
+       <img src="http://192.168.178.51:8080/stream?topic=/webserver/TestVideo2"
+       alt = 'LIVE'
+       />
+       <img src="http://192.168.178.51:8080/stream?topic=/webserver/TestVideo1&type=ros_compressed"
+       alt = 'LIVE_compressed'
        />
     </div>
   );

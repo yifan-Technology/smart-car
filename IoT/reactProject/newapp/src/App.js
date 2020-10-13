@@ -26,15 +26,8 @@ class App extends Component {
             }}
             />
             <VideoWindowExsample
-            
-            // videoURL = 'http://192.168.8.100:8080/stream_viewer?topic=/yf_camera/LiveVideo'
-            // width={400}
-            // height={400}
             />
           </ROS>
-          {/* <ROS> 
-            <EchoTopic />
-          </ROS> */}
         </div>
       </div>
     );
