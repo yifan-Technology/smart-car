@@ -1,0 +1,85 @@
+@startuml
+scale 1920 width
+
+ 
+[*] --> gui
+[*] --> camera
+[*] --> control
+[*] --> cabinet
+
+state gui{
+    [*] --> init4
+    init4: c name: 初始化
+    init4 : trigger: initSuccess
+    init4 : CPP: init Camera,pose,object,point
+
+    ' init4 --> 
+}
+
+state camera{
+
+    [*] --> init
+    init : c name: 初始化
+    init : CPP: init Camera,pose,object,point
+
+    init --> mergeCamera : mergeCaptureSuccess
+    mergeCamera: c name: 合成图像
+    mergeCamera: CPP: caputure mergecamera image
+
+    mergeCamera --> None: smting
+    None: c name: 悬空，快递柜后续
+    None: CPP: --
+
+    init --> leftCamera : initSuccess
+    leftCamera: c name: 左侧摄像头
+    leftCamera: CPP: caputure left camera image
+
+
+    leftCamera --> objectDetection : cameraCaptureSuccess
+    objectDetection: c name: 物体识别
+    objectDetection: CPP: caputure object array
+
+    objectDetection --> waitSelect : objectDetectionSuccess
+    waitSelect: c name: 等待选择
+    waitSelect: CPP: None
+
+    waitSelect --> cameraLock: guiLockSelect
+    cameraLock: c name: GUI锁定
+    cameraLock: CPP: lock frame && publish number
+
+    cameraLock--> userSelect: guiUserSelect
+    userSelect: c name: 用户选择
+    userSelect: CPP: select target
+
+    userSelect--> findTarget: findTarget
+    findTarget: c name: 追踪中
+    findTarget: CPP: tarcking
+
+    ' userSelect--> searchTarget: lostTarget
+    ' searchTarget: c name: 搜索中
+    ' searchTarget: CPP: searching
+
+    searchTarget--> findTarget: findTarget
+    findTarget: c name: 追踪中
+    findTarget: CPP: tarcking
+
+    findTarget--> searchTarget: lostTarget
+    searchTarget: c name: 搜索中
+    searchTarget: CPP: searching
+}
+
+state control{
+    [*] --> init2
+    init2 : c name: 初始化
+    init2 : trigger: initSuccess
+    init2 : CPP: init Camera,pose,object,point
+}
+
+
+state cabinet{
+    [*] --> init3
+    init3 : c name: 初始化
+    init3 : trigger: initSuccess
+    init3 : CPP: init Camera,pose,object,point
+}
+@enduml
