@@ -1,6 +1,0 @@
-*.o
-moc*
-qrc*
-Makefile
-serial_pc
-build-serial_pc-Desktop-Debug/
