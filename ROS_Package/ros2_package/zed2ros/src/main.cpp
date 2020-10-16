@@ -203,7 +203,7 @@ public:
     LabelImage()
     : Node("LiveVideo"), count_(0)
     {
-        publisherImg_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("/yf_camera/LiveVideo", 1);
+        publisherImg_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("/yf_camera/LiveVideo/compressed", 1);
         publisherGoal_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/yf_camera/goal", 1);
         timer_ = this->create_wall_timer(
         10ms, std::bind(&LabelImage::timer_callback, this));
