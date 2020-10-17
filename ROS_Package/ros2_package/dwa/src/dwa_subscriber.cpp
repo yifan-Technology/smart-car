@@ -28,7 +28,7 @@ public:
   : Node("DWA_subscriber")
   {
     subscription_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-      "dwa_sollspeed", 10, std::bind(&DWASubscriber::topic_callback, this, _1));
+      "soll_speed", 10, std::bind(&DWASubscriber::topic_callback, this, _1));
   }
 
 private:

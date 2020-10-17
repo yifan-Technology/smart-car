@@ -42,7 +42,7 @@ namespace dwa_planner {
 		double speed_adjust_param;
 		double speed_cost_gain_max;
 		double speed_cost_gain_min;
-		
+
 		bool SHOW_ANIMATION; // true
 		bool GOAL_ARRIVAED; // false
 		bool RESET_STATE; // false
@@ -63,7 +63,7 @@ namespace dwa_planner {
 		double robot_length = 0.661 + 0.1;  // [m] for collision check
 		double robot_width = 0.504 + 0.1;  // [m] for collision check
 		double dist_to_goal = 1e10; // 1e10
-		
+
 		State car_x;
 
 		void readJsonFromFile();
