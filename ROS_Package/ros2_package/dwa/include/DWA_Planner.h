@@ -7,7 +7,6 @@
 #include<fstream>
 #include <jsoncpp/json/json.h>
 
-
 using namespace Eigen;
 using State = Matrix<double, 5, 1 >;
 using Control = Matrix<double, 2, 1>;
@@ -16,7 +15,7 @@ using Window = Matrix<double, 4, 1>;
 using All_Traj = std::vector<MatrixXd>;
 //using All_Traj = Matrix<MatrixXd,1, 1>;
 struct DWA_result { Control u; MatrixXd traj; All_Traj all_traj; };
-#define PI 3.141592653
+#define PI 3.1415926535
 
 namespace dwa_planner {
 	using namespace std;
@@ -25,7 +24,7 @@ namespace dwa_planner {
 
 	public:
 		//! Constructor
-		Goal test_goal;
+		Goal set_goal;
 		double max_speed;
 		double min_speed;//  - 0.8  [m / s]
 		double max_yaw_rate; // 180.0 * PI / 180.0   [rad / s]
@@ -50,6 +49,7 @@ namespace dwa_planner {
 		bool MAP_TO_OBCOORD; // true
 		bool MEASURE_TIME; // false
 		bool TEMPORARY_GOAL_ARRIVED;
+		bool PUBLISH_DWA_STATE;
 
 		double m = 5;
 		double g = 9.80665;
@@ -65,6 +65,8 @@ namespace dwa_planner {
 		double dist_to_goal = 1e10; // 1e10
 
 		State car_x;
+        Matrix2d vtrans;
+		vtrans << 1, -wheel_quer_dist/2, 1, wheel_quer_dist/2;
 
 		void readJsonFromFile();
 
