@@ -9,8 +9,7 @@
 
 #include "DWA_Planner.h"
 
-
-#define PI 3.141592653
+//#define PI 3.1415926535
 using namespace std;
 using namespace Eigen;
 
@@ -28,11 +27,10 @@ namespace dwa_planner {
 		Json::Reader reader;
 		Json::Value value;
 		if (reader.parse(str, value)) {
-			//????
 		//   auto all_member = value.getMemberNames();
 		//   for (auto member : all_member) {
 		//         std::cout << member << std::endl;}
-			test_goal << value["Car_State"]["test_goalx"].asFloat(), value["Car_State"]["test_goaly"].asFloat();
+			set_goal << value["Car_State"]["set_goalx"].asFloat(), value["Car_State"]["set_goaly"].asFloat();
 			max_speed = value["Car_State"]["max_speed"].asFloat(); // 0.8   [m / s] 
 			//std::cout << "max_speed:" << max_speed << std::endl;
 			//std::cout << "max speed's type:" << value["Car_State"]["max_speed"].type() << std::endl;
@@ -58,9 +56,12 @@ namespace dwa_planner {
 			MAP_TO_OBCOORD = value["Flag_State"]["MAP_TO_OBCOORD"].asBool(); // true
 			MEASURE_TIME = value["Flag_State"]["MEASURE_TIME"].asBool(); // false
 			TEMPORARY_GOAL_ARRIVED = value["Flag_State"]["TEMPORARY_GOAL_ARRIVED"].asBool();
+			PUBLISH_DWA_STATE = value["Flag_State"]["PUBLISH_DWA_STATE"].asBool();
 
 			value.clear();
 		}
+		else{
+		cout<<"cannot read json"<<endl;
 	}
 
 	State DWA::koordinaten_transfomation(Control wheel_speed, double theta) {
@@ -152,7 +153,6 @@ namespace dwa_planner {
 		Window Vs;
 		Vs << min_speed, max_speed, -max_yaw_rate, max_yaw_rate;
 
-		//cout<<"Vs"<<endl<<Vs<<endl;
 		// Dynamic window from motion model
 		Window Vd;
 		Vd << (state(3) - max_accel * dt),
@@ -181,8 +181,6 @@ namespace dwa_planner {
 		trajectory << x.array();
 
 		double count_time = 0;
-		Matrix2d vtrans;
-		vtrans << 1, -wheel_quer_dist / 2, 1, wheel_quer_dist / 2;
 		Control wheel_speed = vtrans * speed_soll / wheel_radius;
 
 		while (count_time <= predict_time) {
@@ -216,14 +214,13 @@ namespace dwa_planner {
 		MatrixXd tr_x = trajectory.row(0).transpose().replicate(1, obstacle.cols());
 		MatrixXd tr_y = trajectory.row(1).transpose().replicate(1, obstacle.cols());
 
-		// ????????????????????, ????????h???????
+		// calculate distance of every (x,y) between traj and obstacles
 		MatrixXd rho_square = (tr_x - ox).array().square() + (tr_y - oy).array().square();
-		/*cout<<"rho"<<rho_square<<endl;*/
+
 		if (rho_square.minCoeff() <= robot_radius * robot_radius) {
 			return INFINITY;
 		}
 		else {
-			//cout << "obst_cost:" << 1.0 / (rho_square).minCoeff() << endl;
 			return 1.0 / (rho_square).minCoeff();
 		}
 	}
@@ -238,7 +235,6 @@ namespace dwa_planner {
 		Control best_u;
 		best_u << 0, 0;
 		MatrixXd best_traj = state;
-		//cout<<"best traj "<<best_traj<<endl;
 		double dmin, ob_cost;
 		DWA_result Result;
 
@@ -247,7 +243,7 @@ namespace dwa_planner {
 			for (double omega = dw(2); omega < dw(3); omega += yaw_rate_resolution) {
 				MatrixXd predict_traj = predict_trajectory(x_init, v, omega);
 				all_traj.push_back(predict_traj);
-				//cout<<"all traj"<<predict_traj<<endl;
+
 				//calc cost;
 				double to_goal_cost = to_goal_cost_gain * calc_to_goal_cost(predict_traj, goal);
 				double dist_square = calc_obstacle_cost(predict_traj, obstacle);
@@ -255,31 +251,23 @@ namespace dwa_planner {
 				if (dist_square != INFINITY) {
 					ob_cost = obstacle_cost_gain * dist_square;
 					dmin = 1 / sqrt(dist_square);
-					/*cout<<"ob_cost"<<ob_cost<<endl;
-					cout<<"dmin "<<dmin<<endl;*/
 				}
 				else {
 					ob_cost = INFINITY;
 					dmin = 0;
 				}
-				//cout<<"dyn speed gain "<<dyn_gain<<endl;
-				//cout<< "traj sp "<<traj_sp<<endl;
 				double speed_cost = dynamic_speed_cost(dmin) * (max_speed - predict_traj(3, predict_traj.cols() - 1));
-				//cout<<"speed cost "<<speed_cost<<endl;
 				double final_cost = to_goal_cost + speed_cost + ob_cost;
-				//cout<< "final_cost "<<final_cost<<endl;
 
 				/* search minimum trajectory*/
 				if (min_cost >= final_cost) {
 					min_cost = final_cost;
 					best_u << v, omega;
-					//cout<<"best u"<<best_u<<endl;
 					best_traj = predict_traj;
 				}
 			}
-			//cout<<"v "<<v<<endl;
 		}
-		//cout<<"best u "<<best_u<<endl;
+
 		Result.u = best_u;
 		Result.traj = best_traj;
 		Result.all_traj = all_traj;
@@ -300,20 +288,15 @@ namespace dwa_planner {
 		}
 
 		Window dw = calc_dynamic_window(temp_x);
-		//cout<<"dw"<<dw<<endl;
 		DWA_result dwa_result = calc_control_and_trajectory(temp_x, dw, zw_goal, ob_list);
-
 		Control u_cal = dwa_result.u;
-		/*	cout<<"u_cal:"<<u_cal<<endl;*/
-		Matrix2d vtrans;
-		vtrans << 1, -wheel_quer_dist, 1, wheel_quer_dist;
+
 		Control u_soll = vtrans * u_cal / wheel_radius;
 		Control motor_soll = speed_change(u_soll, "PC_TO_MOTOR");
 
 		/*check reaching goal*/
-
 		double dist_to_goal = (temp_x.topRows<2>() - zw_goal).norm();  /* generate u = wheel_speed_soll*/
-		/*cout << "dist to goal:" << dist_to_goal << endl;*/
+
 		if ((motor_soll.norm() < 1.414 * min_wheel_speed) && (dist_to_goal >= robot_radius)) {
 			motor_soll = min_wheel_speed * motor_soll.array().sign();
 			cout << "deadzone checked" << endl;
@@ -322,7 +305,6 @@ namespace dwa_planner {
 		if (dist_to_goal <= robot_radius) {
 			TEMPORARY_GOAL_ARRIVED = true;
 		}
-
 		//car_x = motion(x_pre, u_ist, dt);
 		dwa_result.u = motor_soll;
 

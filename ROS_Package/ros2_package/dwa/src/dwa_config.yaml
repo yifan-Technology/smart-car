@@ -3,25 +3,23 @@
 #::::::::::::::#
 # SMART CAR STATE
 Car_State:
-  max_speed: 2.5 # [m/s]
-  min_speed: -0.5 # [m/s]
-  max_yaw_rate: 1440.0 # [grad/s]
+  test_goalx: 0.5,
+  test_goaly: 1,
+  max_speed: 1.5 # [m/s]
+  min_speed: -1.5 # [m/s]
+  max_yaw_rate: 540.0 # [grad/s]
   max_accel: 4.0  # [m/ss]
   max_delta_yaw_rate: 270.0  # [grad/ss]
   v_resolution: 0.2  # [m/s]
   yaw_rate_resolution: 15. # [grad/s]
   min_wheel_speed: 100 # [rpm]
-  
   dt: 0.2  # [s] Time tick for motion prediction
   predict_time: 1. # [s]  less and more flexible
-  to_goal_cost_gain: 1.8
-  #speed_cost_gain: 0.9
-  obstacle_cost_gain: 0.3
+  to_goal_cost_gain: 0.3
+  obstacle_cost_gain: 0.4
   speed_adjust_param: 0.9
   speed_cost_gain_max: 2.5
   speed_cost_gain_min: 0.1
-  dist_to_goal: 1e10
-  dead_count: 0
 
 # FLAG STATE
 Flag_State:
@@ -32,6 +30,9 @@ Flag_State:
   MAP_TO_OBCOORD: True
   MEASURE_TIME: False
   TRANSFORM_MAP: False
+  TEMPORARY_GOAL_ARRIVED: False
+  PUBLISH_DWA_STATE: false
+  SET_GOAL: False
 
 # PLANNER STATE
 Planner_State:
