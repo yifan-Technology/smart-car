@@ -8,7 +8,6 @@
 
 ```bash
 sudo apt-get install ros-dashing-async-web-server-cpp
-sudo apt-get install ros-dashing-web-video-server
 sudo apt install -y libavcodec-dev libavformat-dev libavdevice-dev libavfilter-dev libavutil-dev libswscale-dev
 ```
 
