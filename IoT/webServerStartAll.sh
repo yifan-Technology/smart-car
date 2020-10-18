@@ -1,30 +1,32 @@
 #!/bin/bash
 echo "killing process"
 #killall -9 bash
-#kill $(ps aux | grep '[p]ython csp_build.py' | awk '{print $2}')
-kill $(ps aux | grep '[r]os2 run webvideoserver webvideoserver' | awk '{print $2}')
-kill $(ps aux | grep '[n]ode ~/node_modules/ros2-web-bridge/bin/rosbridge.js' | awk '{print $2}')
-kill $(ps aux | grep '[c]d ~/newapp;npm start' | awk '{print $2}')
+kill -9 $(ps aux | grep '[w]ebvideoserver' | awk '{print $2}')
+kill -9 $(ps aux | grep '[n]ode' | awk '{print $2}')
+kill -9 $(ps aux | grep '[n]pm' | awk '{print $2}')
+
+
 echo "loading ros2 dashing environment"
 source /opt/ros/dashing/setup.bash
 source ~/dev_ws/install/setup.bash
-#1
+
+function roswebserver(){
 echo "loading ros2 web video server"
-sleep 1s
-{
-gnome-terminal -t "roswebserver" -- bash -c "ros2 run webvideoserver webvideoserver;exec bash"
-}&
-#2
+ros2 run webvideoserver webvideoserver
+}
+
+function ros2webbridge(){
 echo "loading ros2-web-bridge"
-sleep 1s
-{
-gnome-terminal -t "ros2webbridge" -- bash -c "node ~/node_modules/ros2-web-bridge/bin/rosbridge.js;exec bash"
-}&
-#3
+node ~/node_modules/ros2-web-bridge/bin/rosbridge.js
+}
+
+function newapp(){
 echo "runing react App"
-sleep 1s
-{
-gnome-terminal -t "newapp" -- bash -c "cd ~/newapp;npm start;exec bash"
-}&
+cd ~/newapp;npm start
+}
+
+
+roswebserver&ros2webbridge&newapp
+
 
 echo "finish"
