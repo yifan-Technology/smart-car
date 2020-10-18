@@ -71,6 +71,7 @@ private:
 		//cout << "car_x: " << car_x.transpose() << endl;
 		//cout << "motor ist " << motor_ist.transpose() << endl;
 		cout << "goal " << goal.transpose() << endl;
+		cout<<"planner.max_yaw_rate: "<< planner.max_yaw_rate<<endl;
 		plan = planner.dwa_control(motor_ist, car_x, goal, oblist);
 		controlspeed = plan.u;
 		//cout<<"motor soll"<<controlspeed.transpose()<<endl;
@@ -206,11 +207,11 @@ public:
 		this->declare_parameter<double>("set_goaly", 0.5);
 		this->declare_parameter<double>("max_speed", 1.0);
 		this->declare_parameter<double>("min_speed", -1.0);
-		this->declare_parameter<double>("max_yaw_rate", 540.0*PI/180);
+		this->declare_parameter<double>("max_yaw_rate", 540.0 );
 		this->declare_parameter<double>("max_accel", 3.0);
-		this->declare_parameter<double>("max_delta_yaw_rate", 540.0*PI/180);
+		this->declare_parameter<double>("max_delta_yaw_rate", 540.0 );
 		this->declare_parameter<double>("v_resolution", 0.2);
-		this->declare_parameter<double>("yaw_rate_resolution", 15.0*PI/180);
+		this->declare_parameter<double>("yaw_rate_resolution", 15.0 );
 		this->declare_parameter<double>("min_wheel_speed", 100.0);
 		this->declare_parameter<double>("dt", 0.2);
 		this->declare_parameter<double>("predict_time", 2.0);
@@ -232,19 +233,20 @@ public:
 		this->declare_parameter<bool>("SET_GOAL", false);
 
 		timer_ = this->create_wall_timer(
-			500ms, std::bind(&DWA_Parametrize::respond, this));
+			2000ms, std::bind(&DWA_Parametrize::respond, this));
 	}
 	void respond()
 	{
-		this->get_parameter("set_goalx", planner.set_goal(0));
-		this->get_parameter("set_goaly", planner.set_goal(1));
+		float setGoalx, setGoaly;
+		this->get_parameter("set_goalx", setGoalx);
+		this->get_parameter("set_goaly", setGoaly);
 		this->get_parameter("max_speed", planner.max_speed);
 		this->get_parameter("min_speed", planner.min_speed);
-		this->get_parameter("max_yaw_rate", planner.max_yaw_rate*PI/180);
+		this->get_parameter("max_yaw_rate", planner.max_yaw_rate);
 		this->get_parameter("max_accel", planner.max_accel);
-		this->get_parameter("max_delta_yaw_rate", planner.max_delta_yaw_rate*PI/180);
+		this->get_parameter("max_delta_yaw_rate", planner.max_delta_yaw_rate);		
 		this->get_parameter("v_resolution", planner.v_resolution);
-		this->get_parameter("yaw_rate_resolution", planner.yaw_rate_resolution*PI/180);
+		this->get_parameter("yaw_rate_resolution", planner.yaw_rate_resolution);
 		this->get_parameter("min_wheel_speed", planner.min_wheel_speed);
 		this->get_parameter("dt", planner.dt);
 		this->get_parameter("predict_time", planner.predict_time);
@@ -257,13 +259,14 @@ public:
 		this->get_parameter("SHOW_ANIMATION", planner.SHOW_ANIMATION);
 		this->get_parameter("GOAL_ARRIVAED", planner.GOAL_ARRIVAED);
 		this->get_parameter("RESET_STATE", planner.RESET_STATE);
-        this->get_parameter("HUMAN_SHAPE", planner.HUMAN_SHAPE);
+		this->get_parameter("HUMAN_SHAPE", planner.HUMAN_SHAPE);
 		this->get_parameter("MAP_TO_OBCOORD", planner.MAP_TO_OBCOORD);
 		this->get_parameter("MEASURE_TIME", planner.MEASURE_TIME);
 		this->get_parameter("TRANSFORM_MAP", planner.TRANSFORM_MAP);
 		this->get_parameter("TEMPORARY_GOAL_ARRIVED", planner.TEMPORARY_GOAL_ARRIVED);
 		this->get_parameter("PUBLISH_DWA_STATE", planner.PUBLISH_DWA_STATE);
-
+		//cout<<"set param finished!"<<endl;
+		planner.set_goal<<setGoalx, setGoaly;
 		//cout << "max_speed:" << planner.max_speed << endl;
 	}
 private:
@@ -398,7 +401,7 @@ private:
 
 int main(int argc, char** argv)
 {
-	planner.readJsonFromFile();
+	//planner.readJsonFromFile();
 	//  init rclcpp
 	rclcpp::init(argc, argv);
 	// make multithreaded executor

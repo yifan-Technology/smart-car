@@ -27,19 +27,19 @@ namespace dwa_planner {
 		Json::Reader reader;
 		Json::Value value;
 		if (reader.parse(str, value)) {
-		//   auto all_member = value.getMemberNames();
-		//   for (auto member : all_member) {
-		//         std::cout << member << std::endl;}
+			//   auto all_member = value.getMemberNames();
+			//   for (auto member : all_member) {
+			//         std::cout << member << std::endl;}
 			set_goal << value["Car_State"]["set_goalx"].asFloat(), value["Car_State"]["set_goaly"].asFloat();
 			max_speed = value["Car_State"]["max_speed"].asFloat(); // 0.8   [m / s] 
 			//std::cout << "max_speed:" << max_speed << std::endl;
 			//std::cout << "max speed's type:" << value["Car_State"]["max_speed"].type() << std::endl;
 			min_speed = value["Car_State"]["min_speed"].asFloat(); //  - 0.8  [m / s]
-			max_yaw_rate = value["Car_State"]["max_yaw_rate"].asFloat() * PI / 180;  // 180.0 * PI / 180.0   [rad / s]
+			max_yaw_rate = value["Car_State"]["max_yaw_rate"].asFloat();  // 180.0 * PI / 180.0   [rad / s]
 			max_accel = value["Car_State"]["max_accel"].asFloat(); // 4.0   [m / ss]
-			max_delta_yaw_rate = value["Car_State"]["max_delta_yaw_rate"].asFloat() * PI / 180;  // 360.0 * PI / 180.0   [rad / ss]
+			max_delta_yaw_rate = value["Car_State"]["max_delta_yaw_rate"].asFloat();  // 360.0 * PI / 180.0   [rad / ss]
 			v_resolution = value["Car_State"]["v_resolution"].asFloat(); // 0.2   [m / s]
-			yaw_rate_resolution = value["Car_State"]["yaw_rate_resolution"].asFloat() * PI / 180;  // 15. * PI / 180.0   [rad / s]
+			yaw_rate_resolution = value["Car_State"]["yaw_rate_resolution"].asFloat();  // 15. * PI / 180.0   [rad / s]
 			min_wheel_speed = value["Car_State"]["min_wheel_speed"].asFloat(); //100 [rpm]
 			dt = value["Car_State"]["dt"].asFloat(); // 0.2  [s] Time tick for motion prediction
 			predict_time = value["Car_State"]["predict_time"].asFloat(); // 0.8   [s]  less and more flexible
@@ -60,8 +60,13 @@ namespace dwa_planner {
 
 			value.clear();
 		}
-		else{
-		cout<<"cannot read json"<<endl;
+		else {
+			cout << "cannot read json" << endl;
+		}
+	}
+
+	double DWA::degree2radian(double degree) {
+		return degree * PI / 180;
 	}
 
 	State DWA::koordinaten_transfomation(Control wheel_speed, double theta) {
@@ -149,16 +154,17 @@ namespace dwa_planner {
 		calculation dynamic window based on current state x
 		"""*/
 		//Dynamic window from robot specification
-
+		double max_yaw_rate_r = degree2radian(max_yaw_rate);
+		double max_delta_yaw_rate_r = degree2radian(max_delta_yaw_rate);
 		Window Vs;
-		Vs << min_speed, max_speed, -max_yaw_rate, max_yaw_rate;
+		Vs << min_speed, max_speed, -max_yaw_rate_r, max_yaw_rate_r;
 
 		// Dynamic window from motion model
 		Window Vd;
 		Vd << (state(3) - max_accel * dt),
 			(state(3) + max_accel * dt),
-			(state(4) - max_delta_yaw_rate * dt),
-			(state(4) + max_delta_yaw_rate * dt);
+			(state(4) - max_delta_yaw_rate_r * dt),
+			(state(4) + max_delta_yaw_rate_r * dt);
 
 		//  [v_min, v_max, yaw_rate_min, yaw_rate_max]
 		Window dw;
@@ -181,6 +187,8 @@ namespace dwa_planner {
 		trajectory << x.array();
 
 		double count_time = 0;
+		Matrix2d vtrans;
+		vtrans << 1, -wheel_quer_dist / 2, 1, wheel_quer_dist / 2;
 		Control wheel_speed = vtrans * speed_soll / wheel_radius;
 
 		while (count_time <= predict_time) {
@@ -237,10 +245,11 @@ namespace dwa_planner {
 		MatrixXd best_traj = state;
 		double dmin, ob_cost;
 		DWA_result Result;
+		double yaw_rate_resolution_r = degree2radian(yaw_rate_resolution);
 
 		//evaluate all trajectory with sampled input in dynamic window;
 		for (double v = dw(0); v < dw(1); v += v_resolution) {
-			for (double omega = dw(2); omega < dw(3); omega += yaw_rate_resolution) {
+			for (double omega = dw(2); omega < dw(3); omega += yaw_rate_resolution_r) {
 				MatrixXd predict_traj = predict_trajectory(x_init, v, omega);
 				all_traj.push_back(predict_traj);
 
@@ -290,7 +299,8 @@ namespace dwa_planner {
 		Window dw = calc_dynamic_window(temp_x);
 		DWA_result dwa_result = calc_control_and_trajectory(temp_x, dw, zw_goal, ob_list);
 		Control u_cal = dwa_result.u;
-
+		Matrix2d vtrans;
+		vtrans << 1, -wheel_quer_dist / 2, 1, wheel_quer_dist / 2;
 		Control u_soll = vtrans * u_cal / wheel_radius;
 		Control motor_soll = speed_change(u_soll, "PC_TO_MOTOR");
 

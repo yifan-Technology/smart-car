@@ -48,6 +48,7 @@ namespace dwa_planner {
 		bool HUMAN_SHAPE; // false
 		bool MAP_TO_OBCOORD; // true
 		bool MEASURE_TIME; // false
+		bool TRANSFORM_MAP;
 		bool TEMPORARY_GOAL_ARRIVED;
 		bool PUBLISH_DWA_STATE;
 
@@ -65,10 +66,10 @@ namespace dwa_planner {
 		double dist_to_goal = 1e10; // 1e10
 
 		State car_x;
-        Matrix2d vtrans;
-		vtrans << 1, -wheel_quer_dist/2, 1, wheel_quer_dist/2;
 
 		void readJsonFromFile();
+
+		double degree2radian(double degree);
 
 		State koordinaten_transfomation(Control wheel_speed, double theta);
 
