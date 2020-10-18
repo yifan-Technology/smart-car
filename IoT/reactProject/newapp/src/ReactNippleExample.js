@@ -1,7 +1,6 @@
  // eslint-disable-next-line
 import React, { Component, useContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
- // eslint-disable-next-line
 
 import ReactNipple from "react-nipple";
 // import DebugView from "react-nipple/lib/DebugView";
@@ -55,8 +54,9 @@ export function ReactNippleExample(props) {
     const handleJoystickPressure = (evt, data) => {
         setdata(data);
     };
+
         return (
-            <div className="NippleExample">
+            <div className="NippleExample" >
                 <h2>{props.title}</h2>
                 <ReactNipple
                     className="joystick"

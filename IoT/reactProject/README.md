@@ -2,6 +2,8 @@
 
 ```bash
 npm install --save react-nipple
+npm install react-grid-layout
+npm install react-ros
 ```
 
 ## 修改
