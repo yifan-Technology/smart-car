@@ -2,18 +2,34 @@
 scale 1920 width
 
  
-[*] --> gui
+[*] --> guiState
 [*] --> camera
-[*] --> control
-[*] --> cabinet
+[*] --> coreState
+[*] --> cabinetState
 
-state gui{
-    [*] --> init4
-    init4: c name: 初始化
-    init4 : trigger: initSuccess
-    init4 : CPP: init Camera,pose,object,point
+state guiState{
+    [*] --> initGUI
+    initGUI: c name: 初始化GUI
+    initGUI : trigger: initGUISuccess
+    initGUI : CPP: init gui state
 
-    ' init4 --> 
+    
+    initGUI --> guiReset: resetButton
+    guiReset: c name: 重置键
+    guiReset: CPP: reset
+    guiReset --> initGUI: GUIreset
+
+    initGUI --> guiManual: manualButton
+    guiManual: c name: 手动键
+    guiManual: CPP: reset
+    guiManual --> initGUI: GUIreset
+
+    initGUI --> guiMAuto: autoButton
+    guiMAuto: c name: 自动键
+    guiMAuto: CPP: reset
+    guiMAuto --> initGUI: GUIreset
+
+
 }
 
 state camera{
@@ -35,11 +51,7 @@ state camera{
     leftCamera: CPP: caputure left camera image
 
 
-    leftCamera --> objectDetection : cameraCaptureSuccess
-    objectDetection: c name: 物体识别
-    objectDetection: CPP: caputure object array
-
-    objectDetection --> waitSelect : objectDetectionSuccess
+    leftCamera --> waitSelect : objectDetectionSuccess
     waitSelect: c name: 等待选择
     waitSelect: CPP: None
 
@@ -55,10 +67,6 @@ state camera{
     findTarget: c name: 追踪中
     findTarget: CPP: tarcking
 
-    ' userSelect--> searchTarget: lostTarget
-    ' searchTarget: c name: 搜索中
-    ' searchTarget: CPP: searching
-
     searchTarget--> findTarget: findTarget
     findTarget: c name: 追踪中
     findTarget: CPP: tarcking
@@ -68,18 +76,73 @@ state camera{
     searchTarget: CPP: searching
 }
 
-state control{
-    [*] --> init2
-    init2 : c name: 初始化
-    init2 : trigger: initSuccess
-    init2 : CPP: init Camera,pose,object,point
+state coreState{
+    [*] --> initCore
+    initCore : c name: 初始化
+    initCore : CPP: init DWA, ros sub
+
+    initCore --> reset: initCoreSuccess
+    reset : c name: 重置
+    reset : CPP: reset all state && hold the car 
+
+    reset --> trackTarget: GUIautButton
+    trackTarget : c name: 目标跟踪
+    trackTarget : CPP: start track algo. 
+    trackTarget --> reset: GUIreset
+
+    reset --> GUImanual: GUImanualButton
+    GUImanual : c name: 手动控制
+    GUImanual : CPP: user Control the Vehicle with GUI 
+    GUImanual --> reset: GUIreset
+
+    reset --> ParkIn: CabParkIn
+    ParkIn : c name: 入库
+    ParkIn : CPP: park in. 
+    ParkIn --> reset: GUIreset
+
+    reset --> moveOut: CabMoveOut
+    moveOut : c name: 出库
+    moveOut : CPP: move out. 
+    moveOut --> reset: GUIreset
+
+    reset --> retureHome: GUIbackButton  
+    retureHome : c name: 返回
+    retureHome : CPP: back to home 
+    retureHome --> reset: GUIreset
+
+
+
 }
 
 
-state cabinet{
-    [*] --> init3
-    init3 : c name: 初始化
-    init3 : trigger: initSuccess
-    init3 : CPP: init Camera,pose,object,point
+state cabinetState{
+    [*] --> initCabinet
+    initCabinet : c name: 初始化快递柜
+    initCabinet : CPP: just start
+
+    initCabinet --> inPosition: CabParkPos  
+    inPosition : c name: 指定位置
+    inPosition : CPP: stay
+
+    inPosition --> packageReady: CabPackageReady
+    packageReady : c name: 货物到达
+    packageReady : CPP: ready to go
+
+    packageReady --> goOut: CabGoOutButton  
+    goOut : c name: 出库
+    goOut : CPP: at out Position
+
+    goOut --> goBack: GUIback  
+    goBack : c name: 返回中
+    goBack : CPP: going to back
+
+    goBack --> goIn: CabParkInPos  
+    goIn : c name: 入库
+    goIn : CPP: park in
+
+    goIn --> inPosition: CabParkPos 
+
+
+
 }
 @enduml
