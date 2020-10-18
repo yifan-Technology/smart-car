@@ -123,8 +123,20 @@ namespace dwa_planner {
 		return loc * res;
 	}
 
+	MatrixXd DWA::remove_human_shape(MatrixXd ob_list, Goal target) {
+		MatrixXd reduced_oblist(2, 1);
+		for (int i = 0; i < ob_list.cols(); i++) {
+			if ((target - ob_list.col(i)).norm() > 0.3) {
+				reduced_oblist.col(reduced_oblist.cols() - 1) << ob_list(0, i), ob_list(1, i);
+				reduced_oblist.conservativeResize(2, reduced_oblist.cols() + 1);
+			}
+		}
+		reduced_oblist.conservativeResize(2, reduced_oblist.cols() - 1);
+		return reduced_oblist;
+	}
+
 	double DWA::dynamic_speed_cost(double dmin) {
-		double ds = speed_adjust_param * max_speed / max_accel;
+		double ds = speed_adjust_param * max_speed / max_accel; // bremse distance
 		//cout<<"ds"<<ds<<endl;
 		if (dmin <= ds) {
 			return speed_cost_gain_min + (speed_cost_gain_max - speed_cost_gain_min) * pow(dmin / ds, 1.8);
@@ -246,10 +258,24 @@ namespace dwa_planner {
 		double dmin, ob_cost;
 		DWA_result Result;
 		double yaw_rate_resolution_r = degree2radian(yaw_rate_resolution);
+		MatrixXd cost_list(6, 1);
+		vector<double> v_range, omega_range;
 
-		//evaluate all trajectory with sampled input in dynamic window;
+		// remove small speed deadzone
 		for (double v = dw(0); v < dw(1); v += v_resolution) {
-			for (double omega = dw(2); omega < dw(3); omega += yaw_rate_resolution_r) {
+			if (abs(v) > 0.05) {
+				v_range.push_back(v);
+			}
+		}
+
+		for (double omega = dw(2); omega < dw(3); omega += yaw_rate_resolution_r) {
+			if (abs(omega) > 0.05) {
+				omega_range.push_back(omega);
+			}
+		}
+
+		for (auto v : v_range) {
+			for (auto omega : omega_range) {
 				MatrixXd predict_traj = predict_trajectory(x_init, v, omega);
 				all_traj.push_back(predict_traj);
 
@@ -265,8 +291,30 @@ namespace dwa_planner {
 					ob_cost = INFINITY;
 					dmin = 0;
 				}
+
+				//evaluate all trajectory with sampled input in dynamic window;
+				//for (double v = dw(0); v < dw(1); v += v_resolution) {
+				//	for (double omega = dw(2); omega < dw(3); omega += yaw_rate_resolution_r) {
+				//		MatrixXd predict_traj = predict_trajectory(x_init, v, omega);
+				//		all_traj.push_back(predict_traj);
+				//		//calc cost;
+				//		double to_goal_cost = to_goal_cost_gain * calc_to_goal_cost(predict_traj, goal);
+				//		double dist_square = calc_obstacle_cost(predict_traj, obstacle);
+				//		if (dist_square != INFINITY) {
+				//			ob_cost = obstacle_cost_gain * dist_square;
+				//			dmin = 1 / sqrt(dist_square);
+				//		}
+				//		else {
+				//			ob_cost = INFINITY;
+				//			dmin = 0;
+				//		}
 				double speed_cost = dynamic_speed_cost(dmin) * (max_speed - predict_traj(3, predict_traj.cols() - 1));
 				double final_cost = to_goal_cost + speed_cost + ob_cost;
+
+				if (PRINT_COST) {
+					cost_list << v, omega, to_goal_cost, speed_cost, ob_cost, final_cost;
+					cout << cost_list.transpose() << endl;
+				}
 
 				/* search minimum trajectory*/
 				if (min_cost >= final_cost) {
@@ -276,10 +324,15 @@ namespace dwa_planner {
 				}
 			}
 		}
-
+		
 		Result.u = best_u;
 		Result.traj = best_traj;
 		Result.all_traj = all_traj;
+
+		if (PRINT_COST) {
+			cout << "##############################################################" << endl;
+			cout << "***************chosen speed :" << best_u.transpose() << "******************" << endl;
+		}
 		return Result;
 	}
 
@@ -307,12 +360,21 @@ namespace dwa_planner {
 		/*check reaching goal*/
 		double dist_to_goal = (temp_x.topRows<2>() - zw_goal).norm();  /* generate u = wheel_speed_soll*/
 
+		//if ((motor_soll.norm() < 1.414 * min_wheel_speed) && (dist_to_goal >= robot_radius) && DEADZONE_CHECK) {
+		//	motor_soll << 500, -500;
+		//	//motor_soll = min_wheel_speed * motor_soll.array().sign();
+		//	cout << "deadzone checked" << endl;
+		//	DEADZONE_CHECK = false;
+		//}
+
 		if ((motor_soll.norm() < 1.414 * min_wheel_speed) && (dist_to_goal >= robot_radius)) {
+			/*motor_soll <<500, -500;*/
 			motor_soll = min_wheel_speed * motor_soll.array().sign();
-			cout << "deadzone checked" << endl;
+			cout << "=================deadzone checked===================" << endl;
 		}
 
-		if (dist_to_goal <= robot_radius) {
+
+		if (dist_to_goal <= robot_radius + 0.3) {
 			TEMPORARY_GOAL_ARRIVED = true;
 		}
 		//car_x = motion(x_pre, u_ist, dt);

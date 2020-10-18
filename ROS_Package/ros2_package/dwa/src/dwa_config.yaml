@@ -5,25 +5,25 @@
 Car_State:
   set_goalx: 0.5
   set_goaly: 1.0
-  max_speed: 1.5 # [m/s]
-  min_speed: -1.5 # [m/s]
-  max_yaw_rate: 180.0 # [grad/s]
-  max_accel: 4.0  # [m/ss]
-  max_delta_yaw_rate: 270.0  # [grad/ss]
-  v_resolution: 0.2  # [m/s]
-  yaw_rate_resolution: 15.0 # [grad/s]
-  min_wheel_speed: 100.0 # [rpm]
-  dt: 0.2  # [s] Time tick for motion prediction
-  predict_time: 1.0 # [s]  less and more flexible
+  max_speed: 2.0 # [m/s]
+  min_speed: -0.3 # [m/s]
+  max_yaw_rate: 360.0 # [grad/s]
+  max_accel: 2.8  # [m/ss]
+  max_delta_yaw_rate: 360.0  # [grad/ss]
+  v_resolution: 0.15  # [m/s]
+  yaw_rate_resolution: 5.0 # [grad/s]
+  min_wheel_speed: 180.0 # [rpm]
+  dt: 0.25  # [s] Time tick for motion prediction
+  predict_time: 2.0 # [s]  less and more flexible
   to_goal_cost_gain: 0.3
-  obstacle_cost_gain: 0.4
-  speed_adjust_param: 0.9
-  speed_cost_gain_max: 2.5
+  obstacle_cost_gain: 0.35
+  speed_adjust_param: 0.8
+  speed_cost_gain_max: 1.6
   speed_cost_gain_min: 0.1
 
 # FLAG STATE
 Flag_State:
-  SHOW_ANIMATION: False
+  SHOW_ANIMATION: true
   GOAL_ARRIVAED: False
   RESET_STATE: True
   HUMAN_SHAPE: False
@@ -31,8 +31,9 @@ Flag_State:
   MEASURE_TIME: False
   TRANSFORM_MAP: False
   TEMPORARY_GOAL_ARRIVED: False
-  PUBLISH_DWA_STATE: false
+  PUBLISH_DWA_STATE: true
   SET_GOAL: False
+  PRINT_COST: False
 
 # PLANNER STATE
 Planner_State:

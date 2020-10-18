@@ -90,7 +90,7 @@ set(MY_TARGET_LINK_LIBRARIES
     ${OpenCV_LIBRARY_DIRS} 
     jsoncpp
 )
-include_directories("${JSONCPP_INCLUDE_DIRS}")
+#include_directories("${JSONCPP_INCLUDE_DIRS}")
 
 
 ###############################################################################
@@ -115,6 +115,7 @@ ament_target_dependencies(planner
 			  sensor_msgs
 			  geometry_msgs
 			  jsoncpp
+        cv_bridge
 			  )
 
 target_include_directories(planner
@@ -125,6 +126,11 @@ target_link_libraries(planner ${MY_TARGET_LINK_LIBRARIES})
 
 #ament_export_dependencies(eigen3_cmake_module)
 #ament_export_dependencies(Eigen3)
+
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 install(TARGETS
   listener

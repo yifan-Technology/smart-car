@@ -17,6 +17,7 @@ using All_Traj = std::vector<MatrixXd>;
 struct DWA_result { Control u; MatrixXd traj; All_Traj all_traj; };
 #define PI 3.1415926535
 
+
 namespace dwa_planner {
 	using namespace std;
 
@@ -51,6 +52,8 @@ namespace dwa_planner {
 		bool TRANSFORM_MAP;
 		bool TEMPORARY_GOAL_ARRIVED;
 		bool PUBLISH_DWA_STATE;
+		bool DEADZONE_CHECK;
+		bool PRINT_COST;
 
 		double m = 5;
 		double g = 9.80665;
@@ -78,6 +81,8 @@ namespace dwa_planner {
 		Control speed_change(Control u_in, string mode);
 
 		MatrixXd obmap2coordinaten(MatrixXd obmap, double res);
+
+		MatrixXd remove_human_shape(MatrixXd ob_list, Goal target);
 
 		double dynamic_speed_cost(double dmin);
 

@@ -10,6 +10,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <math.h>
 
 #include <chrono>
 #include <functional>
@@ -20,7 +21,8 @@
 #include "std_msgs/msg/float32_multi_array.hpp"
 #include <sensor_msgs/msg/image.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-//#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.h>
+#include <sensor_msgs/msg/compressed_image.hpp>
 
 #include "DWA_Planner.h"
 
@@ -29,6 +31,7 @@ using namespace dwa_planner;
 using namespace std;
 using namespace Eigen;
 using namespace std::chrono_literals;
+
 
 // init global value
 Control controlspeed, motor_ist, u_;
@@ -40,16 +43,16 @@ DWA_result plan;
 DWA planner;
 clock_t start = clock();
 
-float figure_size = 600;
-float scale_up = 90;
+float figure_size = 500;
+float scale_up = 70;
 int count0 = 0;
 
 cv::Point2i cv_offset(
-	double x, double y, int image_width = 600, int image_height = 600)
+	double x, double y, int image_width = figure_size, int image_height = figure_size)
 {
 	cv::Point2i output;
-	output.x = int(x * 90) + image_width / 9;
-	output.y = image_height - int(y * 90) - image_height / 9;
+	output.x = int(x * scale_up) + image_width / scale_up * 10;
+	output.y = image_height - int(y * scale_up) - image_height / scale_up * 10;
 	return output;
 }
 
@@ -71,7 +74,7 @@ private:
 		//cout << "car_x: " << car_x.transpose() << endl;
 		//cout << "motor ist " << motor_ist.transpose() << endl;
 		cout << "goal " << goal.transpose() << endl;
-		cout<<"planner.max_yaw_rate: "<< planner.max_yaw_rate<<endl;
+		//cout << "planner.max_yaw_rate: " << planner.max_yaw_rate << endl;
 		plan = planner.dwa_control(motor_ist, car_x, goal, oblist);
 		controlspeed = plan.u;
 		//cout<<"motor soll"<<controlspeed.transpose()<<endl;
@@ -160,14 +163,16 @@ private:
 		std::vector<float> v = mapmsg->data;
 		float* v2 = v.data();
 		Map<MatrixXf> ob(v2, 2, mapmsg->data.size() / 2);
-		oblist = ob.cast<double>();
+		oblist = planner.remove_human_shape(ob.cast<double>(), goal);
 	}
 
 	void topicGoal_callback(const geometry_msgs::msg::PoseStamped::SharedPtr message) const
 	{
 		Goal temp_goal;
-		temp_goal << message->pose.position.x, message->pose.position.z;
-		goal = temp_goal;
+		if (!isnan(message->pose.position.x) && !isnan(message->pose.position.z)) {
+			temp_goal << message->pose.position.x + 0.06, message->pose.position.z;
+			goal = temp_goal;
+		}
 	}
 
 	rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr subscriptionSpeed_;
@@ -207,11 +212,11 @@ public:
 		this->declare_parameter<double>("set_goaly", 0.5);
 		this->declare_parameter<double>("max_speed", 1.0);
 		this->declare_parameter<double>("min_speed", -1.0);
-		this->declare_parameter<double>("max_yaw_rate", 540.0 );
+		this->declare_parameter<double>("max_yaw_rate", 540.0);
 		this->declare_parameter<double>("max_accel", 3.0);
-		this->declare_parameter<double>("max_delta_yaw_rate", 540.0 );
+		this->declare_parameter<double>("max_delta_yaw_rate", 540.0);
 		this->declare_parameter<double>("v_resolution", 0.2);
-		this->declare_parameter<double>("yaw_rate_resolution", 15.0 );
+		this->declare_parameter<double>("yaw_rate_resolution", 15.0);
 		this->declare_parameter<double>("min_wheel_speed", 100.0);
 		this->declare_parameter<double>("dt", 0.2);
 		this->declare_parameter<double>("predict_time", 2.0);
@@ -229,8 +234,10 @@ public:
 		this->declare_parameter<bool>("TRANSFORM_MAP", false);
 		this->declare_parameter<bool>("MEASURE_TIME", false);
 		this->declare_parameter<bool>("TEMPORARY_GOAL_ARRIVED", false);
-		this->declare_parameter<bool>("PUBLISH_DWA_STATE", false);
+		this->declare_parameter<bool>("PUBLISH_DWA_STATE", true);
 		this->declare_parameter<bool>("SET_GOAL", false);
+		this->declare_parameter<bool>("DEADZONE_CHECK", true);
+		this->declare_parameter<bool>("PRINT_COST", false);
 
 		timer_ = this->create_wall_timer(
 			2000ms, std::bind(&DWA_Parametrize::respond, this));
@@ -244,7 +251,7 @@ public:
 		this->get_parameter("min_speed", planner.min_speed);
 		this->get_parameter("max_yaw_rate", planner.max_yaw_rate);
 		this->get_parameter("max_accel", planner.max_accel);
-		this->get_parameter("max_delta_yaw_rate", planner.max_delta_yaw_rate);		
+		this->get_parameter("max_delta_yaw_rate", planner.max_delta_yaw_rate);
 		this->get_parameter("v_resolution", planner.v_resolution);
 		this->get_parameter("yaw_rate_resolution", planner.yaw_rate_resolution);
 		this->get_parameter("min_wheel_speed", planner.min_wheel_speed);
@@ -265,8 +272,10 @@ public:
 		this->get_parameter("TRANSFORM_MAP", planner.TRANSFORM_MAP);
 		this->get_parameter("TEMPORARY_GOAL_ARRIVED", planner.TEMPORARY_GOAL_ARRIVED);
 		this->get_parameter("PUBLISH_DWA_STATE", planner.PUBLISH_DWA_STATE);
+		this->get_parameter("DEADZONE_CHECK", planner.DEADZONE_CHECK);
+		this->get_parameter("PRINT_COST", planner.PRINT_COST);
 		//cout<<"set param finished!"<<endl;
-		planner.set_goal<<setGoalx, setGoaly;
+		planner.set_goal << setGoalx, setGoaly;
 		//cout << "max_speed:" << planner.max_speed << endl;
 	}
 private:
@@ -279,11 +288,13 @@ public:
 	DWA_Visualizer()
 		: Node("DWA_Visualizer"), count_(0)
 	{
+		publisherImg_ = this->create_publisher<sensor_msgs::msg::CompressedImage>("dwa/Planner/compressed", 1);
 		timer_ = this->create_wall_timer(
 			10ms, std::bind(&DWA_Visualizer::timer_callback, this));
 	}
 
 private:
+	cv_bridge::CvImage img_bridge;
 	void timer_callback()
 	{
 		//  visualization
@@ -293,7 +304,7 @@ private:
 			cv::Mat bg(figure_size, figure_size, CV_8UC3, cv::Scalar(255, 255, 255));
 
 			// draw goal
-			cv::circle(bg, cv_offset(goal(0) + 2.56, goal(1), bg.cols, bg.rows), int(scale_up * 0.5), cv::Scalar(255, 0, 0), int(figure_size / 200));
+			cv::circle(bg, cv_offset(goal(0) + 2.56, goal(1), bg.cols, bg.rows), int(scale_up * 0.8), cv::Scalar(255, 0, 0), int(figure_size / 200));
 
 			// draw calibration 1m
 			//cv::circle(bg, 0,0, 10, cv::Scalar(155, 155, 115), int(figure_size / 200));
@@ -324,12 +335,6 @@ private:
 				}
 			}
 
-			// draw car optimal trajectory
-			for (unsigned int j = 0; j < plan.traj.cols(); j++)
-			{
-				cv::circle(bg, cv_offset(plan.traj(0, j) + 2.56, plan.traj(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(139, 134, 0), -1);
-			}
-
 			// draw car body
 			MatrixXd diag_pos(4, 2);
 			diag_pos << -planner.robot_width / 2, +planner.robot_length / 2,
@@ -343,23 +348,29 @@ private:
 			pos0 << car_x(0), car_x(1);
 			MatrixXd trans = pos0.replicate(4, 1);
 			MatrixXd rec_pos = (diag_pos * rot_bot.transpose()) + trans;
-			cv::line(bg, cv_offset(rec_pos(0, 0) + 2.56, rec_pos(0, 1)), cv_offset(rec_pos(1, 0) + 2.56, rec_pos(1, 1)), cv::Scalar(100, 0, 200), int(figure_size / 200));
-			cv::line(bg, cv_offset(rec_pos(1, 0) + 2.56, rec_pos(1, 1)), cv_offset(rec_pos(2, 0) + 2.56, rec_pos(2, 1)), cv::Scalar(100, 0, 200), int(figure_size / 200));
-			cv::line(bg, cv_offset(rec_pos(2, 0) + 2.56, rec_pos(2, 1)), cv_offset(rec_pos(3, 0) + 2.56, rec_pos(3, 1)), cv::Scalar(100, 0, 200), int(figure_size / 200));
-			cv::line(bg, cv_offset(rec_pos(3, 0) + 2.56, rec_pos(3, 1)), cv_offset(rec_pos(0, 0) + 2.56, rec_pos(0, 1)), cv::Scalar(100, 0, 200), int(figure_size / 200));
+			cv::line(bg, cv_offset(rec_pos(0, 0) + 2.56, rec_pos(0, 1)), cv_offset(rec_pos(1, 0) + 2.56, rec_pos(1, 1)), cv::Scalar(200, 0, 100), int(figure_size / 200));
+			cv::line(bg, cv_offset(rec_pos(1, 0) + 2.56, rec_pos(1, 1)), cv_offset(rec_pos(2, 0) + 2.56, rec_pos(2, 1)), cv::Scalar(200, 0, 100), int(figure_size / 200));
+			cv::line(bg, cv_offset(rec_pos(2, 0) + 2.56, rec_pos(2, 1)), cv_offset(rec_pos(3, 0) + 2.56, rec_pos(3, 1)), cv::Scalar(200, 0, 100), int(figure_size / 200));
+			cv::line(bg, cv_offset(rec_pos(3, 0) + 2.56, rec_pos(3, 1)), cv_offset(rec_pos(0, 0) + 2.56, rec_pos(0, 1)), cv::Scalar(200, 0, 100), int(figure_size / 200));
 
 			// draw car safe circle
-			cv::circle(bg, cv_offset(car_x(0) + 2.56, car_x(1), bg.cols, bg.rows), int(scale_up * 0.5), cv::Scalar(0, 0, 255), 2);
+			cv::circle(bg, cv_offset(car_x(0) + 2.56, car_x(1), bg.cols, bg.rows), int(scale_up * 0.5), cv::Scalar(200, 20, 20), 2);
 
-			// draw car heading arrow
-			cv::arrowedLine(bg, cv_offset(car_x(0) + 2.56, car_x(1), bg.cols, bg.rows),
-				cv_offset(car_x(0) + 2.56 + std::cos(car_x(2)), car_x(1) + std::sin(car_x(2)), bg.cols, bg.rows),
-				cv::Scalar(255, 0, 255),
-				int(figure_size / 300));
+			//// draw car heading arrow
+			//cv::arrowedLine(bg, cv_offset(car_x(0) + 2.56, car_x(1), bg.cols, bg.rows),
+			//	cv_offset(car_x(0) + 2.56 + std::cos(car_x(2)), car_x(1) + std::sin(car_x(2)), bg.cols, bg.rows),
+			//	cv::Scalar(255, 0, 255),
+			//	int(figure_size / 300));
 
-			if ((car_x.head(2) - goal).norm() <= planner.robot_radius)
+			// draw car optimal trajectory
+			for (unsigned int j = 0; j < plan.traj.cols(); j++)
 			{
-				cv::circle(bg, cv_offset(goal(0) + 2.56, goal(1), bg.cols, bg.rows), int(scale_up * 0.5), cv::Scalar(0, 205, 0), int(figure_size / 150));
+				cv::circle(bg, cv_offset(plan.traj(0, j) + 2.56, plan.traj(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(10, 10, 255), -1);
+			}
+
+			if ((car_x.head(2) - goal).norm() <= planner.robot_radius+0.3)
+			{
+				cv::circle(bg, cv_offset(goal(0) + 2.56, goal(1), bg.cols, bg.rows), int(scale_up * 0.8), cv::Scalar(0, 205, 0), int(figure_size / 150));
 				// draw reaching goal
 				if (!planner.RESET_STATE) {
 					for (unsigned int j = 0; j < traj_.cols(); j++)
@@ -371,30 +382,26 @@ private:
 
 			}
 			//cout << "reach before publish dwa state" << endl;
-			//if (planner.PUBLISH_DWA_STATE) {
-			//	cout<<"reach publish dwa state"<<endl;
-			//	cv::Mat outImg;
-			//	//cv::resize(bg, outImg, cv::Size(200, 200), 0, 0, cv::INTER_AREA);
-			//	cv::imshow("dwa", bg);
-			//	cv::waitKey(10);
-			//	std::string int_count = std::to_string(count0);
-			//	cv::imwrite("./pngs/" + std::string(5 - int_count.length(), '0').append(int_count) + ".png", bg);
-			//	auto message = sensor_msgs::msg::CompressedImage();
-			//	std_msgs::msg::Header header; // empty header
-			//	img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGRA8, bg);
-			//	img_bridge.toCompressedImageMsg(message); // from cv_bridge to sensor_msgs::Image
-			//	publisherImg_->publish(message);
-			//	
-			//}
+			if (planner.PUBLISH_DWA_STATE) {
+				//	cout<<"reach publish dwa state"<<endl;
+				//	cv::Mat outImg;
+				//	//cv::resize(bg, outImg, cv::Size(200, 200), 0, 0, cv::INTER_AREA);
+				auto message = sensor_msgs::msg::CompressedImage();
+				std_msgs::msg::Header header; // empty header
+				img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, bg);
+				img_bridge.toCompressedImageMsg(message); // from cv_bridge to sensor_msgs::Image
+				publisherImg_->publish(message);
 
-			cv::imshow("dwa", bg);
-			cv::waitKey(10);
-
-			std::string int_count = std::to_string(count0);
-			cv::imwrite("./pngs/" + std::string(5 - int_count.length(), '0').append(int_count) + ".png", bg);
-
+			}
+			else {
+				cv::imshow("dwa", bg);
+				cv::waitKey(10);
+				std::string int_count = std::to_string(count0);
+				cv::imwrite("./pngs/" + std::string(5 - int_count.length(), '0').append(int_count) + ".png", bg);
+			}
 		}
 	}
+	rclcpp::Publisher<sensor_msgs::msg::CompressedImage >::SharedPtr publisherImg_;
 	rclcpp::TimerBase::SharedPtr timer_;
 	size_t count_;
 };
@@ -413,7 +420,7 @@ int main(int argc, char** argv)
 	auto parameter = std::make_shared<DWA_Parametrize>();
 	//cout << "max_speed:" << planner.max_speed << endl;
 	car_x << 0., -0.3, PI / 2, 0, 0;
-	goal << 0.5, 0.5;
+	goal << 0.1, 0.1;
 	MatrixXd obin(20, 2);
 	obin << -1, -1,
 		-1.5, -1.5,
@@ -442,7 +449,7 @@ int main(int argc, char** argv)
 	if (planner.SHOW_ANIMATION)
 	{
 		cv::namedWindow("dwa", cv::WINDOW_NORMAL);
-		cv::resizeWindow("dwa", 720, 720);
+		cv::resizeWindow("dwa", 500, 500);
 	}
 
 	// add to the executor
