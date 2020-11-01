@@ -24,10 +24,42 @@ state guiState{
     guiManual: CPP: reset
     guiManual --> initGUI: GUIreset
 
+    guiManual --> nipple: nippleButton
+    nipple: c name:手动控制
+    nipple: JS: nipplecontroller
+    nipple: CPP: manual driving
+
     initGUI --> guiMAuto: autoButton
     guiMAuto: c name: 自动键
     guiMAuto: CPP: reset
     guiMAuto --> initGUI: GUIreset
+
+    guiMAuto --> getState
+    getState: c name:状态获取
+    getState: CPP: get state
+
+    getState --> cameraLock: cameraLockButton
+    lockFrame: c name: 相机锁定
+    lockFrame: lock frame
+
+    getState --> userSelect: inputBox
+    userSelect: c name: 用户选择
+    userSelect: CPP:select target && target publish
+
+    guiMAuto --> ParkIn: CabParkInButton
+    ParkIn : c name: 入库
+    ParkIn : CPP: park in. 
+    ParkIn --> reset: GUIreset
+
+    guiMAuto --> moveOut: CabMoveOutButton
+    moveOut : c name: 出库
+    moveOut : CPP: move out. 
+    moveOut --> reset: GUIreset
+
+    guiMAuto --> retureHome: GUIbackButton  
+    retureHome : c name: 返回
+    retureHome : CPP: back to home 
+    retureHome --> reset: GUIreset
 
 
 }
