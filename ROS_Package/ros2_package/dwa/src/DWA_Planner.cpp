@@ -263,16 +263,17 @@ namespace dwa_planner {
 
 		// remove small speed deadzone
 		for (double v = dw(0); v < dw(1); v += v_resolution) {
-			if (abs(v) > 0.05) {
+			if (abs(v) > 0.08) {
 				v_range.push_back(v);
 			}
 		}
-
+		//v_range.push_back(0.);
 		for (double omega = dw(2); omega < dw(3); omega += yaw_rate_resolution_r) {
-			if (abs(omega) > 0.05) {
+			if (abs(omega) > 0.26) {
 				omega_range.push_back(omega);
 			}
 		}
+		omega_range.push_back(0.);
 
 		for (auto v : v_range) {
 			for (auto omega : omega_range) {
@@ -367,13 +368,19 @@ namespace dwa_planner {
 		//	DEADZONE_CHECK = false;
 		//}
 
-		if ((motor_soll.norm() < 1.414 * min_wheel_speed) && (dist_to_goal >= robot_radius)) {
-			/*motor_soll <<500, -500;*/
-			motor_soll = min_wheel_speed * motor_soll.array().sign();
-			cout << "=================deadzone checked===================" << endl;
+		//if ((motor_soll.norm() < 1.414 * min_wheel_speed) && (dist_to_goal >= robot_radius)) {
+		//	/*motor_soll <<500, -500;*/
+		//	motor_soll = min_wheel_speed * motor_soll.array().sign();
+		//	cout << "=================deadzone checked===================" << endl;
+		//}
+
+		// when too close, predict less time
+		if (dist_to_goal <= robot_radius + 0.8) {
+			predict_time = 0.5;
 		}
-
-
+		else {
+			predict_time = predict_time0;
+		}
 		if (dist_to_goal <= robot_radius + 0.3) {
 			TEMPORARY_GOAL_ARRIVED = true;
 		}

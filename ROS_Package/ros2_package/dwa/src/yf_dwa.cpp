@@ -276,6 +276,7 @@ public:
 		this->get_parameter("PRINT_COST", planner.PRINT_COST);
 		//cout<<"set param finished!"<<endl;
 		planner.set_goal << setGoalx, setGoaly;
+		planner.predict_time0 = planner.predict_time;
 		//cout << "max_speed:" << planner.max_speed << endl;
 	}
 private:

@@ -36,6 +36,7 @@ namespace dwa_planner {
 		double min_wheel_speed;//100 [rpm]
 		double dt;// 0.2  [s] Time tick for motion prediction
 		double predict_time; // 0.8   [s]  less and more flexible
+		double predict_time0;
 
 		double to_goal_cost_gain;// 0.16
 		double obstacle_cost_gain;//  0.6
