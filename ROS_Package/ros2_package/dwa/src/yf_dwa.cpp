@@ -34,12 +34,12 @@ using namespace std::chrono_literals;
 
 
 // init global value
-Control controlspeed, motor_ist, u_;
+Control controlspeed, motor_ist, u_, motor_speed0;
 MatrixXd oblist;
-State car_x;
+State car_x, car_x0;
 Goal goal;
 MatrixXd traj_(5, 1);
-DWA_result plan;
+DWA_result plan, vorplan;
 DWA planner;
 clock_t start = clock();
 
@@ -71,21 +71,41 @@ private:
 	void timer_callback()
 	{
 		auto message = std_msgs::msg::Float32MultiArray();
-		//cout << "car_x: " << car_x.transpose() << endl;
-		//cout << "motor ist " << motor_ist.transpose() << endl;
 		cout << "goal " << goal.transpose() << endl;
-		//cout << "planner.max_yaw_rate: " << planner.max_yaw_rate << endl;
+
+		if (planner.PLOT_ESTIMATE_TRAJ) {
+			int vorplan_count = 0;
+
+			planner.RESET_STATE = false;
+			motor_speed0 = motor_ist;
+			planner.TEMPORARY_GOAL_ARRIVED = false;
+			if (traj_.cols() > 50) {
+				MatrixXd traj_;
+			}
+			while (vorplan_count < 50) {
+				vorplan = planner.dwa_control(motor_speed0, car_x0, goal, oblist);
+				u_ = planner.speed_change(vorplan.u, "MOTOR_TO_PC");
+				car_x0 = planner.motion(car_x0, u_, planner.dt);
+				motor_speed0 = vorplan.u;
+				//cout << "motor_speed0:" << motor_speed0 << endl;
+				traj_.conservativeResize(traj_.rows(), traj_.cols() + 1);
+				traj_.col(traj_.cols() - 1) = car_x0;
+				vorplan_count++;
+			}
+			planner.RESET_STATE = true;
+			cout << "traj_ size:" << traj_.cols() << "  vorplan count: " << vorplan_count << endl;
+		}
+
 		plan = planner.dwa_control(motor_ist, car_x, goal, oblist);
 		controlspeed = plan.u;
-		//cout<<"motor soll"<<controlspeed.transpose()<<endl;
 
-		if (!planner.RESET_STATE)
+		/*if (!planner.RESET_STATE)
 		{
 			u_ = planner.speed_change(plan.u, "MOTOR_TO_PC");
 			car_x = planner.motion(car_x, u_, planner.dt);
 			traj_.conservativeResize(traj_.rows(), traj_.cols() + 1);
 			traj_.col(traj_.cols() - 1) = car_x;
-		}
+		}*/
 
 		if (planner.TEMPORARY_GOAL_ARRIVED)
 		{
@@ -141,23 +161,6 @@ private:
 		motor_ist << motor_left, motor_right;
 	}
 
-	// void topicObmap_callback(const sensor_msgs::msg::Image::SharedPtr mapmsg) const
-	// {
-	//   cv_bridge::CvImagePtr cv_ptr;
-	//   try
-	//   {
-	//     cv_ptr = cv_bridge::toCvCopy(mapmsg, sensor_msgs::image_encodings::BGRA8);
-	//     cv::Mat img = cv_ptr->image;
-	//     MatrixXd obmap(img.cols, img.rows);
-	//     cv::cv2eigen(img, obmap);
-	//     oblist = planner.obmap2coordinaten(obmap, 5 / 50);
-	//   }
-	//   catch (cv_bridge::Exception &e)
-	//   {
-	//     std::cout << "Map recieve fail! " << std::endl;
-	//   }
-	// }
-
 	void topicOblist_callback(const std_msgs::msg::Float32MultiArray::SharedPtr mapmsg) const
 	{
 		std::vector<float> v = mapmsg->data;
@@ -180,28 +183,6 @@ private:
 	rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr subscriptionGoal_;
 };
 
-//class DWA_RealspeedSubscriber : public rclcpp::Node
-//{
-//public:
-//    DWA_RealspeedSubscriber()
-//        : Node("DWA_RealspeedSubscriber")
-//    {
-//        subscriptionSpeed_ = this->create_subscription<std_msgs::msg::Float32MultiArray>(
-//            "soll_speed", 1, std::bind(&DWA_RealspeedSubscriber::topic_callback, this, _1));
-//    }
-//
-//private:
-//    void topic_callback(const std_msgs::msg::Float32MultiArray::SharedPtr msg) const
-//    {
-//        //   RCLCPP_INFO(this->get_logger(), "I heard: '%s'", msg->data.c_str());
-//        auto RealSpeed = msg->data;
-//        motor_ist << RealSpeed[0], RealSpeed[1];
-//        //cout<<"speed recieved.."<<endl;
-//        //std::cout<<"broadcast speed :" << RealSpeed[0]<<","<<RealSpeed[1] <<","<<RealSpeed[2]<<","<<RealSpeed[3]<<std::endl;
-//    }
-//    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr subscriptionSpeed_;
-//};
-//
 class DWA_Parametrize : public rclcpp::Node
 {
 public:
@@ -209,21 +190,21 @@ public:
 		: Node("DWA_Parametrize")
 	{
 		this->declare_parameter<double>("set_goalx", 0.5);
-		this->declare_parameter<double>("set_goaly", 0.5);
-		this->declare_parameter<double>("max_speed", 1.0);
-		this->declare_parameter<double>("min_speed", -1.0);
+		this->declare_parameter<double>("set_goaly", 1.0);
+		this->declare_parameter<double>("max_speed", 3.0);
+		this->declare_parameter<double>("min_speed", -0.3);
 		this->declare_parameter<double>("max_yaw_rate", 540.0);
 		this->declare_parameter<double>("max_accel", 3.0);
 		this->declare_parameter<double>("max_delta_yaw_rate", 540.0);
-		this->declare_parameter<double>("v_resolution", 0.2);
+		this->declare_parameter<double>("v_resolution", 0.15);
 		this->declare_parameter<double>("yaw_rate_resolution", 15.0);
-		this->declare_parameter<double>("min_wheel_speed", 100.0);
+		this->declare_parameter<double>("min_wheel_speed", 180.0);
 		this->declare_parameter<double>("dt", 0.2);
 		this->declare_parameter<double>("predict_time", 2.0);
 		this->declare_parameter<double>("to_goal_cost_gain", 0.3);
 		this->declare_parameter<double>("obstacle_cost_gain", 0.4);
-		this->declare_parameter<double>("speed_adjust_param", 0.9);
-		this->declare_parameter<double>("speed_cost_gain_max", 2.5);
+		this->declare_parameter<double>("speed_adjust_param", 0.8);
+		this->declare_parameter<double>("speed_cost_gain_max", 1.6);
 		this->declare_parameter<double>("speed_cost_gain_min", 0.1);
 
 		this->declare_parameter<bool>("SHOW_ANIMATION", true);
@@ -234,11 +215,11 @@ public:
 		this->declare_parameter<bool>("TRANSFORM_MAP", false);
 		this->declare_parameter<bool>("MEASURE_TIME", false);
 		this->declare_parameter<bool>("TEMPORARY_GOAL_ARRIVED", false);
-		this->declare_parameter<bool>("PUBLISH_DWA_STATE", true);
+		this->declare_parameter<bool>("PUBLISH_DWA_STATE", false);
 		this->declare_parameter<bool>("SET_GOAL", false);
-		this->declare_parameter<bool>("DEADZONE_CHECK", true);
+		this->declare_parameter<bool>("DEADZONE_CHECK",false);
 		this->declare_parameter<bool>("PRINT_COST", false);
-
+		this->declare_parameter<bool>("PLOT_ESTIMATE_TRAJ",false);
 		timer_ = this->create_wall_timer(
 			2000ms, std::bind(&DWA_Parametrize::respond, this));
 	}
@@ -274,6 +255,8 @@ public:
 		this->get_parameter("PUBLISH_DWA_STATE", planner.PUBLISH_DWA_STATE);
 		this->get_parameter("DEADZONE_CHECK", planner.DEADZONE_CHECK);
 		this->get_parameter("PRINT_COST", planner.PRINT_COST);
+		this->get_parameter("PLOT_ESTIMATE_TRAJ", planner.PLOT_ESTIMATE_TRAJ);
+
 		//cout<<"set param finished!"<<endl;
 		planner.set_goal << setGoalx, setGoaly;
 		planner.predict_time0 = planner.predict_time;
@@ -320,14 +303,9 @@ private:
 				cv::circle(bg, cv_offset(oblist(0, j) + 2.56, oblist(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(0, 0, 0), -1);
 			}
 
-			/* if(!planner.RESET_STATE){
-			   for (unsigned int j = 0; j < traj_.cols(); j++)
-				 {
-				   cv::circle(bg, cv_offset(traj_(0, j)+2.5, traj_(1, j), bg.cols, bg.rows), int(figure_size / 500), cv::Scalar(10, 55, 100), -1);
-				 }
-			 }*/
-
-			 // draw car all posible trajectory
+			/*traj_.conservativeResize(traj_.rows(), 1);
+			traj_ << 0., -0.3, PI / 2, 0, 0;*/
+			// draw car all posible trajectory
 			for (unsigned int i = 0; i < plan.all_traj.size(); i++)
 			{
 				for (unsigned int j = 0; j < plan.all_traj[i].cols(); j++)
@@ -369,7 +347,7 @@ private:
 				cv::circle(bg, cv_offset(plan.traj(0, j) + 2.56, plan.traj(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(10, 10, 255), -1);
 			}
 
-			if ((car_x.head(2) - goal).norm() <= planner.robot_radius+0.3)
+			if ((car_x.head(2) - goal).norm() <= planner.robot_radius + 0.3)
 			{
 				cv::circle(bg, cv_offset(goal(0) + 2.56, goal(1), bg.cols, bg.rows), int(scale_up * 0.8), cv::Scalar(0, 205, 0), int(figure_size / 150));
 				// draw reaching goal
@@ -382,6 +360,16 @@ private:
 				}
 
 			}
+
+			if (planner.PLOT_ESTIMATE_TRAJ) {
+				traj_.conservativeResize(traj_.rows(), 50);
+				cout << "traj_ size in visualizer: " << traj_.cols() << endl;
+				for (unsigned int j = 0; j < traj_.cols(); j++)
+				{
+					cv::circle(bg, cv_offset(traj_(0, j) + 2.56, traj_(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(100, 0, 10), -1);
+				}
+				}
+		
 			//cout << "reach before publish dwa state" << endl;
 			if (planner.PUBLISH_DWA_STATE) {
 				//	cout<<"reach publish dwa state"<<endl;
@@ -421,7 +409,8 @@ int main(int argc, char** argv)
 	auto parameter = std::make_shared<DWA_Parametrize>();
 	//cout << "max_speed:" << planner.max_speed << endl;
 	car_x << 0., -0.3, PI / 2, 0, 0;
-	goal << 0.1, 0.1;
+	car_x0 << 0., -0.3, PI / 2, 0, 0;
+	goal << 0., 0.1;
 	MatrixXd obin(20, 2);
 	obin << -1, -1,
 		-1.5, -1.5,

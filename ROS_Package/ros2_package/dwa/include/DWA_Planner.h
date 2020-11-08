@@ -53,6 +53,7 @@ namespace dwa_planner {
 		bool TRANSFORM_MAP;
 		bool TEMPORARY_GOAL_ARRIVED;
 		bool PUBLISH_DWA_STATE;
+		bool PLOT_ESTIMATE_TRAJ;
 		bool DEADZONE_CHECK;
 		bool PRINT_COST;
 
@@ -64,7 +65,7 @@ namespace dwa_planner {
 		double wheel_quer_dist = 0.460;
 		double car_h = 0.4;
 		double wheel_radius = 0.095;
-		double robot_radius = 0.5;  // [m] for collision check
+		double robot_radius = 0.58;  // [m] for collision check
 		double robot_length = 0.661 + 0.1;  // [m] for collision check
 		double robot_width = 0.504 + 0.1;  // [m] for collision check
 		double dist_to_goal = 1e10; // 1e10
