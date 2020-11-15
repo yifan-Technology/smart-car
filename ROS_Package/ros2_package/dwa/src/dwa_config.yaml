@@ -5,10 +5,10 @@
 Car_State:
   set_goalx: 0.5
   set_goaly: 1.0
-  max_speed: 3.0 # [m/s]
+  max_speed: 2.5 # [m/s]
   min_speed: -0.1 # [m/s]
   max_yaw_rate: 750.0 # [grad/s]
-  max_accel: 3.0  # [m/ss]
+  max_accel: 4.0  # [m/ss]
   max_delta_yaw_rate: 450.0  # [grad/ss]
   v_resolution: 0.15  # [m/s]
   yaw_rate_resolution: 10.0 # [grad/s]
@@ -31,9 +31,9 @@ Flag_State:
   MEASURE_TIME: False
   TRANSFORM_MAP: False
   TEMPORARY_GOAL_ARRIVED: False
-  PUBLISH_DWA_STATE: False
+  PUBLISH_DWA_STATE: True
   SET_GOAL: False
-  PRINT_COST: False
+  PRINT_COST: True
   PLOT_ESTIMATE_TRAJ: False
 
 # PLANNER STATE

@@ -68,6 +68,11 @@ namespace dwa_planner {
 	double DWA::degree2radian(double degree) {
 		return degree * PI / 180;
 	}
+	double DWA::RandInnovation(double fMin, double fMax)
+	{
+		double f = (double)rand() / RAND_MAX;
+		return fMin + f * (fMax - fMin);
+	}
 
 	State DWA::koordinaten_transfomation(Control wheel_speed, double theta) {
 		double omega_l = wheel_speed[0];
@@ -217,22 +222,6 @@ namespace dwa_planner {
 		/*"""
 		calc to goal cost with angle difference
 		"""*/
-		//double bias_y = 0;
-		///*if (goal(0)) > 0) {
-		//	bias_theta = 30 * 3.14159/ 180 ;
-		//}
-		//else if (goal(0)) < 0) {
-		//	bias_theta = -30 * 3.14159 / 180;
-		//}*/
-		///*	else {
-		//		bias_theta = 0;
-		//	}*/
-		//if (goal(1) >1.5) {
-		//	bias_y = 1.5;
-		//}
-		//if (goal(0) > 2.0 || goal(0) < -2.0) {
-		//	bias_y = 1.5;
-		//}
 		double dx = goal(0) - trajectory(0, trajectory.cols() - 1);
 		double dy = goal(1) - trajectory(1, trajectory.cols() - 1);
 		double	error_angle = atan2(dy, dx);
@@ -275,7 +264,19 @@ namespace dwa_planner {
 		DWA_result Result;
 		double yaw_rate_resolution_r = degree2radian(yaw_rate_resolution);
 		MatrixXd cost_list(6, 1);
+		double turnning_sign;
 		vector<double> v_temp, omega_temp, v_range, omega_range, v_range0, omega_range0;
+
+		// add less choice for turning
+		v_range0.push_back(0);
+		v_range0.push_back(0.001);
+
+		omega_range0.push_back(0.5 * PI);
+		omega_range0.push_back(-0.5 * PI);
+		omega_range0.push_back(PI);
+		omega_range0.push_back(-PI);
+		omega_range0.push_back(1.5 * PI);
+		omega_range0.push_back(-1.5 * PI);
 
 		// prefer turning around
 		double goal_theta = atan2(goal(1), goal(0)) * 180 / PI;
@@ -288,20 +289,7 @@ namespace dwa_planner {
 			}
 		}
 
-		if ((goal_theta > 120 || goal_theta < 60) && SAFE_TURNING) {
-
-			v_range0.push_back(0);
-			v_range0.push_back(0.001);
-
-			omega_range0.push_back(0.5 * PI);
-			omega_range0.push_back(-0.5 * PI);
-			omega_range0.push_back(PI);
-			omega_range0.push_back(-PI);
-			omega_range0.push_back(1.5 * PI);
-			omega_range0.push_back(-1.5 * PI);
-
-			//omega_range0.push_back(2.5 * PI);
-			//omega_range0.push_back(-2.5 * PI);
+		if ((goal_theta > 135 || goal_theta < 45) && SAFE_TURNING) {
 			v_temp = v_range0;
 			omega_temp = omega_range0;
 		}
@@ -358,7 +346,23 @@ namespace dwa_planner {
 				}
 			}
 		}
-
+		// random innovation retreat strategy
+		if (min_cost == INFINITY) {
+			double v_innovate = RandInnovation(-0.2, -0.1);
+			if (goal(0) < 0) {
+				turnning_sign = 1;
+			}
+			else {
+				turnning_sign = -1;
+			}
+			double omega_innovate = turnning_sign * RandInnovation(PI / 4, PI / 2);
+			best_u << v_innovate, omega_innovate;
+			EMERGENCY_STOP = true;
+			cout<<"emergency u: "<<best_u.transpose()<<endl;
+		}
+		else {
+			EMERGENCY_STOP = false;
+		}
 		Result.u = best_u;
 		Result.traj = best_traj;
 		Result.all_traj = all_traj;
@@ -380,7 +384,7 @@ namespace dwa_planner {
 		//cout<<"x_trans:"<<x_trans<<endl;
 		if (RESET_STATE) {
 			temp_x.topRows<3>() << 0, -0.3, PI / 2;
-			temp_x.bottomRows<2>() = x_trans.bottomRows<2>();
+			temp_x.bottomRows<2>() = u_ist;
 		}
 
 		Window dw = calc_dynamic_window(temp_x);

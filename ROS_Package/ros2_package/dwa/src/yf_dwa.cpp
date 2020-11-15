@@ -164,9 +164,17 @@ private:
 	void topicOblist_callback(const std_msgs::msg::Float32MultiArray::SharedPtr mapmsg) const
 	{
 		std::vector<float> v = mapmsg->data;
-		float* v2 = v.data();
-		Map<MatrixXf> ob(v2, 2, mapmsg->data.size() / 2);
-		oblist = planner.remove_human_shape(ob.cast<double>(), goal);
+		try
+		{
+			float* v2 = new float[20000];
+			v2 = v.data();
+			Map<MatrixXf> ob(v2, 2, mapmsg->data.size() / 2);
+			oblist = planner.remove_human_shape(ob.cast<double>(), goal);
+		}
+		catch (std::bad_alloc& ba)
+		{
+			std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+		}
 	}
 
 	void topicGoal_callback(const geometry_msgs::msg::PoseStamped::SharedPtr message) const
@@ -217,9 +225,9 @@ public:
 		this->declare_parameter<bool>("TEMPORARY_GOAL_ARRIVED", false);
 		this->declare_parameter<bool>("PUBLISH_DWA_STATE", false);
 		this->declare_parameter<bool>("SET_GOAL", false);
-		this->declare_parameter<bool>("DEADZONE_CHECK",false);
+		this->declare_parameter<bool>("DEADZONE_CHECK", false);
 		this->declare_parameter<bool>("PRINT_COST", false);
-		this->declare_parameter<bool>("PLOT_ESTIMATE_TRAJ",false);
+		this->declare_parameter<bool>("PLOT_ESTIMATE_TRAJ", false);
 		timer_ = this->create_wall_timer(
 			2000ms, std::bind(&DWA_Parametrize::respond, this));
 	}
@@ -298,9 +306,14 @@ private:
 			cv::rectangle(bg, (cv_offset(0, 0, bg.cols, bg.rows)), (cv_offset(5, 5, bg.cols, bg.rows)), cv::Scalar(10, 205, 215), int(figure_size / 200));
 
 			// draw all obstacle
+			int obstacle_color = 0;
+			if (planner.EMERGENCY_STOP) {
+				obstacle_color = 255;
+			}
+
 			for (unsigned int j = 0; j < oblist.cols(); j++)
 			{
-				cv::circle(bg, cv_offset(oblist(0, j) + 2.56, oblist(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(0, 0, 0), -1);
+				cv::circle(bg, cv_offset(oblist(0, j) + 2.56, oblist(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(0, 0, obstacle_color), -1);
 			}
 
 			/*traj_.conservativeResize(traj_.rows(), 1);
@@ -358,7 +371,6 @@ private:
 							int(figure_size / 200), cv::Scalar(0, 0, 255), -1);
 					}
 				}
-
 			}
 
 			if (planner.PLOT_ESTIMATE_TRAJ) {
@@ -368,8 +380,8 @@ private:
 				{
 					cv::circle(bg, cv_offset(traj_(0, j) + 2.56, traj_(1, j), bg.cols, bg.rows), int(figure_size / 200), cv::Scalar(100, 0, 10), -1);
 				}
-				}
-		
+			}
+
 			//cout << "reach before publish dwa state" << endl;
 			if (planner.PUBLISH_DWA_STATE) {
 				//	cout<<"reach publish dwa state"<<endl;
