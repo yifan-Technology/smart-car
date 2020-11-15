@@ -4,6 +4,7 @@
 npm install --save react-nipple
 npm install react-grid-layout
 npm install react-ros
+npm install react-router-dom
 ```
 
 ## 修改
