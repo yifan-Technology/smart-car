@@ -11,10 +11,12 @@ import { VideoWindowLiveVideo } from './VideoWindowLiveVideo';
 import { VideoWindowPlanner } from './VideoWindowPlanner';
 import { ROS } from './ROS';
 import GridLayout from 'react-grid-layout';
+import { ManualButton } from "./ManualDriving";
 
 import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
-import ListItemText from '@material-ui/core/ListItemText'
+//import ListItemText from '@material-ui/core/ListItemText'
+
 
 import {
   BrowserRouter as Router,
@@ -56,21 +58,21 @@ export default function App() {
 
 function Home() {
   
-  return <h2>YIFAN</h2>
+  return <h2>易繁</h2>
     
 }
 
 function Auto() {
   const layout = [
     {i: 'a', x: 0.5, y: 3, w: 3, h: 2,static: true},
-    {i: 'b', x: 0, y: 6, w: 3, h: 2,static: true},
+    {i: 'b', x: 0.5, y: 6, w: 3, h: 2,static: true},
     {i: 'c', x: 5, y: 0, w: 5, h: 5,static: true},
     {i: 'd', x: 4.5, y: 7, w: 5, h: 5,static: true}
   ];
   return (
-  <div className="App">
+  <div className="AutoLayout">
       <ROS>
-      <GridLayout className="layout" layout={layout} cols={12} rowHeight={30} width={1200}>
+      <GridLayout className="autolayout" layout={layout} cols={12} rowHeight={30} width={1200}>
         <div key="a" className="ToggleConnectLayout">
           <ToggleConnect />
         </div>
@@ -79,11 +81,12 @@ function Auto() {
             title="JOY"
             width={400}
             height={400}
-            options={{ mode: "static", 
-            color: "red",
-            position: { top: "50%", left: "50%" },
-            size: 200 
-          }}
+            options={{ 
+              mode: "static", 
+              color: "red",
+              position: { top: "50%", left: "50%" },
+              size: 200 
+            }}
           />
         </div>
         <div key="c" className="VideoWindowLiveVideoLayout">
@@ -101,11 +104,20 @@ function Auto() {
 }
 
 function Manual() {
+  const layout = [
+    {i: 'a', x: 0.5, y: 3, w: 3, h: 2,static: true},
+  ];
+  
+
   return (
-    <List disablePadding dense>
-        <ListItem button>
-          <ListItemText>Big Cen</ListItemText>
-        </ListItem>
-    </List>
+    <ROS>
+      <div className="ManualLayout">
+        <GridLayout className="manuallayout" layout={layout} cols={12} rowHeight={30} width={1200}>
+          <div key="a" className="manualbutton">
+            <ManualButton />
+          </div>
+        </GridLayout>
+      </div>
+    </ROS>
   );
 }
