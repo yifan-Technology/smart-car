@@ -14,7 +14,7 @@ from mainwindow import MainWindow
 from PyQt5.QtWidgets import QApplication
 from multiprocessing import freeze_support, Event, Queue, Process
 
-PLOT = True
+PLOT = False
 
 class SerialThread:
     """
