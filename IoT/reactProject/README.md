@@ -5,6 +5,8 @@ npm install --save react-nipple
 npm install react-grid-layout
 npm install react-ros
 npm install react-router-dom
+npm install react-responsive --save
+npm install react-bootstrap bootstrap
 ```
 
 ## 修改
