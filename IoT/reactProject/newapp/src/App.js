@@ -11,7 +11,9 @@ import { VideoWindowLiveVideo } from './VideoWindowLiveVideo';
 import { VideoWindowPlanner } from './VideoWindowPlanner';
 import { ROS } from './ROS';
 import GridLayout from 'react-grid-layout';
-import { ManualButton } from "./ManualDriving";
+import { ManualPage } from "./ManualPage";
+import { HomePage } from "./HomePage";
+
 
 import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
@@ -26,6 +28,7 @@ import {
 } from "react-router-dom";
 
 export default function App() {
+
   return (
     <Router>
       <div>
@@ -57,9 +60,13 @@ export default function App() {
 }
 
 function Home() {
+
+  return (
+    <div>
+      <HomePage/>
+    </div>
+  );
   
-  return <h2>易繁</h2>
-    
 }
 
 function Auto() {
@@ -104,20 +111,11 @@ function Auto() {
 }
 
 function Manual() {
-  const layout = [
-    {i: 'a', x: 0.5, y: 3, w: 3, h: 2,static: true},
-  ];
   
-
   return (
-    <ROS>
-      <div className="ManualLayout">
-        <GridLayout className="manuallayout" layout={layout} cols={12} rowHeight={30} width={1200}>
-          <div key="a" className="manualbutton">
-            <ManualButton />
-          </div>
-        </GridLayout>
-      </div>
-    </ROS>
+  
+      <ROS>
+        <ManualPage /> 
+      </ROS>
   );
 }
