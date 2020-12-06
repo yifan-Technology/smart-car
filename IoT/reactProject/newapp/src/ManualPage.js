@@ -1,153 +1,155 @@
 import React from 'react';
 import GridLayout from 'react-grid-layout';
-//import { ROS } from './ROS';
+// import { ROS } from './ROS';
 import ReactNippleExample from "./ReactNippleExample";
-import { ToggleConnect } from './ToggleConnect';
-import { VideoWindowLiveVideo } from './VideoWindowLiveVideo';
+// import { ToggleConnect } from './ToggleConnect';
+// import { VideoWindowLiveVideo } from './VideoWindowLiveVideo';
 import { useMediaQuery } from 'react-responsive';
 import Button from 'react-bootstrap/Button';
+import { useState, useEffect } from 'react';
+
+// function getWindowDimensions() {
+//     const { innerWidth: width, innerHeight: height } = window;
+//     return {
+//       width,
+//       height
+//     };
+// }
+
+// if mobil phone return sm; if Laptop return lg
+function ButtonSize(){
+    const { innerWidth: width} = window;
+    if(width<512){
+        return "sm"
+    }
+    else if(width>1024){
+        return "lg"
+    }
+    else {
+        return ""
+    }
+}
+
+function useWindowSize() {
+    // Initialize state with undefined width/height so server and client renders match
+    // Learn more here: https://joshwcomeau.com/react/the-perils-of-rehydration/
+    const [windowSize, setWindowSize] = useState({
+      width: 2100,
+      height: 100,
+    });
+  
+    useEffect(() => {
+      // Handler to call on window resize
+      function handleResize() {
+
+        // Set window width/height to state
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      }
+      
+      // Add event listener
+      window.addEventListener("resize", handleResize);
+      
+      // Call handler right away so state gets updated with initial window size
+      handleResize();
+      
+      // Remove event listener on cleanup
+      return () => window.removeEventListener("resize", handleResize);
+    }, []); // Empty array ensures that effect is only run on mount
+  
+    return windowSize.width/2100;
+  }
+
+function ButtonLayout(){
+    var i;
+    const layout = [];
+    for( i=0; i<8; i++) {
+        layout[i] = {i:'a'+i, x: i*2, y:0, w:1, h:1, static: true }
+    }
+    return layout
+}
 
 export function ManualPage() {
-    
-    const Portrait = ({ children }) => {
+    const layout = ButtonLayout();
+    //layout[100] = {i:'a'+i, x: i*2, y:0, w:1, h:1, static: true }
+    console.log(layout);
+    const [btz] = ButtonSize();
+    const scalingratio = useWindowSize();
+    const NarrowScreen = ({ children }) => {
         const isPortrait = useMediaQuery({ orientation: 'portrait' })
         return isPortrait ? children : null
     }
 
-    const Landscape = ({ children }) => {
+    const WideScreen = ({ children }) => {
         const isLandscape = useMediaQuery({ orientation: 'landscape' })
         return isLandscape ? children : null
     }
-
-    const layout = [
-        {i: 'a3', x: 0, y: 7, w: 0.5, h: 1,static: true},
-        {i: 'b3', x: 0.7, y: 8, w: 0.5, h: 1,static: true},
-        {i: 'c3', x: 1.6, y: 8, w: 0.5, h: 1,static: true},
-        {i: 'd3', x: 2.7, y: 8, w: 0.5, h: 1,static: true},
-        {i: 'e3', x: 0, y: 9, w: 0.5, h: 1,static: true},
-        {i: 'f3', x: 0.7, y: 9, w: 0.5, h: 1,static: true},
-        {i: 'g3', x: 1.9, y: 9, w: 0.5, h: 1,static: true},
-        {i: 'h3', x: 0, y: 10, w: 5, h: 2,static: true},
-        {i: 'i3', x: 2.5, y: 0, w: 5, h: 5,static: true},
-        {i: 'j3', x: 5.5, y: 0, w: 2, h: 2,static: true},
-        {i: 'a4', x: 0, y: 0, w: 0.5, h: 1,static: true},
-        {i: 'b4', x: 0.7, y: 0, w: 0.5, h: 1,static: true},
-        {i: 'c4', x: 1.6, y: 0, w: 0.5, h: 1,static: true},
-        {i: 'd4', x: 2.7, y: 0, w: 0.5, h: 1,static: true},
-        {i: 'e4', x: 3.6, y: 0, w: 0.5, h: 1,static: true},
-        {i: 'f4', x: 4.35, y: 0, w: 0.5, h: 1,static: true},
-        {i: 'g4', x: 5.55, y: 0, w: 0.5, h: 1,static: true},
-        {i: 'h4', x: 0.3, y: 8, w: 5, h: 2,static: true},
-        {i: 'i4', x: 0.3, y: 1, w: 5, h: 5,static: true},
-        {i: 'j4', x: 5.5, y: 1, w: 2, h: 2,static: true},
-    ];
-      
     
     return (
-        
-        <div>
-            <Portrait>
-                <GridLayout className="manuallayout" layout={layout} cols={10} rowHeight={20} width={1000}>
-                   
-                    <div key="a3" className="Reset">
-                        <Button variant="danger" size="sm">Reset</Button>
-                      
-                    </div>
-                    <div key="b3" className="GetState">
-                        <button>GetState</button>
-                    </div>
-                    <div key="c3" className="LockCamera">
-                        <button>LockCamera</button>
-                    </div>
-                    <div key="d3" className="InputBox">
-                        <button>InputBox</button>
-                    </div>
-                    <div key="e3" className="ParkIn">
-                        <button>ParkIn</button>
-                    </div>
-                    <div key="f3" className="CabMoveOutt">
-                        <button>CabMoveOutt</button>
-                    </div>
-                    <div key="g3" className="ReturnHome">
-                        <button>ReturnHome</button>
-                    </div>
-                    <div key="h3" className="ToggleConnectLayout">
-                        <ToggleConnect />
-                    </div>
-                    <div key="i3" className="ReactNippleLayout">
+        <body>
+            <WideScreen >
+                <GridLayout className="widescreen" layout={layout} cols={50} rowHeight={22} width={5000}>
+                        <div key={layout[0].i} className="Reset">
+                            <Button variant="danger" size={btz}>Reset</Button>
+                        </div>
+                        <div key={layout[1].i} className="GetState">
+                            <Button variant="primary" size={btz}>GetState</Button>
+                        </div>
+                        <div key={layout[2].i} className="LockCamera">
+                            <Button variant="primary" size={btz}>LockCamera</Button>
+                        </div>
+                        <div key="e3" className="ReactNippleLayout">
                         <ReactNippleExample
-                        title="Manual Controller"
-                        width={150}
-                        height={150}
-                        options={{ 
+                            title="JOY"
+                            width={400*scalingratio}
+                            height={400*scalingratio}
+                            options={{ 
                             mode: "static", 
                             color: "red",
                             position: { top: "50%", left: "50%" },
-                            size: 100 
-                        }}
+                            size: 200*scalingratio
+                            }}
                         />
-                    </div>
-                    {/* <div key="j3" className="VideoWindowLiveVideoLayout">
-                        <VideoWindowLiveVideo
-                            width={150}
-                            height={150}
-                        />
-                    </div> */}
+                        </div>     
                 </GridLayout>
-            </Portrait>
-
-            <Landscape>
-                <GridLayout className="manuallayout" layout={layout} cols={12} rowHeight={20} width={1200}>
-                    <div key="a4" className="Reset">
-                        <Button variant="danger" size="lg">Reset</Button>
+            </WideScreen>
+            <NarrowScreen>
+                <GridLayout className="narrowscreen" layout={layout} cols={50} rowHeight={22} width={2100*scalingratio}>
+                    <div key={layout[0].i} className="Reset">
+                        <Button variant="danger" size={btz}>Reset</Button>
                     </div>
-                    <div key="b4" className="GetState">
-                        <button>GetState</button>
+                    <div key={layout[1].i} className="GetState">
+                        <Button variant="primary" size={btz}>GetState</Button>
                     </div>
-                    <div key="c4" className="LockCamera">
-                        <button>LockCamera</button>
+                    <div key={layout[2].i} className="LockCamera">
+                        <Button variant="primary" size={btz}>LockCamera</Button>
                     </div>
-                    <div key="d4" className="InputBox">
-                        <button>InputBox</button>
+                    <div key={layout[3].i} className="InputBox">
+                        <Button variant="primary" size={btz}>InputBox</Button>
                     </div>
-                    <div key="e4" className="ParkIn">
-                        <button>ParkIn</button>
-                    </div>
-                    <div key="f4" className="CabMoveOutt">
-                        <button>CabMoveOutt</button>
-                    </div>
-                    <div key="g4" className="ReturnHome">
-                        <button>ReturnHome</button>
-                    </div>
-                    <div key="h4" className="ToggleConnectLayout">
-                        <ToggleConnect />
-                    </div>
-                    <div key="i4" className="ReactNippleLayout">
+                    <div key="e3" className="ReactNippleLayout">
                         <ReactNippleExample
-                        title="Manual Controller"
-                        width={150}
-                        height={150}
-                        options={{ 
+                            title="JOY"
+                            width={400*scalingratio}
+                            height={400*scalingratio}
+                            options={{ 
                             mode: "static", 
                             color: "red",
                             position: { top: "50%", left: "50%" },
-                            size: 100 
-                        }}
-                        />
-                    </div>
-                    <div key="j4" className="VideoWindowLiveVideoLayout">
-                        <VideoWindowLiveVideo
-                            width={150}
-                            height={150}
+                            size: 200*scalingratio
+                            }}
                         />
                     </div>
                 </GridLayout>
-            </Landscape>
-        </div>
-        
+            </NarrowScreen>
+        </body>      
     );
-
 }
+                   
+    
+
 
 export default ManualPage
 
