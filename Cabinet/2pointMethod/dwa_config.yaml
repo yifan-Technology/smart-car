@@ -1,0 +1,54 @@
+#::::::::::::::#
+#   DWA Model  #
+#::::::::::::::#
+# SMART CAR STATE
+Car_State:
+  set_goalx: 0.5
+  set_goaly: 1.0
+  max_speed: 1.2 # [m/s]
+  min_speed: -0.8 # [m/s]
+  max_yaw_rate: 360.0 # [grad/s]
+  max_accel: 5.0  # [m/ss]
+  max_delta_yaw_rate: 540.0  # [grad/ss]
+  v_resolution: 0.2  # [m/s]
+  yaw_rate_resolution: 10.0 # [grad/s]
+  min_wheel_speed: 100.0 # [rpm]
+  dt: 0.1  # [s] Time tick for motion prediction
+  predict_time: 2.0 # [s]  less and more flexible
+  to_goal_cost_gain: 0.3
+  obstacle_cost_gain: 0.4
+  speed_adjust_param: 0.9
+  speed_cost_gain_max: 2.8
+  speed_cost_gain_min: 0.1
+  Kp: 0.5
+  Ki: 0.1
+  v0: 0.18
+
+# FLAG STATE
+Flag_State:
+  SHOW_ANIMATION: False
+  GOAL_ARRIVAED: False
+  RESET_STATE: True
+  HUMAN_SHAPE: False
+  MAP_TO_OBCOORD: True
+  MEASURE_TIME: False
+  TRANSFORM_MAP: False
+  TEMPORARY_GOAL_ARRIVED: False
+  PUBLISH_DWA_STATE: true
+  SET_GOAL: False
+
+# PLANNER STATE
+Planner_State:
+  # Parameters
+  KP: 5.0  # attractive potential gain
+  ETA: 100.0  # repulsive potential gain
+  AREA_WIDTH: 15.0  # potential area width [m]
+  OSCILLATIONS_DETECTION_LENGTH: 3  # the number of previous positions used to check oscillations
+  # Robot property
+  start_locx: 2.5  # [m]
+  start_locy: 0.  # [m]
+  ein_step: 1.0  # move step length [m]
+  grid_size: 0.5  # potential grid size [m]
+  robot_radius: 1.0  # robot radius [m]
+  # Flag state
+  SHOW_ANIMATION: False
